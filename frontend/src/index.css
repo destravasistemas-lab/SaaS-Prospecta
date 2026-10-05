@@ -3,10 +3,11 @@
 @tailwind utilities;
 
 body {
-  background-color: #0a0a0f;
+  background-color: #030712;
+  color: #f8fafc;
 }
 
-/* ---------- Aurora animada (fundo do hero da landing) ---------- */
+/* ---------- Aurora Cristal Animada (fundo do hero da landing) ---------- */
 @keyframes aurora-a {
   0%   { transform: translate(-8%, -6%) scale(1);   }
   50%  { transform: translate(10%, 8%)  scale(1.25); }
@@ -22,17 +23,17 @@ body {
   50%  { transform: translate(8%, -10%) scale(1.2); }
   100% { transform: translate(0, 0)     scale(1);   }
 }
-.aurora-blob { will-change: transform; border-radius: 9999px; filter: blur(90px); }
+.aurora-blob { will-change: transform; border-radius: 9999px; filter: blur(95px); }
 .aurora-a { animation: aurora-a 18s ease-in-out infinite; }
 .aurora-b { animation: aurora-b 22s ease-in-out infinite; }
 .aurora-c { animation: aurora-c 26s ease-in-out infinite; }
 
-/* Grade fina que some pras bordas — dá profundidade sem competir com o texto */
+/* Grade fina cristal que dá profundidade e visual tech refinado */
 .hero-grid {
   background-image:
-    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-  background-size: 46px 46px;
+    linear-gradient(rgba(56, 189, 248, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
 }

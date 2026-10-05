@@ -29,8 +29,8 @@ const bottomLinks: NavItem[] = [
 function navItemClass(isActive: boolean): string {
   return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
     isActive
-      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
-      : 'text-[#5a5a6e] hover:bg-white/[0.04] hover:text-[#c0c0d0]'
+      ? 'bg-sky-500/15 text-sky-200 border border-sky-400/30 shadow-sm shadow-sky-500/10'
+      : 'text-[#64748b] hover:bg-white/[0.04] hover:text-white'
   }`
 }
 
@@ -123,21 +123,21 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-[#07070c] min-h-screen flex flex-col border-r border-white/[0.05]">
+    <aside className="w-64 bg-[#030712] min-h-screen flex flex-col border-r border-[#38bdf8]/10">
       {/* Logo */}
       <div className="px-5 pt-6 pb-4">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2.5 group"
         >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-lg shadow-[#0ea5e9]/30">
             <span className="text-white font-bold text-sm tracking-tight">P</span>
           </div>
           <div className="flex flex-col text-left">
             <span className="text-sm font-semibold text-white tracking-tight">
-              {BRANDING.namePrefix}<span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">{BRANDING.nameHighlight}</span>{BRANDING.nameSuffix}
+              {BRANDING.namePrefix}<span className="bg-gradient-to-r from-white via-sky-200 to-sky-400 bg-clip-text text-transparent">{BRANDING.nameHighlight}</span>{BRANDING.nameSuffix}
             </span>
-            <span className="text-[10px] text-indigo-400/80 font-medium tracking-wide flex items-center gap-1">
+            <span className="text-[10px] text-sky-400/90 font-medium tracking-wide flex items-center gap-1">
               by {BRANDING.company}
             </span>
           </div>
@@ -178,8 +178,8 @@ export default function Sidebar() {
                 onClick={() => toggleGroup(group.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   hasActive && !isOpen
-                    ? 'text-indigo-300'
-                    : 'text-[#7a7a8e] hover:bg-white/[0.04] hover:text-[#c0c0d0]'
+                    ? 'text-sky-300'
+                    : 'text-[#64748b] hover:bg-white/[0.04] hover:text-white'
                 }`}
               >
                 <GroupIcon size={15} strokeWidth={1.75} />
@@ -275,7 +275,7 @@ export default function Sidebar() {
           Sair
         </button>
         <div className="mt-2.5 pt-2 border-t border-white/[0.04] px-1 text-center">
-          <p className="text-[10px] text-white/30 tracking-tight">
+          <p className="text-[10px] text-sky-400/70 tracking-tight font-medium">
             {BRANDING.developedBy}
           </p>
         </div>

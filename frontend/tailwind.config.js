@@ -4,53 +4,70 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Accent neon (Aurora): remapeia toda a escala `indigo-*` já usada no app
-        // para o roxo neon — re-tinge o sistema inteiro sem mexer tela por tela.
+        // Paleta principal remapeada para Azul Cristal / Ice Cyan / Safira
         indigo: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          200: '#e9d5ff',
-          300: '#d8b4fe',
-          400: '#c9a7ff',
-          500: '#bd7cf9',
-          600: '#a855f7',
-          700: '#9333ea',
-          800: '#7e22ce',
-          900: '#4a1d7a',
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8', // Azul cristal claro
+          500: '#0ea5e9', // Sky vibrante
+          600: '#0284c7', // Azul cristal elétrico
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+          950: '#082f49',
         },
-        // Cores neon da marca, disponíveis como classes (bg-neon-pink, text-neon-cyan…)
+        // Paleta Crystal & Ice
+        crystal: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+          dark: '#030712',
+          card: '#070e22',
+        },
+        // Cores neon/accent remapeadas para Azul Cristal, Ice Cyan e Branco Puro
         neon: {
-          pink: '#ff4fd8',
-          purple: '#a855f7',
-          cyan: '#00d4ff',
+          pink: '#38bdf8',   // Azul cristal claro (substitui pink anterior)
+          purple: '#0ea5e9', // Azul sky vibrante
+          cyan: '#00f0ff',   // Ice Cyan puro
+          ice: '#bae6fd',    // Gelo cristalino
+          white: '#ffffff',  // Branco puro
         },
         brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#4f46e5',
-          600: '#4338ca',
-          700: '#3730a3',
-          800: '#312e81',
-          900: '#1e1b4b',
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
         },
         dark: {
-          DEFAULT: '#0f172a',
-          50: '#1e293b',
-          100: '#334155',
-          200: '#475569',
-          300: '#64748b',
-          400: '#94a3b8',
-          500: '#cbd5e1',
-          600: '#e2e8f0',
+          DEFAULT: '#030712',
+          50: '#070e22',
+          100: '#0b152d',
+          200: '#111e3d',
+          300: '#1e293b',
+          400: '#475569',
+          500: '#94a3b8',
+          600: '#cbd5e1',
           700: '#f1f5f9',
         },
         surface: {
-          DEFAULT: '#0f172a',
-          card: '#1e293b',
-          hover: '#334155',
+          DEFAULT: '#030712',
+          card: '#070e22',
+          hover: '#0d1838',
         },
       },
     },

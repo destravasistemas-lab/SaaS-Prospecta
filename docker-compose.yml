@@ -10,18 +10,18 @@ services:
   # ---------------------------------------------------------
   postgres:
     image: postgres:17-alpine
-    container_name: adstudioai-db
+    container_name: prospecta-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-marketing_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marketing_pass}
-      POSTGRES_DB: ${POSTGRES_DB:-adstudioai}
+      POSTGRES_DB: ${POSTGRES_DB:-prospecta_db}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketing_user} -d ${POSTGRES_DB:-adstudioai}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketing_user} -d ${POSTGRES_DB:-prospecta_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,10 +32,10 @@ services:
   # ---------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: adstudioai-redis
+    container_name: prospecta-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -49,16 +49,16 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: adstudioai-backend
+    container_name: prospecta-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-marketing_user}:${POSTGRES_PASSWORD:-marketing_pass}@postgres:5432/${POSTGRES_DB:-adstudioai}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-marketing_user}:${POSTGRES_PASSWORD:-marketing_pass}@postgres:5432/${POSTGRES_DB:-prospecta_db}
       REDIS_URL: redis://redis:6379/0
       PYTHONUNBUFFERED: "1"
       PYTHONDONTWRITEBYTECODE: "1"
       UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8001}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -76,10 +76,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: adstudioai-frontend
+    container_name: prospecta-frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     depends_on:
       - backend
 

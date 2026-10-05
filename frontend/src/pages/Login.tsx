@@ -84,11 +84,11 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c10] flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden">
+    <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden font-sans">
 
       {/* glows */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[320px] bg-indigo-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute -bottom-20 -right-20 w-[300px] h-[300px] bg-indigo-500/5 blur-[100px] pointer-events-none" />
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[320px] bg-sky-500/15 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-20 -right-20 w-[300px] h-[300px] bg-[#0284c7]/10 blur-[100px] pointer-events-none" />
 
       {/* noise overlay */}
       <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
@@ -98,15 +98,15 @@ export default function Login() {
       {/* top nav */}
       <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-7 py-[18px]">
         <a href="/" className="flex items-center gap-2 no-underline">
-          <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center font-bold text-xs text-white">
+          <div className="w-6 h-6 bg-gradient-to-br from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] rounded-md flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-sky-500/30">
             P
           </div>
           <span className="text-[13px] font-semibold text-white tracking-tight">
             {BRANDING.name}
-            <span className="ml-1.5 text-[10px] text-indigo-400 font-normal">by {BRANDING.company}</span>
+            <span className="ml-1.5 text-[10px] text-sky-400 font-normal">by {BRANDING.company}</span>
           </span>
         </a>
-        <a href="#" className="text-xs text-white/25 hover:text-white/60 no-underline transition-colors">Precisa de ajuda?</a>
+        <a href="#" className="text-xs text-white/35 hover:text-white transition-colors no-underline">Precisa de ajuda?</a>
       </nav>
 
       <div className="w-full max-w-[360px] relative z-10">
@@ -125,20 +125,20 @@ export default function Login() {
           <button
             onClick={() => setTab('login')}
             className={`pb-3 text-[13px] font-medium mr-5 cursor-pointer transition-colors relative ${
-              tab === 'login' ? 'text-white' : 'text-white/25 hover:text-white/60'
+              tab === 'login' ? 'text-white' : 'text-white/30 hover:text-white'
             }`}
           >
             Entrar
-            {tab === 'login' && <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-indigo-600 rounded-full" />}
+            {tab === 'login' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />}
           </button>
           <button
             onClick={() => setTab('signup')}
             className={`pb-3 text-[13px] font-medium mr-5 cursor-pointer transition-colors relative ${
-              tab === 'signup' ? 'text-white' : 'text-white/25 hover:text-white/60'
+              tab === 'signup' ? 'text-white' : 'text-white/30 hover:text-white'
             }`}
           >
             Criar conta
-            {tab === 'signup' && <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-indigo-600 rounded-full" />}
+            {tab === 'signup' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />}
           </button>
         </div>
 
@@ -279,7 +279,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={signupLoading}
-                className="w-full py-2.5 bg-indigo-600 text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:bg-indigo-700 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(79,70,229,0.3)] active:translate-y-0 disabled:opacity-50"
+                className="w-full py-2.5 bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:brightness-110 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(2,132,199,0.35)] active:translate-y-0 disabled:opacity-50"
               >
                 <span className="relative z-10">Criar conta grátis</span>
               </button>
@@ -299,15 +299,15 @@ export default function Login() {
 
       {/* footer */}
       <div className="absolute bottom-[18px] left-0 right-0 text-center">
-        <p className="text-[11px] text-white/[0.22] mb-1">
+        <p className="text-[11px] text-sky-400/80 mb-1 font-medium">
           {BRANDING.developedBy}
         </p>
-        <p className="text-[11px] text-white/[0.12]">
-          <a href="#" className="text-white/20 hover:text-white/50 no-underline transition-colors">Termos</a>
+        <p className="text-[11px] text-white/[0.2]">
+          <a href="#" className="text-white/30 hover:text-white no-underline transition-colors">Termos</a>
           {' · '}
-          <a href="/privacy" className="text-white/20 hover:text-white/50 no-underline transition-colors">Privacidade</a>
+          <a href="/privacy" className="text-white/30 hover:text-white no-underline transition-colors">Privacidade</a>
           {' · '}
-          <a href="/" className="text-white/20 hover:text-white/50 no-underline transition-colors">← Página inicial</a>
+          <a href="/" className="text-white/30 hover:text-white no-underline transition-colors">← Página inicial</a>
         </p>
       </div>
     </div>

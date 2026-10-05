@@ -50,20 +50,20 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c10] flex items-center justify-center px-5">
+    <div className="min-h-screen bg-[#030712] flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <Link to="/" className="inline-flex items-center gap-2 no-underline mb-8">
-            <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center font-bold text-xs text-white">
+            <div className="w-6 h-6 bg-gradient-to-br from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] rounded-md flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-sky-500/30">
               P
             </div>
             <span className="text-sm font-semibold text-white">
               {BRANDING.name}
-              <span className="ml-1 text-[10px] text-indigo-400 font-normal">by {BRANDING.company}</span>
+              <span className="ml-1 text-[10px] text-sky-400 font-normal">by {BRANDING.company}</span>
             </span>
           </Link>
           <h1 className="text-xl font-semibold text-white mb-1">Redefinir senha</h1>
-          <p className="text-sm text-white/30">Escolha uma nova senha para sua conta.</p>
+          <p className="text-sm text-[#94a3b8]">Escolha uma nova senha para sua conta.</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -73,29 +73,29 @@ export default function ResetPassword() {
             </div>
           )}
           <div className="mb-3">
-            <label className="block text-xs font-medium text-white/40 mb-1.5">Nova senha</label>
+            <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">Nova senha</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
-              className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-white/20 focus:border-indigo-500/60"
+              className="w-full px-3.5 py-2.5 bg-[#070e22] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-[#475569] focus:border-sky-400 focus:shadow-[0_0_0_3px_rgba(56,189,248,0.15)]"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-xs font-medium text-white/40 mb-1.5">Confirmar senha</label>
+            <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">Confirmar senha</label>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repita a senha"
-              className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-white/20 focus:border-indigo-500/60"
+              className="w-full px-3.5 py-2.5 bg-[#070e22] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-[#475569] focus:border-sky-400 focus:shadow-[0_0_0_3px_rgba(56,189,248,0.15)]"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-all disabled:opacity-50"
+            className="w-full py-2.5 bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] text-white text-sm font-semibold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-[#0284c7]/25"
           >
             {loading ? 'Redefinindo...' : 'Redefinir senha'}
           </button>
