@@ -3,6 +3,7 @@ import {
   Camera, MessageSquare, Megaphone, Send, Clock, Calendar,
   Building2, Zap, Users, Check, ArrowRight, Sparkles, BarChart3,
 } from 'lucide-react'
+import { BRANDING } from '../config/branding'
 
 const NEON = 'from-[#ff4fd8] via-[#a855f7] to-[#00d4ff]'
 
@@ -68,8 +69,15 @@ export default function Landing() {
       <nav className="sticky top-0 z-40 backdrop-blur-md bg-[#05060a]/80 border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <button onClick={() => navigate('/')} className="flex items-center gap-2.5">
-            <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${NEON} grid place-items-center text-white font-black shadow-lg shadow-[#a855f7]/40`}>A</span>
-            <span className="font-semibold tracking-tight">ad<Grad>Studio</Grad>AI</span>
+            <span className={`w-8 h-8 rounded-lg bg-gradient-to-br ${NEON} grid place-items-center text-white font-black shadow-lg shadow-[#a855f7]/40`}>P</span>
+            <div className="flex flex-col text-left">
+              <span className="font-semibold tracking-tight text-white leading-none">
+                {BRANDING.namePrefix}<Grad>{BRANDING.nameHighlight}</Grad>{BRANDING.nameSuffix}
+              </span>
+              <span className="text-[10px] text-[#8b8fa6] font-medium tracking-wide">
+                by {BRANDING.company}
+              </span>
+            </div>
           </button>
           <div className="flex items-center gap-2">
             <button onClick={() => navigate('/login')} className="px-4 py-2 text-sm text-[#8b8fa6] hover:text-white transition-colors">
@@ -186,7 +194,7 @@ export default function Landing() {
           <div className="grid grid-cols-[1fr_auto_auto] text-sm">
             <div className="px-5 py-3 text-[#555] text-xs font-bold uppercase tracking-wider border-b border-white/[0.06]">O que você precisa</div>
             <div className="px-5 py-3 text-[#555] text-xs font-bold uppercase tracking-wider border-b border-white/[0.06] text-center">Meta grátis</div>
-            <div className="px-5 py-3 text-xs font-bold uppercase tracking-wider border-b border-white/[0.06] text-center"><Grad>adStudioAI</Grad></div>
+            <div className="px-5 py-3 text-xs font-bold uppercase tracking-wider border-b border-white/[0.06] text-center"><Grad>{BRANDING.name}</Grad></div>
             {metaVsUs.map((row) => (
               <div key={row.need} className="contents">
                 <div className="px-5 py-3.5 text-[#c9c9d6] border-b border-white/[0.04]">{row.need}</div>
@@ -265,7 +273,10 @@ export default function Landing() {
       {/* footer */}
       <footer className="border-t border-white/[0.06] mt-8">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#5c5f70]">
-          <span className="font-semibold text-[#8b8fa6]">ad<Grad>Studio</Grad>AI</span>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <span className="font-semibold text-[#8b8fa6]">{BRANDING.namePrefix}<Grad>{BRANDING.nameHighlight}</Grad>{BRANDING.nameSuffix}</span>
+            <span className="text-xs text-[#5c5f70]">· {BRANDING.authorCredit}</span>
+          </div>
           <div className="flex items-center gap-5">
             <button onClick={() => navigate('/pricing')} className="hover:text-[#c9c9d6] transition-colors flex items-center gap-1.5">
               <Clock size={13} /> Planos

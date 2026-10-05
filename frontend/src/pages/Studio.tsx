@@ -202,7 +202,7 @@ export default function Studio() {
     if (generatedVideoUrl) {
       const a = document.createElement('a')
       a.href = generatedVideoUrl
-      a.download = 'video-adstudioai.mp4'
+      a.download = 'video-prospecta.mp4'
       a.click()
     }
   }
@@ -485,7 +485,7 @@ export default function Studio() {
                 type="text"
                 value={publishData.hashtags}
                 onChange={(e) => setPublishData({ ...publishData, hashtags: e.target.value })}
-                placeholder="#adstudioai #marketing #automação"
+                placeholder="#prospecta #marketing #automacao"
                 className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
               />
             </div>

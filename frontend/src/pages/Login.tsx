@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import api from '../services/api'
+import { BRANDING } from '../config/branding'
 
 function GoogleIcon() {
   return (
@@ -97,10 +98,13 @@ export default function Login() {
       {/* top nav */}
       <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-7 py-[18px]">
         <a href="/" className="flex items-center gap-2 no-underline">
-          <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white"><path d="M13 3L4 14h8l-1 7 9-11h-8z"/></svg>
+          <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center font-bold text-xs text-white">
+            P
           </div>
-          <span className="text-[13px] font-semibold text-white tracking-tight">adStudio<span className="text-white/40">AI</span></span>
+          <span className="text-[13px] font-semibold text-white tracking-tight">
+            {BRANDING.name}
+            <span className="ml-1.5 text-[10px] text-indigo-400 font-normal">by {BRANDING.company}</span>
+          </span>
         </a>
         <a href="#" className="text-xs text-white/25 hover:text-white/60 no-underline transition-colors">Precisa de ajuda?</a>
       </nav>
@@ -295,10 +299,13 @@ export default function Login() {
 
       {/* footer */}
       <div className="absolute bottom-[18px] left-0 right-0 text-center">
+        <p className="text-[11px] text-white/[0.22] mb-1">
+          {BRANDING.developedBy}
+        </p>
         <p className="text-[11px] text-white/[0.12]">
           <a href="#" className="text-white/20 hover:text-white/50 no-underline transition-colors">Termos</a>
           {' · '}
-          <a href="#" className="text-white/20 hover:text-white/50 no-underline transition-colors">Privacidade</a>
+          <a href="/privacy" className="text-white/20 hover:text-white/50 no-underline transition-colors">Privacidade</a>
           {' · '}
           <a href="/" className="text-white/20 hover:text-white/50 no-underline transition-colors">← Página inicial</a>
         </p>

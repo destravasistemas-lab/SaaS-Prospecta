@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { BRANDING } from '../config/branding'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -49,10 +50,13 @@ export default function ForgotPassword() {
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <Link to="/" className="inline-flex items-center gap-2 no-underline mb-8">
-            <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white"><path d="M13 3L4 14h8l-1 7 9-11h-8z" /></svg>
+            <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center font-bold text-xs text-white">
+              P
             </div>
-            <span className="text-sm font-semibold text-white">adStudio<span className="text-white/40">AI</span></span>
+            <span className="text-sm font-semibold text-white">
+              {BRANDING.name}
+              <span className="ml-1 text-[10px] text-indigo-400 font-normal">by {BRANDING.company}</span>
+            </span>
           </Link>
           <h1 className="text-xl font-semibold text-white mb-1">Esqueceu sua senha?</h1>
           <p className="text-sm text-white/30">Digite seu email e enviaremos um link para redefinir.</p>

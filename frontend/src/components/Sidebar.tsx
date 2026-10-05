@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Clapperboard, Megaphone, Link2, Send,
+  LayoutDashboard, Megaphone, Link2, Send,
   Users, Settings, CreditCard, Building2, LogOut,
   ChevronRight, ChevronDown, MessageSquare, FileText, Clock,
   Headphones, Camera, Zap, Shield,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import AccountSwitcher from './AccountSwitcher'
+import { BRANDING } from '../config/branding'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; sub?: string }
 type NavGroup = { id: string; label: string; icon: LucideIcon; items: NavItem[] }
@@ -127,14 +128,19 @@ export default function Sidebar() {
       <div className="px-5 pt-6 pb-4">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 group"
+          className="flex items-center gap-2.5 group"
         >
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-neon-pink via-neon-purple to-neon-cyan flex items-center justify-center shadow-lg shadow-neon-purple/40">
-            <Clapperboard size={14} className="text-white" />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <span className="text-white font-bold text-sm tracking-tight">P</span>
           </div>
-          <span className="text-sm font-semibold text-white">
-            ad<span className="bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan bg-clip-text text-transparent">Studio</span>AI
-          </span>
+          <div className="flex flex-col text-left">
+            <span className="text-sm font-semibold text-white tracking-tight">
+              {BRANDING.namePrefix}<span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">{BRANDING.nameHighlight}</span>{BRANDING.nameSuffix}
+            </span>
+            <span className="text-[10px] text-indigo-400/80 font-medium tracking-wide flex items-center gap-1">
+              by {BRANDING.company}
+            </span>
+          </div>
         </button>
       </div>
 
@@ -268,6 +274,11 @@ export default function Sidebar() {
           <LogOut size={15} strokeWidth={1.75} />
           Sair
         </button>
+        <div className="mt-2.5 pt-2 border-t border-white/[0.04] px-1 text-center">
+          <p className="text-[10px] text-white/30 tracking-tight">
+            {BRANDING.developedBy}
+          </p>
+        </div>
       </div>
     </aside>
   )

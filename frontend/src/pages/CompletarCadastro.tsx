@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { BRANDING } from '../config/branding'
 
 export default function CompletarCadastro() {
   const [searchParams] = useSearchParams()
@@ -47,10 +48,11 @@ export default function CompletarCadastro() {
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl font-bold text-white">AM</span>
+          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/25">
+            <span className="text-2xl font-bold text-white">P</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#e2e2e8]">Bem-vindo ao adStudioAI</h1>
+          <h1 className="text-2xl font-bold text-[#e2e2e8]">Bem-vindo ao {BRANDING.name}</h1>
+          <p className="text-xs text-indigo-400/80 mb-1">{BRANDING.developedBy}</p>
           <p className="text-[#555] text-sm mt-1">Seu pagamento foi confirmado! Agora defina sua senha.</p>
         </div>
         <form onSubmit={handleSubmit} className="bg-[#111118] rounded-2xl border border-white/[0.06] p-8 space-y-5">
