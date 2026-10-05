@@ -1,0 +1,38 @@
+# ============================================================
+# Arquivos que NÃO entram na imagem Docker
+# ============================================================
+
+# Segredos — NUNCA embutir na imagem (vêm de fly secrets / env)
+.env
+.env.*
+!.env.example
+
+# Ambiente virtual e caches Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Testes e docs (não precisam em produção)
+tests/
+SECURITY_CHECKLIST.py
+SECURITY_GUIDE.md
+SECURITY_IMPLEMENTATION.md
+
+# Migrations locais do Alembic geradas em runtime não se aplicam aqui,
+# mas o histórico de versões deve ir junto (mantém alembic/)
+
+# Git e infra
+.git/
+.gitignore
+Dockerfile
+fly.toml
+
+# Editores
+.vscode/
+.idea/
+*.swp

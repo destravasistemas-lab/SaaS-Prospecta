@@ -1,0 +1,88 @@
+# ============================================================
+# docker-compose.yml - Ambiente local do adStudioAI
+# Pronto para evoluir para ECS / Kubernetes
+# ============================================================
+
+services:
+
+  # ---------------------------------------------------------
+  # Banco de dados PostgreSQL 17
+  # ---------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: adstudioai-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-marketing_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marketing_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-adstudioai}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketing_user} -d ${POSTGRES_DB:-adstudioai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------
+  # Redis — debounce da IA, rate limit e dedup de webhook
+  # ---------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: adstudioai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # Backend FastAPI
+  # ---------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: adstudioai-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-marketing_user}:${POSTGRES_PASSWORD:-marketing_pass}@postgres:5432/${POSTGRES_DB:-adstudioai}
+      REDIS_URL: redis://redis:6379/0
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${UVICORN_WORKERS:-4} --reload"
+
+  # ---------------------------------------------------------
+  # Frontend React + Vite
+  # ---------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: adstudioai-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+    driver: local

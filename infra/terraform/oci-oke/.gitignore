@@ -1,0 +1,15 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Variáveis com segredos/OCIDs — NUNCA commitar
+*.tfvars
+!terraform.tfvars.example
+
+# Chaves
+*.pem
+*.key

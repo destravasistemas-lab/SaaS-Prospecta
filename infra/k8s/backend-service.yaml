@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: adstudioai
+  labels:
+    app: adstudioai
+    component: backend
+  annotations:
+    # Load Balancer flexível de 10 Mbps — dentro do Always Free.
+    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
+spec:
+  type: LoadBalancer
+  selector:
+    app: adstudioai
+    component: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP

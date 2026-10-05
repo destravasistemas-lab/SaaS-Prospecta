@@ -1,0 +1,6 @@
+.vercel
+tsconfig.tsbuildinfo
+
+# Env locais (Vercel pull etc.) — nunca versionar
+.env.local
+.env*.local

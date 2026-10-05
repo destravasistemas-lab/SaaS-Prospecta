@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+backend/uploads/
+
+# Chaves SSH — NUNCA vão pro git (pasta única + qualquer chave solta)
+.keyssh/
+*.key
+*.key.pub
+*.pem

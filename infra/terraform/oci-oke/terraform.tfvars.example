@@ -1,0 +1,27 @@
+# ============================================================
+# Exemplo de variáveis — copie para terraform.tfvars e preencha.
+# NÃO commite o terraform.tfvars (já está no .gitignore).
+# ============================================================
+
+# ---- Autenticação OCI (do painel: Identity > Users > API Keys) ----
+tenancy_ocid     = "ocid1.tenancy.oc1..xxxxx"
+user_ocid        = "ocid1.user.oc1..xxxxx"
+fingerprint      = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+private_key_path = "~/.oci/oci_api_key.pem"
+region           = "sa-saopaulo-1"
+compartment_ocid = "ocid1.compartment.oc1..xxxxx"
+
+# ---- Acesso ao kubectl (RECOMENDADO travar no seu IP) ----
+# Descubra seu IP: curl ifconfig.me   ->   ex: "203.0.113.10/32"
+admin_cidr = "0.0.0.0/0"
+
+# ---- SSH para os nodes (conteúdo do .pub) ----
+ssh_public_key = "ssh-rsa AAAA... seu_email@exemplo.com"
+
+# ---- Opcionais (têm defaults sensatos) ----
+# cluster_name         = "adstudioai-oke"
+# kubernetes_version   = ""          # vazio = mais recente
+# node_count           = 2
+# node_ocpus           = 2           # 2 nodes x 2 = 4 OCPUs (máx free)
+# node_memory_gbs      = 12          # 2 nodes x 12 = 24 GB (máx free)
+# frontend_bucket_name = "adstudioai-frontend"
