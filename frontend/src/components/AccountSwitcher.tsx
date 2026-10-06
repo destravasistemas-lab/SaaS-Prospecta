@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ChevronsUpDown, Building2, Check, Briefcase } from 'lucide-react'
 import axios from 'axios'
 import { API_BASE } from '../services/api'
+import { useI18n } from '../i18n'
 
 interface ClientLite {
   id: string
@@ -22,6 +23,7 @@ function authHeader(token: string) {
 }
 
 export default function AccountSwitcher() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [isAgency, setIsAgency] = useState(false)
   const [agencyName, setAgencyName] = useState('')
@@ -31,7 +33,7 @@ export default function AccountSwitcher() {
 
   const impersonating = localStorage.getItem('impersonating') === 'true'
   const activeName = impersonating
-    ? localStorage.getItem('impersonating_name') || 'Cliente'
+    ? localStorage.getItem('impersonating_name') || t('Cliente', 'Client')
     : agencyName
   const activeTenant = localStorage.getItem('tenant_id') || ''
 
@@ -61,7 +63,7 @@ export default function AccountSwitcher() {
         return
       }
       setIsAgency(true)
-      setAgencyName(me.brand_name || 'Minha agência')
+      setAgencyName(me.brand_name || t('Minha agência', 'My agency'))
       const list = (await axios.get(`${API_BASE}/api/v1/auth/clients`, authHeader(token))).data
       setClients(list.map((c: any) => ({ id: c.id, brand_name: c.brand_name })))
     } catch {
@@ -94,7 +96,7 @@ export default function AccountSwitcher() {
       window.location.href = '/app'
     } catch {
       setSwitching(false)
-      alert('Erro ao acessar a conta do cliente.')
+      alert(t('Erro ao acessar a conta do cliente.', 'Failed to access the client account.'))
     }
   }
 
@@ -131,7 +133,7 @@ export default function AccountSwitcher() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-[#5a5a6e] leading-none mb-0.5">
-            {impersonating ? 'Cliente' : 'Agência'}
+            {impersonating ? t('Cliente', 'Client') : t('Agência', 'Agency')}
           </p>
           <p className="text-xs font-medium text-[#e2e2e8] truncate leading-tight">{activeName}</p>
         </div>
@@ -149,7 +151,7 @@ export default function AccountSwitcher() {
               <Briefcase size={13} className="text-indigo-300" />
             </div>
             <span className="flex-1 text-xs font-medium text-[#e2e2e8] truncate">{agencyName}</span>
-            <span className="text-[9px] text-[#5a5a6e] uppercase tracking-wide">Agência</span>
+            <span className="text-[9px] text-[#5a5a6e] uppercase tracking-wide">{t('Agência', 'Agency')}</span>
             {!impersonating && <Check size={13} className="text-indigo-400 shrink-0" />}
           </button>
 
@@ -173,7 +175,7 @@ export default function AccountSwitcher() {
           })}
 
           {clients.length === 0 && (
-            <p className="px-3 py-2 text-[11px] text-[#5a5a6e]">Nenhum cliente ainda.</p>
+            <p className="px-3 py-2 text-[11px] text-[#5a5a6e]">{t('Nenhum cliente ainda.', 'No clients yet.')}</p>
           )}
         </div>
       )}

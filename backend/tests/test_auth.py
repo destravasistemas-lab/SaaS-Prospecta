@@ -103,32 +103,75 @@ async def test_connections_empty_for_unknown_account(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_start_rejects_invalid_provider(client):
+async def test_start_requires_auth(client):
+    resp = await client.get("/api/v1/auth/meta/start", params={"provider": "ads"})
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_start_rejects_invalid_provider(client, make_user):
+    _, headers = await make_user()
     resp = await client.get(
-        "/api/v1/auth/meta/start",
-        params={"account_id": "acc-123", "provider": "twitter"},
+        "/api/v1/auth/meta/start", params={"provider": "twitter"}, headers=headers,
     )
     assert resp.status_code == 400
 
 
 @pytest.mark.asyncio
-async def test_start_returns_auth_url(client):
-    for provider in ("instagram", "whatsapp", "ads"):
-        resp = await client.get(
-            "/api/v1/auth/meta/start",
-            params={"account_id": "acc-123", "provider": provider},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "auth_url" in data
-        assert "facebook.com" in data["auth_url"]
-        assert f"state=" in data["auth_url"]
+async def test_start_rejects_other_tenant(client, make_user):
+    _, headers = await make_user()
+    resp = await client.get(
+        "/api/v1/auth/meta/start",
+        params={"account_id": "someone-else", "provider": "ads"},
+        headers=headers,
+    )
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_delete_connection_not_found(client):
-    resp = await client.delete(
-        "/api/v1/auth/meta/connections/nonexistent-id",
-        params={"account_id": "acc-123"},
-    )
+async def test_start_returns_auth_url(client, make_user):
+    tid, headers = await make_user()
+    for provider in ("instagram", "whatsapp", "ads"):
+        resp = await client.get(
+            "/api/v1/auth/meta/start", params={"provider": provider}, headers=headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "facebook.com" in data["auth_url"]
+        state = data["auth_url"].split("state=")[1].split("&")[0]
+        from urllib.parse import unquote
+        assert verify_signed_state(unquote(state))["account_id"] == tid
+
+
+@pytest.mark.asyncio
+async def test_delete_connection_requires_auth(client):
+    resp = await client.delete("/api/v1/auth/meta/connections/any-id")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_delete_connection_not_found(client, make_user):
+    _, headers = await make_user()
+    resp = await client.delete("/api/v1/auth/meta/connections/nonexistent-id", headers=headers)
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_error_messages_follow_language_header(client, make_user):
+    _, headers = await make_user()
+    resp = await client.delete(
+        "/api/v1/auth/meta/connections/nonexistent-id", headers={**headers, "X-Lang": "en"},
+    )
+    assert resp.json()["detail"] == "Connection not found."
+    resp = await client.delete(
+        "/api/v1/auth/meta/connections/nonexistent-id", headers={**headers, "X-Lang": "pt"},
+    )
+    assert resp.json()["detail"] == "Conexão não encontrada."
+
+
+@pytest.mark.asyncio
+async def test_openapi_uses_bearer_scheme(client):
+    resp = await client.get("/openapi.json")
+    assert resp.status_code == 200
+    schemes = resp.json()["components"]["securitySchemes"]
+    assert schemes["OAuth2PasswordBearer"] == {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}

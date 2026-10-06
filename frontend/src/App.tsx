@@ -10,6 +10,8 @@ import Configuracoes from './pages/Configuracoes'
 import PublicarInstagram from './pages/PublicarInstagram'
 import AIConfig from './pages/AIConfig'
 import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
+import DataDeletion from './pages/DataDeletion'
 import Pricing from './pages/Pricing'
 import CompletarCadastro from './pages/CompletarCadastro'
 import Clients from './pages/Clients'
@@ -35,6 +37,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/data-deletion" element={<DataDeletion />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/completar-cadastro" element={<CompletarCadastro />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

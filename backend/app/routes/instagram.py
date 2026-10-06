@@ -9,6 +9,8 @@ import httpx
 
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.security import get_current_user
+from app.models.user import User
 from app.models.account import Account
 from app.models.meta_connection import (
     MetaConnection,
@@ -40,9 +42,13 @@ IG_SCOPES = (
 
 @router.get("/start", response_model=MetaAuthUrlResponse)
 async def instagram_start(
-    account_id: str = Query(..., description="Tenant account_id"),
+    account_id: str | None = Query(None, description="Deprecated — the authenticated tenant is used"),
+    current_user: User = Depends(get_current_user),
 ):
-    state = create_signed_state(account_id, PROVIDER_INSTAGRAM)
+    """Instagram Business Login URL (signed anti-CSRF state bound to the caller's tenant)."""
+    if account_id and account_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    state = create_signed_state(current_user.tenant_id, PROVIDER_INSTAGRAM)
     params = {
         "client_id": settings.ig_app_id or settings.meta_app_id,
         "redirect_uri": settings.ig_redirect_uri,
@@ -54,7 +60,7 @@ async def instagram_start(
     return MetaAuthUrlResponse(auth_url=auth_url)
 
 
-@router.get("/callback")
+@router.get("/callback", include_in_schema=False)
 async def instagram_callback(
     code: str = Query(None),
     state: str = Query(None),
@@ -63,20 +69,22 @@ async def instagram_callback(
     db: AsyncSession = Depends(get_db),
 ):
     if error:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Instagram OAuth denied: {error_description or error}",
+        return RedirectResponse(
+            url=f"{settings.app_url}/oauth/success?{urlencode({'error': error_description or error})}",
+            status_code=302,
         )
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code.")
+    if not state:
+        raise HTTPException(status_code=400, detail="Missing state parameter.")
+    try:
+        state_payload = verify_signed_state(state)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     # Troca code por short-lived token (POST multipart/form-data como a doc do Instagram mostra)
     used_app_id = settings.ig_app_id or settings.meta_app_id
     used_secret = settings.ig_app_secret or settings.meta_app_secret
-    logger.info(
-        "IG token exchange — client_id=%s secret_len=%s redirect_uri=%r code_prefix=%s",
-        used_app_id, len(used_secret or ""), settings.ig_redirect_uri, (code or "")[:20],
-    )
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(
             IG_TOKEN_URL,
@@ -88,11 +96,10 @@ async def instagram_callback(
                 "code": (None, code),
             },
         )
-    logger.info("IG token resp status=%s body=%s", token_resp.status_code, token_resp.text)
     token_data = token_resp.json()
 
     if "access_token" not in token_data:
-        logger.error("IG token exchange failed: %s", token_data)
+        logger.error("IG token exchange failed: %s", token_data.get("error_message") or token_data.get("error"))
         raise HTTPException(
             status_code=400,
             detail=f"Instagram authentication failed: {token_data.get('error_message', token_data.get('error', 'unknown'))}",
@@ -115,9 +122,9 @@ async def instagram_callback(
             },
         )
     ll_data = ll_resp.json()
-    logger.info("IG long-lived exchange status=%s body=%s", ll_resp.status_code, ll_data)
     if "access_token" not in ll_data:
-        logger.error("IG long-lived token exchange failed — storing short-lived token as fallback: %s", ll_data)
+        logger.error("IG long-lived token exchange failed — storing short-lived token as fallback: %s",
+                     ll_data.get("error"))
     access_token = ll_data.get("access_token", short_lived_token)
     expires_in = ll_data.get("expires_in", 3600)
     expires_at = datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
@@ -135,20 +142,10 @@ async def instagram_callback(
             },
         )
     me_data = me_resp.json()
-    logger.info("Instagram /me: %s", me_data)
 
     ig_app_scoped_id = me_data.get("id") or ig_user_id_fallback
     ig_biz_id = me_data.get("user_id") or ig_app_scoped_id
     ig_username = me_data.get("username")
-
-    # Verifica state e acha o tenant
-    if not state:
-        raise HTTPException(status_code=400, detail="Missing state parameter.")
-
-    try:
-        state_payload = verify_signed_state(state)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
 
     tenant_account_id = state_payload["account_id"]
 
@@ -172,6 +169,7 @@ async def instagram_callback(
         connection.meta_user_id = ig_app_scoped_id
         connection.ig_business_account_id = ig_biz_id
         connection.scopes = IG_SCOPES
+        connection.expires_at = expires_at
         connection.status = STATUS_ACTIVE
     else:
         connection = MetaConnection(
@@ -181,6 +179,7 @@ async def instagram_callback(
             ig_business_account_id=ig_biz_id,
             access_token_encrypted=encrypted_token,
             token_type="long_lived",
+            expires_at=expires_at,
             scopes=IG_SCOPES,
             status=STATUS_ACTIVE,
         )

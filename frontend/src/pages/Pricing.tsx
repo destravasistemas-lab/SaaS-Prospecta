@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useI18n, LanguageToggle } from '../i18n';
 
 interface Plan {
   id: string;
@@ -9,6 +10,21 @@ interface Plan {
   description: string;
   features: string[];
   interval_days: number;
+}
+
+const PLAN_EN: Record<string, { name: string; description: string; features: string[] }> = {
+  free: { name: 'Free', description: 'Perfect to get started', features: ['Up to 5 campaigns', 'Basic chat', 'Dashboard'] },
+  starter: { name: 'Starter', description: 'For small businesses', features: ['Up to 50 campaigns', 'Email support', 'Basic automations'] },
+  pro: {
+    name: 'Professional',
+    description: 'For agencies and growing businesses',
+    features: ['Unlimited campaigns', 'Priority support', 'Advanced automations', 'APIs', 'Manage up to 10 clients', 'Access client accounts'],
+  },
+  premium: {
+    name: 'Premium',
+    description: 'For large operations',
+    features: ['Everything unlimited', '24/7 support', 'Advanced analytics', 'Dedicated manager', 'Unlimited clients'],
+  },
 }
 
 interface Subscription {
@@ -24,6 +40,9 @@ export default function Pricing() {
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { t, lang } = useI18n();
+  const localized = (plan: Plan): Plan =>
+    lang === 'en' && PLAN_EN[plan.id] ? { ...plan, ...PLAN_EN[plan.id] } : plan;
 
   useEffect(() => {
     fetchPlans();
@@ -70,12 +89,13 @@ export default function Pricing() {
       if (response.data.payment_link) {
         window.location.href = response.data.payment_link;
       } else {
-        alert('Bem-vindo ao plano ' + plans.find(p => p.id === planId)?.name + '!');
+        const p = plans.find(p => p.id === planId);
+        alert(t('Bem-vindo ao plano ', 'Welcome to the ') + (p ? localized(p).name : '') + t('!', ' plan!'));
         fetchCurrentSubscription();
       }
     } catch (error) {
       console.error('Error subscribing:', error);
-      alert('Erro ao criar assinatura. Tente novamente.');
+      alert(t('Erro ao criar assinatura. Tente novamente.', 'Failed to create subscription. Please try again.'));
     } finally {
       setSelectedPlan(null);
     }
@@ -84,7 +104,7 @@ export default function Pricing() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
-        <div className="text-[#555]">Carregando planos...</div>
+        <div className="text-[#555]">{t('Carregando planos...', 'Loading plans...')}</div>
       </div>
     );
   }
@@ -92,27 +112,32 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <button onClick={() => navigate(-1)} className="text-sm text-[#64748b] hover:text-white">← {t('Voltar', 'Back')}</button>
+          <LanguageToggle compact />
+        </div>
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Planos e Preços</h1>
+          <h1 className="text-4xl font-bold text-white mb-4">{t('Planos e Preços', 'Plans & Pricing')}</h1>
           <p className="text-[#555]">
-            Escolha o plano perfeito para suas necessidades
+            {t('Escolha o plano perfeito para suas necessidades', 'Choose the right plan for your needs')}
           </p>
         </div>
 
         {currentSubscription && (
           <div className="mb-8 p-4 bg-green-900/20 border border-green-500/20 rounded-lg text-center">
             <p className="text-green-400">
-              ✓ Você está no plano{' '}
-              <strong>{plans.find(p => p.id === currentSubscription.plan)?.name}</strong>
+              ✓ {t('Você está no plano', "You're on the")}{' '}
+              <strong>{(() => { const p = plans.find(p => p.id === currentSubscription.plan); return p ? localized(p).name : '' })()}</strong>
+              {t('', ' plan')}
             </p>
           </div>
         )}
 
         <div className="grid md:grid-cols-4 gap-6 mb-12">
-          {plans.map((plan) => (
+          {plans.map(localized).map((plan) => (
             <div
               key={plan.id}
-              className={`rounded-xl border overflow-hidden transition-all duration-300 ${
+              className={`relative rounded-xl border overflow-hidden transition-all duration-300 ${
                 currentSubscription?.plan === plan.id
                   ? 'border-indigo-500 shadow-xl shadow-indigo-900/20'
                   : 'border-white/[0.06] hover:border-white/[0.12]'
@@ -121,13 +146,13 @@ export default function Pricing() {
               <div className="bg-[#111118] p-6 h-full flex flex-col">
                 {plan.id === 'premium' && (
                   <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg">
-                    MAIS POPULAR
+                    {t('MAIS POPULAR', 'MOST POPULAR')}
                   </div>
                 )}
 
                 {currentSubscription?.plan === plan.id && (
                   <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-br-lg">
-                    ATUAL
+                    {t('ATUAL', 'CURRENT')}
                   </div>
                 )}
 
@@ -139,7 +164,7 @@ export default function Pricing() {
                     R$ {plan.value === 0 ? '0' : plan.value.toFixed(0)}
                   </div>
                   <p className="text-[#444] text-sm">
-                    {plan.value > 0 ? '/mês' : 'Para sempre'}
+                    {plan.value > 0 ? t('/mês', '/month') : t('Para sempre', 'Forever')}
                   </p>
                 </div>
 
@@ -173,11 +198,11 @@ export default function Pricing() {
                   }`}
                 >
                   {selectedPlan === plan.id
-                    ? 'Processando...'
+                    ? t('Processando...', 'Processing...')
                     : currentSubscription?.plan === plan.id &&
                       currentSubscription?.is_active
-                    ? 'Plano Atual'
-                    : 'Escolher'}
+                    ? t('Plano Atual', 'Current Plan')
+                    : t('Escolher', 'Choose')}
                 </button>
               </div>
             </div>
@@ -185,33 +210,30 @@ export default function Pricing() {
         </div>
 
         <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-8 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-white mb-6">Perguntas Frequentes</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">{t('Perguntas Frequentes', 'FAQ')}</h2>
           <div className="space-y-4">
             <div>
               <h3 className="text-[#e2e2e8] font-semibold mb-2">
-                Posso mudar de plano a qualquer momento?
+                {t('Posso mudar de plano a qualquer momento?', 'Can I change plans at any time?')}
               </h3>
               <p className="text-[#555]">
-                Sim! Você pode fazer upgrade ou downgrade de plano a qualquer momento. A mudança
-                será refletida no próximo ciclo de cobrança.
+                {t('Sim! Você pode fazer upgrade ou downgrade a qualquer momento. A mudança será refletida no próximo ciclo de cobrança.', 'Yes! You can upgrade or downgrade at any time. The change applies to the next billing cycle.')}
               </p>
             </div>
             <div>
               <h3 className="text-[#e2e2e8] font-semibold mb-2">
-                Há período de trial?
+                {t('Há período de teste?', 'Is there a free trial?')}
               </h3>
               <p className="text-[#555]">
-                Sim, todos os planos pagos têm 7 dias de teste gratuito. Sem necessidade de cartão
-                de crédito.
+                {t('Sim, todos os planos pagos têm 7 dias de teste gratuito, sem cartão de crédito.', 'Yes, all paid plans include a 7-day free trial, no credit card required.')}
               </p>
             </div>
             <div>
               <h3 className="text-[#e2e2e8] font-semibold mb-2">
-                O que acontece se eu cancelar?
+                {t('O que acontece se eu cancelar?', 'What happens if I cancel?')}
               </h3>
               <p className="text-[#555]">
-                Você pode cancelar a qualquer momento. O acesso permanecerá até o final do período
-                pago.
+                {t('Você pode cancelar a qualquer momento. O acesso permanece até o fim do período pago.', 'You can cancel at any time. Access remains until the end of the paid period.')}
               </p>
             </div>
           </div>

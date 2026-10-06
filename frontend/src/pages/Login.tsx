@@ -2,19 +2,10 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import api from '../services/api'
 import { BRANDING } from '../config/branding'
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 shrink-0">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-    </svg>
-  )
-}
+import { useI18n, LanguageToggle } from '../i18n'
 
 export default function Login() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -32,6 +23,7 @@ export default function Login() {
   const [signupPassword, setSignupPassword] = useState('')
   const [signupError, setSignupError] = useState('')
   const [signupLoading, setSignupLoading] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -46,7 +38,7 @@ export default function Login() {
       const redirect = searchParams.get('redirect') || '/app'
       navigate(redirect)
     } catch {
-      setError('Usuário ou senha inválidos.')
+      setError(t('E-mail ou senha inválidos.', 'Invalid email or password.'))
     } finally {
       setLoading(false)
     }
@@ -56,11 +48,15 @@ export default function Login() {
     e.preventDefault()
     setSignupError('')
     if (!signupName.trim() || !signupEmail.trim() || !signupPassword.trim()) {
-      setSignupError('Preencha todos os campos.')
+      setSignupError(t('Preencha todos os campos.', 'Please fill in all fields.'))
       return
     }
     if (signupPassword.length < 6) {
-      setSignupError('A senha deve ter no mínimo 6 caracteres.')
+      setSignupError(t('A senha deve ter no mínimo 6 caracteres.', 'Password must be at least 6 characters.'))
+      return
+    }
+    if (!acceptedTerms) {
+      setSignupError(t('Aceite os Termos de Serviço e a Política de Privacidade.', 'Please accept the Terms of Service and Privacy Policy.'))
       return
     }
     setSignupLoading(true)
@@ -77,7 +73,7 @@ export default function Login() {
       localStorage.setItem('tenant_id', data.tenant_id)
       navigate('/onboarding')
     } catch (err: any) {
-      setSignupError(err.response?.data?.detail || 'Erro ao criar conta.')
+      setSignupError(err.response?.data?.detail || t('Erro ao criar conta.', 'Failed to create account.'))
     } finally {
       setSignupLoading(false)
     }
@@ -106,17 +102,17 @@ export default function Login() {
             <span className="ml-1.5 text-[10px] text-sky-400 font-normal">by {BRANDING.company}</span>
           </span>
         </a>
-        <a href="#" className="text-xs text-white/35 hover:text-white transition-colors no-underline">Precisa de ajuda?</a>
+        <LanguageToggle compact />
       </nav>
 
       <div className="w-full max-w-[360px] relative z-10">
         {/* heading */}
         <div className="mb-6">
           <h1 className="text-[22px] font-semibold text-white tracking-tight leading-tight mb-1">
-            {tab === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
+            {tab === 'login' ? t('Bem-vindo de volta', 'Welcome back') : t('Crie sua conta', 'Create your account')}
           </h1>
           <p className="text-[13px] text-white/30">
-            {tab === 'login' ? 'Entre na sua conta para continuar' : 'Comece grátis, sem cartão de crédito'}
+            {tab === 'login' ? t('Entre na sua conta para continuar', 'Sign in to your account to continue') : t('Comece grátis, sem cartão de crédito', 'Start free, no credit card required')}
           </p>
         </div>
 
@@ -128,7 +124,7 @@ export default function Login() {
               tab === 'login' ? 'text-white' : 'text-white/30 hover:text-white'
             }`}
           >
-            Entrar
+            {t('Entrar', 'Sign in')}
             {tab === 'login' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />}
           </button>
           <button
@@ -137,7 +133,7 @@ export default function Login() {
               tab === 'signup' ? 'text-white' : 'text-white/30 hover:text-white'
             }`}
           >
-            Criar conta
+            {t('Criar conta', 'Sign up')}
             {tab === 'signup' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />}
           </button>
         </div>
@@ -145,17 +141,6 @@ export default function Login() {
         {/* LOGIN TAB */}
         {tab === 'login' && (
           <div>
-            <button className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white/[0.05] border border-white/[0.1] rounded-lg text-[13px] font-medium text-white/70 hover:bg-white/[0.09] hover:border-white/[0.18] hover:text-white transition-all cursor-pointer mb-1">
-              <GoogleIcon />
-              Continuar com Google
-            </button>
-
-            <div className="flex items-center gap-2.5 my-[18px]">
-              <div className="flex-1 h-px bg-white/[0.07]" />
-              <span className="text-[11px] text-white/20 font-medium">ou continue com email</span>
-              <div className="flex-1 h-px bg-white/[0.07]" />
-            </div>
-
             <form onSubmit={handleLogin}>
               {error && (
                 <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 mb-3.5">
@@ -166,21 +151,21 @@ export default function Login() {
 
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-white/40">Usuário</span>
+                  <span className="text-xs font-medium text-white/40">{t('E-mail', 'Email')}</span>
                 </div>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="seu usuário"
+                  placeholder={t('seu@email.com', 'you@company.com')}
                   autoComplete="username"
                   className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
                 />
               </div>
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-white/40">Senha</span>
-                  <Link to="/forgot-password" className="text-[11px] text-indigo-400/80 no-underline hover:text-indigo-400 transition-colors">Esqueceu?</Link>
+                  <span className="text-xs font-medium text-white/40">{t('Senha', 'Password')}</span>
+                  <Link to="/forgot-password" className="text-[11px] text-indigo-400/80 no-underline hover:text-indigo-400 transition-colors">{t('Esqueceu?', 'Forgot?')}</Link>
                 </div>
                 <input
                   type="password"
@@ -197,15 +182,15 @@ export default function Login() {
                 disabled={loading}
                 className="w-full py-2.5 bg-indigo-600 text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:bg-indigo-700 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(79,70,229,0.3)] active:translate-y-0 disabled:opacity-50"
               >
-                <span className="relative z-10">Entrar na conta</span>
+                <span className="relative z-10">{loading ? t('Entrando…', 'Signing in…') : t('Entrar na conta', 'Sign in')}</span>
               </button>
             </form>
 
             <div className="text-center mt-3.5">
               <p className="text-xs text-white/20">
-                Não tem conta?{' '}
+                {t('Não tem conta?', "Don't have an account?")}{' '}
                 <button onClick={() => setTab('signup')} className="text-indigo-400/70 hover:text-indigo-400 no-underline transition-colors bg-none border-none cursor-pointer text-xs">
-                  Criar grátis →
+                  {t('Criar grátis →', 'Sign up free →')}
                 </button>
               </p>
             </div>
@@ -217,18 +202,7 @@ export default function Login() {
           <div>
             <div className="flex items-start gap-2 bg-indigo-500/5 border border-indigo-500/12 rounded-lg px-3 py-2.5 mb-3.5">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0 mt-1" />
-              <span className="text-[11px] text-white/30 leading-relaxed">7 dias grátis, sem cartão de crédito. Cancele quando quiser.</span>
-            </div>
-
-            <button className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-white/[0.05] border border-white/[0.1] rounded-lg text-[13px] font-medium text-white/70 hover:bg-white/[0.09] hover:border-white/[0.18] hover:text-white transition-all cursor-pointer mb-1">
-              <GoogleIcon />
-              Criar conta com Google
-            </button>
-
-            <div className="flex items-center gap-2.5 my-[18px]">
-              <div className="flex-1 h-px bg-white/[0.07]" />
-              <span className="text-[11px] text-white/20 font-medium">ou use seu email</span>
-              <div className="flex-1 h-px bg-white/[0.07]" />
+              <span className="text-[11px] text-white/30 leading-relaxed">{t('7 dias grátis, sem cartão de crédito. Cancele quando quiser.', '7-day free trial, no credit card. Cancel anytime.')}</span>
             </div>
 
             <form onSubmit={handleSignup}>
@@ -241,13 +215,13 @@ export default function Login() {
 
               <div className="mb-3">
                 <div className="mb-1.5">
-                  <span className="text-xs font-medium text-white/40">Nome completo</span>
+                  <span className="text-xs font-medium text-white/40">{t('Nome completo', 'Full name')}</span>
                 </div>
                 <input
                   type="text"
                   value={signupName}
                   onChange={(e) => setSignupName(e.target.value)}
-                  placeholder="Seu nome"
+                  placeholder={t('Seu nome', 'Your name')}
                   className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
                 />
               </div>
@@ -259,13 +233,13 @@ export default function Login() {
                   type="email"
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
-                  placeholder="seu@email.com"
+                  placeholder={t('seu@email.com', 'you@company.com')}
                   className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
                 />
               </div>
               <div className="mb-3">
                 <div className="mb-1.5">
-                  <span className="text-xs font-medium text-white/40">Senha</span>
+                  <span className="text-xs font-medium text-white/40">{t('Senha', 'Password')}</span>
                 </div>
                 <input
                   type="password"
@@ -276,20 +250,35 @@ export default function Login() {
                 />
               </div>
 
+              <label className="flex items-start gap-2 mb-3 text-[11px] text-white/40 leading-relaxed cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 accent-sky-500"
+                />
+                <span>
+                  {t('Li e aceito os', 'I have read and accept the')}{' '}
+                  <Link to="/terms" target="_blank" className="text-sky-400/80 hover:text-sky-300">{t('Termos de Serviço', 'Terms of Service')}</Link>{' '}
+                  {t('e a', 'and the')}{' '}
+                  <Link to="/privacy" target="_blank" className="text-sky-400/80 hover:text-sky-300">{t('Política de Privacidade', 'Privacy Policy')}</Link>.
+                </span>
+              </label>
+
               <button
                 type="submit"
                 disabled={signupLoading}
                 className="w-full py-2.5 bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:brightness-110 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(2,132,199,0.35)] active:translate-y-0 disabled:opacity-50"
               >
-                <span className="relative z-10">Criar conta grátis</span>
+                <span className="relative z-10">{signupLoading ? t('Criando…', 'Creating…') : t('Criar conta grátis', 'Create free account')}</span>
               </button>
             </form>
 
             <div className="text-center mt-3.5">
               <p className="text-xs text-white/20">
-                Já tem conta?{' '}
+                {t('Já tem conta?', 'Already have an account?')}{' '}
                 <button onClick={() => setTab('login')} className="text-indigo-400/70 hover:text-indigo-400 no-underline transition-colors bg-none border-none cursor-pointer text-xs">
-                  Entrar →
+                  {t('Entrar →', 'Sign in →')}
                 </button>
               </p>
             </div>
@@ -300,14 +289,14 @@ export default function Login() {
       {/* footer */}
       <div className="absolute bottom-[18px] left-0 right-0 text-center">
         <p className="text-[11px] text-sky-400/80 mb-1 font-medium">
-          {BRANDING.developedBy}
+          {t(BRANDING.developedBy, 'Developed by Destrava')}
         </p>
         <p className="text-[11px] text-white/[0.2]">
-          <a href="#" className="text-white/30 hover:text-white no-underline transition-colors">Termos</a>
+          <Link to="/terms" className="text-white/30 hover:text-white no-underline transition-colors">{t('Termos', 'Terms')}</Link>
           {' · '}
-          <a href="/privacy" className="text-white/30 hover:text-white no-underline transition-colors">Privacidade</a>
+          <Link to="/privacy" className="text-white/30 hover:text-white no-underline transition-colors">{t('Privacidade', 'Privacy')}</Link>
           {' · '}
-          <a href="/" className="text-white/30 hover:text-white no-underline transition-colors">← Página inicial</a>
+          <Link to="/" className="text-white/30 hover:text-white no-underline transition-colors">{t('← Página inicial', '← Home')}</Link>
         </p>
       </div>
     </div>

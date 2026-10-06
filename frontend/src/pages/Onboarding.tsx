@@ -1,36 +1,39 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-
-const options = [
-  {
-    id: 'autonomo',
-    name: 'Autônomo',
-    description: 'Para gerenciar o próprio negócio',
-    features: [
-      'Conecte seu Instagram, WhatsApp e Ads',
-      'Captação e atendimento de leads',
-      'Automação por palavra-chave e DM',
-      'Dashboard e métricas do seu negócio',
-    ],
-    icon: '🚀',
-  },
-  {
-    id: 'agencia',
-    name: 'Agência',
-    description: 'Para gerenciar várias empresas-clientes',
-    features: [
-      'Tudo do Autônomo, para cada cliente',
-      'Crie e gerencie contas de clientes',
-      'Troque entre empresas num clique',
-      'Visão consolidada da agência',
-    ],
-    icon: '🏢',
-    featured: true,
-  },
-]
+import { BRANDING } from '../config/branding'
+import { useI18n, LanguageToggle } from '../i18n'
 
 export default function Onboarding() {
+  const { t } = useI18n()
+  const options = [
+    {
+      id: 'autonomo',
+      name: t('Autônomo', 'Business'),
+      description: t('Para gerenciar o próprio negócio', 'To manage your own business'),
+      features: [
+        t('Conecte seu Instagram, WhatsApp e Ads', 'Connect your Instagram, WhatsApp and Ads'),
+        t('Captação e atendimento de leads', 'Lead capture and customer service'),
+        t('Automação por palavra-chave e DM', 'Keyword and DM automation'),
+        t('Dashboard e métricas do seu negócio', 'Dashboard and business metrics'),
+      ],
+      icon: '🚀',
+      featured: false,
+    },
+    {
+      id: 'agencia',
+      name: t('Agência', 'Agency'),
+      description: t('Para gerenciar várias empresas-clientes', 'To manage multiple client businesses'),
+      features: [
+        t('Tudo do Autônomo, para cada cliente', 'Everything in Business, for each client'),
+        t('Crie e gerencie contas de clientes', 'Create and manage client accounts'),
+        t('Troque entre empresas num clique', 'Switch between businesses in one click'),
+        t('Visão consolidada da agência', 'Consolidated agency view'),
+      ],
+      icon: '🏢',
+      featured: true,
+    },
+  ]
   const navigate = useNavigate()
   const [loading, setLoading] = useState('')
   const [error, setError] = useState('')
@@ -43,7 +46,7 @@ export default function Onboarding() {
       await api.post('/auth/onboarding/plan', { plan_type: plan })
       navigate('/app')
     } catch {
-      setError('Erro ao selecionar. Tente novamente.')
+      setError(t('Erro ao selecionar. Tente novamente.', 'Selection failed. Please try again.'))
       setLoading('')
     }
   }
@@ -52,21 +55,25 @@ export default function Onboarding() {
     <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
       <div className="px-4 py-6">
         <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
             className="text-base font-semibold text-white hover:text-indigo-400 transition-colors"
           >
-            ad<span className="text-indigo-400">Studio</span>AI
+            {BRANDING.namePrefix}<span className="text-sky-400">{BRANDING.nameHighlight}</span>
           </button>
+          <LanguageToggle compact />
+          </div>
         </div>
       </div>
 
       <div className="flex-1 px-4 pb-16 flex items-center">
         <div className="max-w-4xl mx-auto w-full">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">Que tipo de conta?</h2>
+            <h2 className="text-3xl font-bold text-white mb-2">{t('Que tipo de conta?', 'What type of account?')}</h2>
             <p className="text-[#555] max-w-lg mx-auto">
-              Escolha como vai usar a plataforma. Você conecta Instagram, WhatsApp e Ads depois, na página de <span className="text-[#888]">Conexão Meta</span>.
+              {t('Escolha como vai usar a plataforma. Você conecta Instagram, WhatsApp e Ads depois, na página', "Choose how you'll use the platform. You'll connect Instagram, WhatsApp and Ads next, on the")}{' '}
+              <span className="text-[#888]">{t('Conexões Meta', 'Meta Connections')}</span>{t('.', ' page.')}
             </p>
           </div>
 
@@ -86,7 +93,7 @@ export default function Onboarding() {
                 onClick={() => handleSelect(opt.id)}
               >
                 {opt.featured && (
-                  <span className="text-indigo-400 text-[10px] font-semibold bg-indigo-500/15 rounded-full px-3 py-1 w-fit mb-3">Mais popular</span>
+                  <span className="text-indigo-400 text-[10px] font-semibold bg-indigo-500/15 rounded-full px-3 py-1 w-fit mb-3">{t('Mais popular', 'Most popular')}</span>
                 )}
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">{opt.icon}</span>
@@ -109,7 +116,7 @@ export default function Onboarding() {
                       : 'bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400'
                   } disabled:opacity-50`}
                 >
-                  {loading === opt.id ? 'Entrando...' : `Continuar como ${opt.name}`}
+                  {loading === opt.id ? t('Entrando...', 'Loading...') : `${t('Continuar como', 'Continue as')} ${opt.name}`}
                 </button>
               </div>
             ))}

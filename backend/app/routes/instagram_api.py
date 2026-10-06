@@ -648,6 +648,13 @@ async def send_instagram_dm(
             detail="ID da conta Instagram Business não configurado.",
         )
 
+    # Instagram só permite DM dentro de 24h da última mensagem do usuário —
+    # não é permitido iniciar conversa fria com quem apenas comentou.
+    from app.services import messaging_policy
+    await messaging_policy.require_instagram_window(
+        db, current_user.tenant_id, sender_id=body.recipient_ig_user_id,
+    )
+
     token = decrypt_token(conn.access_token_encrypted)
     ig_biz_id = conn.ig_business_account_id
 

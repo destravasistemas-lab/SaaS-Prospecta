@@ -18,6 +18,7 @@ from app.models.meta_connection import (
 )
 from app.services.meta_token_service import decrypt_token
 from app.services import whatsapp_service, instagram_service
+from app.services import messaging_policy
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations/{conv_id}/messages", tags=["messages"])
@@ -243,7 +244,7 @@ async def _send_whatsapp_outbound(
             last_inbound is not None
             and datetime.now(timezone.utc) - last_inbound < WA_SESSION_WINDOW
         )
-        if not within_window and not body.template_name:
+        if not within_window:
             raise HTTPException(
                 status_code=422,
                 detail={
@@ -323,6 +324,7 @@ async def _send_instagram_outbound(
 
     if not body.text:
         raise HTTPException(422, "Envio de mídia pelo Instagram ainda não é suportado — apenas texto.")
+    await messaging_policy.require_instagram_window(db, tenant_id, conv_id=conv_id)
 
     conn = (
         await db.execute(

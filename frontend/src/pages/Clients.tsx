@@ -5,6 +5,7 @@ import {
   BarChart3, Blocks, MailCheck, MailWarning,
 } from 'lucide-react'
 import api from '../services/api'
+import { useI18n } from '../i18n'
 
 interface Client {
   id: string
@@ -21,11 +22,11 @@ interface Client {
 }
 
 // Módulos que a agência pode bloquear por cliente (espelha o backend)
-const MODULES: { key: string; label: string; desc: string }[] = [
-  { key: 'whatsapp', label: 'WhatsApp', desc: 'Atendimento, templates, follow-ups e disparos' },
-  { key: 'instagram', label: 'Instagram', desc: 'Publicar, automação e Direct' },
-  { key: 'ads', label: 'Meta Ads', desc: 'Campanhas, anúncios e métricas' },
-  { key: 'ia', label: 'IA de atendimento', desc: 'Gemini + base de conhecimento (RAG)' },
+const MODULES: { key: string; label: [string, string]; desc: [string, string] }[] = [
+  { key: 'whatsapp', label: ['WhatsApp', 'WhatsApp'], desc: ['Atendimento, templates, follow-ups e disparos', 'Customer service, templates, follow-ups and broadcasts'] },
+  { key: 'instagram', label: ['Instagram', 'Instagram'], desc: ['Publicar, automação e Direct', 'Publishing, automation and Direct'] },
+  { key: 'ads', label: ['Meta Ads', 'Meta Ads'], desc: ['Campanhas, anúncios e métricas', 'Campaigns, ads and metrics'] },
+  { key: 'ia', label: ['Assistente de IA', 'AI Assistant'], desc: ['Gemini + base de conhecimento (RAG)', 'Gemini + knowledge base (RAG)'] },
 ]
 
 interface AgencyStat {
@@ -49,11 +50,11 @@ interface AgencyDashboard {
   clients: AgencyStat[]
 }
 
-const planLabel: Record<string, string> = {
-  free: 'Grátis',
-  starter: 'Iniciante',
-  pro: 'Profissional',
-  premium: 'Premium',
+const planLabel: Record<string, [string, string]> = {
+  free: ['Grátis', 'Free'],
+  starter: ['Iniciante', 'Starter'],
+  pro: ['Profissional', 'Professional'],
+  premium: ['Premium', 'Premium'],
 }
 
 const planColor: Record<string, string> = {
@@ -79,6 +80,7 @@ function MetricCard({ icon: Icon, iconColor, value, label, sub }: {
 }
 
 export default function Clients() {
+  const { t } = useI18n()
   const [clients, setClients] = useState<Client[]>([])
   const [agencyStats, setAgencyStats] = useState<AgencyDashboard | null>(null)
   const [loading, setLoading] = useState(true)
@@ -112,7 +114,7 @@ export default function Clients() {
       if (clientsRes.status === 'fulfilled') setClients(clientsRes.value.data)
       if (statsRes.status === 'fulfilled') setAgencyStats(statsRes.value.data)
     } catch {
-      setError('Erro ao carregar dados.')
+      setError(t('Erro ao carregar dados.', 'Failed to load data.'))
     } finally {
       setLoading(false)
     }
@@ -122,11 +124,11 @@ export default function Clients() {
     e.preventDefault()
     setCreateError('')
     if (!createName.trim() || !createUsername.trim() || !createPassword.trim() || !createEmail.trim()) {
-      setCreateError('Preencha todos os campos obrigatórios.')
+      setCreateError(t('Preencha todos os campos obrigatórios.', 'Fill in all required fields.'))
       return
     }
     if (!createEmail.includes('@')) {
-      setCreateError('Informe um email válido — o dono recebe o link de verificação nele.')
+      setCreateError(t('Informe um e-mail válido — o dono recebe o link de verificação nele.', 'Enter a valid email — the owner receives the verification link there.'))
       return
     }
     setCreating(true)
@@ -146,7 +148,7 @@ export default function Clients() {
       setCreateEmail('')
       await loadData()
     } catch (err: any) {
-      setCreateError(err.response?.data?.detail || 'Erro ao criar cliente.')
+      setCreateError(err.response?.data?.detail || t('Erro ao criar cliente.', 'Failed to create client.'))
     } finally {
       setCreating(false)
     }
@@ -165,7 +167,7 @@ export default function Clients() {
       setModulesOf(null)
       await loadData()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro ao salvar os módulos.')
+      setError(err.response?.data?.detail || t('Erro ao salvar os módulos.', 'Failed to save modules.'))
     } finally {
       setSavingModules(false)
     }
@@ -189,17 +191,17 @@ export default function Clients() {
       // Full reload so every screen refetches with the client's tenant.
       window.location.href = '/app'
     } catch {
-      alert('Erro ao acessar conta do cliente.')
+      alert(t('Erro ao acessar conta do cliente.', 'Failed to access the client account.'))
     }
   }
 
   async function handleDelete(clientId: string) {
-    if (!confirm('Desativar este cliente?')) return
+    if (!confirm(t('Desativar este cliente?', 'Deactivate this client?'))) return
     try {
       await api.delete(`/auth/clients/${clientId}`)
       await loadData()
     } catch {
-      alert('Erro ao remover cliente.')
+      alert(t('Erro ao remover cliente.', 'Failed to remove client.'))
     }
   }
 
@@ -213,10 +215,10 @@ export default function Clients() {
         <div>
           <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
             <Building2 size={20} className="text-indigo-400" />
-            Meus Clientes
+            {t('Meus Clientes', 'My Clients')}
           </h1>
           <p className="text-[#555] text-sm mt-0.5">
-            Gerencie as contas dos seus clientes como agência.
+            {t('Gerencie as contas dos seus clientes como agência.', "Manage your clients' accounts as an agency.")}
           </p>
         </div>
         <button
@@ -224,7 +226,7 @@ export default function Clients() {
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           <Plus size={15} />
-          Novo Cliente
+          {t('Novo Cliente', 'New Client')}
         </button>
       </div>
 
@@ -237,7 +239,7 @@ export default function Clients() {
         <div className="mb-6">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[#444] mb-3 flex items-center gap-2">
             <BarChart3 size={11} />
-            Visão geral da agência
+            {t('Visão geral da agência', 'Agency overview')}
             <span className="flex-1 h-px bg-white/[0.05]" />
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -245,29 +247,29 @@ export default function Clients() {
               icon={Building2}
               iconColor="bg-indigo-500/10 text-indigo-400"
               value={agencyStats.total_clients}
-              label="Total de clientes"
-              sub={`${agencyStats.active_clients} ativos`}
+              label={t('Total de clientes', 'Total clients')}
+              sub={`${agencyStats.active_clients} ${t('ativos', 'active')}`}
             />
             <MetricCard
               icon={Users}
               iconColor="bg-blue-500/10 text-blue-400"
               value={agencyStats.total_leads}
-              label="Total de leads"
-              sub={`+${agencyStats.new_leads_7d} esta semana`}
+              label={t('Total de leads', 'Total leads')}
+              sub={`+${agencyStats.new_leads_7d} ${t('esta semana', 'this week')}`}
             />
             <MetricCard
               icon={CheckCircle}
               iconColor="bg-green-500/10 text-green-400"
               value={agencyStats.total_converted}
-              label="Leads convertidos"
-              sub="em todos os clientes"
+              label={t('Leads convertidos', 'Converted leads')}
+              sub={t('em todos os clientes', 'across all clients')}
             />
             <MetricCard
               icon={TrendingUp}
               iconColor="bg-purple-500/10 text-purple-400"
               value={`${agencyStats.overall_conversion_rate}%`}
-              label="Taxa de conversão"
-              sub="conversão global"
+              label={t('Taxa de conversão', 'Conversion rate')}
+              sub={t('conversão global', 'overall conversion')}
             />
           </div>
         </div>
@@ -293,15 +295,15 @@ export default function Clients() {
           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
             <Building2 size={24} className="text-indigo-400" />
           </div>
-          <h3 className="text-base font-semibold text-[#e2e2e8] mb-2">Nenhum cliente ainda</h3>
+          <h3 className="text-base font-semibold text-[#e2e2e8] mb-2">{t('Nenhum cliente ainda', 'No clients yet')}</h3>
           <p className="text-[#444] text-sm max-w-sm mx-auto mb-5">
-            Crie contas para seus clientes e gerencie tudo em um só lugar.
+            {t('Crie contas para seus clientes e gerencie tudo em um só lugar.', 'Create accounts for your clients and manage everything in one place.')}
           </p>
           <button
             onClick={() => setShowCreate(true)}
             className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"
           >
-            Criar primeiro cliente
+            {t('Criar primeiro cliente', 'Create first client')}
           </button>
         </div>
       ) : (
@@ -328,30 +330,30 @@ export default function Clients() {
                           ? 'bg-green-900/20 text-green-400 border-green-500/20'
                           : 'bg-red-900/20 text-red-400 border-red-500/20'
                       }`}>
-                        {client.is_active ? 'Ativo' : 'Inativo'}
+                        {client.is_active ? t('Ativo', 'Active') : t('Inativo', 'Inactive')}
                       </span>
                       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${planColor[client.plan] ?? planColor.free}`}>
-                        {planLabel[client.plan] ?? client.plan}
+                        {planLabel[client.plan] ? t(...planLabel[client.plan]) : client.plan}
                       </span>
                       {client.plan_type === 'dependente' && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-indigo-900/20 text-indigo-300 border-indigo-500/20">
-                          Dependente
+                          {t('Dependente', 'Client business')}
                         </span>
                       )}
                       {client.email && (
                         client.email_verified ? (
-                          <span title={`${client.email} — verificado`} className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-green-900/20 text-green-400 border-green-500/20 flex items-center gap-1">
-                            <MailCheck size={10} /> verificado
+                          <span title={`${client.email} — ${t('verificado', 'verified')}`} className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-green-900/20 text-green-400 border-green-500/20 flex items-center gap-1">
+                            <MailCheck size={10} /> {t('verificado', 'verified')}
                           </span>
                         ) : (
-                          <span title={`Aguardando o dono confirmar ${client.email}`} className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-900/20 text-amber-400 border-amber-500/20 flex items-center gap-1">
-                            <MailWarning size={10} /> email pendente
+                          <span title={t(`Aguardando o dono confirmar ${client.email}`, `Waiting for the owner to confirm ${client.email}`)} className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-900/20 text-amber-400 border-amber-500/20 flex items-center gap-1">
+                            <MailWarning size={10} /> {t('e-mail pendente', 'email pending')}
                           </span>
                         )
                       )}
                       {(client.blocked_modules?.length ?? 0) > 0 && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-red-900/20 text-red-400 border-red-500/20">
-                          {client.blocked_modules.length} módulo(s) off
+                          {client.blocked_modules.length} {t('módulo(s) off', 'module(s) off')}
                         </span>
                       )}
                     </div>
@@ -363,11 +365,11 @@ export default function Clients() {
                     <div className="hidden md:flex items-center gap-5 mr-4">
                       <div className="text-center">
                         <p className="text-sm font-semibold text-[#e2e2e8] leading-none">{stat.leads}</p>
-                        <p className="text-[10px] text-[#444] mt-0.5">leads</p>
+                        <p className="text-[10px] text-[#444] mt-0.5">{t('leads', 'leads')}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-semibold text-green-400 leading-none">{stat.conversion_rate}%</p>
-                        <p className="text-[10px] text-[#444] mt-0.5">conversão</p>
+                        <p className="text-[10px] text-[#444] mt-0.5">{t('conversão', 'conversion')}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] text-[#444]">Instagram</p>
@@ -379,7 +381,7 @@ export default function Clients() {
                       {stat.new_leads_7d > 0 && (
                         <div className="text-center">
                           <p className="text-sm font-semibold text-blue-400 leading-none">+{stat.new_leads_7d}</p>
-                          <p className="text-[10px] text-[#444] mt-0.5">7 dias</p>
+                          <p className="text-[10px] text-[#444] mt-0.5">{t('7 dias', '7 days')}</p>
                         </div>
                       )}
                     </div>
@@ -389,21 +391,22 @@ export default function Clients() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => openModules(client)}
-                      title="Bloquear/liberar módulos deste cliente"
+                      title={t('Bloquear/liberar módulos deste cliente', "Block/allow this client's modules")}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-[#8a8a9e] hover:text-white rounded-lg text-xs font-semibold transition-colors"
                     >
                       <Blocks size={12} />
-                      Módulos
+                      {t('Módulos', 'Modules')}
                     </button>
                     <button
                       onClick={() => handleImpersonate(client.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors"
                     >
                       <ExternalLink size={12} />
-                      Acessar
+                      {t('Acessar', 'Open')}
                     </button>
                     <button
                       onClick={() => handleDelete(client.id)}
+                      title={t('Desativar', 'Deactivate')}
                       className="p-1.5 bg-red-900/20 text-red-400 rounded-lg hover:bg-red-900/40 transition-colors"
                     >
                       <Trash2 size={13} />
@@ -415,10 +418,10 @@ export default function Clients() {
                 {stat && (
                   <div className="flex md:hidden items-center gap-4 mt-3 pt-3 border-t border-white/[0.04]">
                     <span className="text-xs text-[#555]">{stat.leads} leads</span>
-                    <span className="text-xs text-green-400">{stat.conversion_rate}% conversão</span>
+                    <span className="text-xs text-green-400">{stat.conversion_rate}% {t('conversão', 'conversion')}</span>
                     {stat.instagram_connected
                       ? <span className="text-xs text-green-400 flex items-center gap-1"><Wifi size={10} /> Instagram</span>
-                      : <span className="text-xs text-[#444] flex items-center gap-1"><WifiOff size={10} /> Sem Instagram</span>
+                      : <span className="text-xs text-[#444] flex items-center gap-1"><WifiOff size={10} /> {t('Sem Instagram', 'No Instagram')}</span>
                     }
                   </div>
                 )}
@@ -434,8 +437,8 @@ export default function Clients() {
           <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-base font-semibold text-white">Novo Cliente</h3>
-                <p className="text-xs text-[#555] mt-0.5">Crie uma subconta para seu cliente.</p>
+                <h3 className="text-base font-semibold text-white">{t('Novo Cliente', 'New Client')}</h3>
+                <p className="text-xs text-[#555] mt-0.5">{t('Crie uma subconta para seu cliente.', 'Create a sub-account for your client.')}</p>
               </div>
               <button onClick={() => setShowCreate(false)} className="text-[#444] hover:text-[#888] transition-colors">
                 <X size={18} />
@@ -450,49 +453,49 @@ export default function Clients() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">Nome da empresa / cliente *</label>
+                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome da empresa / cliente *', 'Company / client name *')}</label>
                 <input
                   type="text"
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="Ex: Padaria do João"
+                  placeholder={t('Ex: Padaria do João', "E.g. John's Bakery")}
                   className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">Email do dono *</label>
+                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('E-mail do dono *', 'Owner email *')}</label>
                 <input
                   type="email"
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
-                  placeholder="dono@empresa.com"
+                  placeholder={t('dono@empresa.com', 'owner@company.com')}
                   className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
                 <p className="text-[10px] text-[#555] mt-1">
-                  O dono recebe um link de verificação neste email — o login dele só ativa depois de confirmar.
+                  {t('O dono recebe um link de verificação neste e-mail — o login dele só ativa depois de confirmar.', 'The owner receives a verification link at this email — their login activates only after confirming.')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">Nome de usuário *</label>
+                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome de usuário *', 'Username *')}</label>
                 <input
                   type="text"
                   value={createUsername}
                   onChange={(e) => setCreateUsername(e.target.value)}
-                  placeholder="Ex: padariajoao"
+                  placeholder={t('Ex: padariajoao', 'E.g. johnsbakery')}
                   className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">Senha *</label>
+                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Senha *', 'Password *')}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={createPassword}
                     onChange={(e) => setCreatePassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
                     className="w-full px-4 py-2.5 pr-10 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                   />
                   <button
@@ -506,12 +509,12 @@ export default function Clients() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">Nome completo (opcional)</label>
+                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome completo (opcional)', 'Full name (optional)')}</label>
                 <input
                   type="text"
                   value={createFullName}
                   onChange={(e) => setCreateFullName(e.target.value)}
-                  placeholder="Ex: João Silva"
+                  placeholder={t('Ex: João Silva', 'E.g. John Smith')}
                   className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
@@ -522,14 +525,14 @@ export default function Clients() {
                   onClick={() => setShowCreate(false)}
                   className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors"
                 >
-                  Cancelar
+                  {t('Cancelar', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
-                  {creating ? 'Criando...' : 'Criar Cliente'}
+                  {creating ? t('Criando...', 'Creating...') : t('Criar Cliente', 'Create Client')}
                 </button>
               </div>
             </form>
@@ -543,14 +546,14 @@ export default function Clients() {
           <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Blocks size={16} className="text-indigo-400" /> Módulos — {modulesOf.brand_name}
+                <Blocks size={16} className="text-indigo-400" /> {t('Módulos', 'Modules')} — {modulesOf.brand_name}
               </h3>
               <button onClick={() => setModulesOf(null)} className="text-[#444] hover:text-[#888] transition-colors">
                 <X size={18} />
               </button>
             </div>
             <p className="text-xs text-[#555] mb-5">
-              Desligue um módulo para escondê-lo e bloqueá-lo por completo para este cliente.
+              {t('Desligue um módulo para escondê-lo e bloqueá-lo por completo para este cliente.', 'Turn a module off to hide and fully block it for this client.')}
             </p>
 
             <div className="space-y-3">
@@ -559,8 +562,8 @@ export default function Clients() {
                 return (
                   <div key={m.key} className="flex items-center justify-between gap-3 bg-[#0a0a0f] border border-white/[0.05] rounded-lg p-3">
                     <div className="min-w-0">
-                      <p className={`text-sm font-medium ${blocked ? 'text-[#555] line-through' : 'text-[#e2e2e8]'}`}>{m.label}</p>
-                      <p className="text-[11px] text-[#555]">{m.desc}</p>
+                      <p className={`text-sm font-medium ${blocked ? 'text-[#555] line-through' : 'text-[#e2e2e8]'}`}>{t(...m.label)}</p>
+                      <p className="text-[11px] text-[#555]">{t(...m.desc)}</p>
                     </div>
                     <button
                       onClick={() =>
@@ -568,7 +571,7 @@ export default function Clients() {
                           blocked ? prev.filter((k) => k !== m.key) : [...prev, m.key]
                         )
                       }
-                      title={blocked ? 'Bloqueado — clique para liberar' : 'Liberado — clique para bloquear'}
+                      title={blocked ? t('Bloqueado — clique para liberar', 'Blocked — click to allow') : t('Liberado — clique para bloquear', 'Allowed — click to block')}
                       className={`w-11 h-6 rounded-full relative transition-colors shrink-0 ${blocked ? 'bg-white/[0.08]' : 'bg-green-500'}`}
                     >
                       <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${blocked ? 'left-0.5' : 'left-[22px]'}`} />
@@ -583,14 +586,14 @@ export default function Clients() {
                 onClick={() => setModulesOf(null)}
                 className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors"
               >
-                Cancelar
+                {t('Cancelar', 'Cancel')}
               </button>
               <button
                 onClick={saveModules}
                 disabled={savingModules}
                 className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
               >
-                {savingModules ? 'Salvando…' : 'Salvar módulos'}
+                {savingModules ? t('Salvando…', 'Saving…') : t('Salvar módulos', 'Save modules')}
               </button>
             </div>
           </div>

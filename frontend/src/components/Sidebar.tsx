@@ -10,21 +10,10 @@ import {
 import api from '../services/api'
 import AccountSwitcher from './AccountSwitcher'
 import { BRANDING } from '../config/branding'
+import { useI18n, LanguageToggle } from '../i18n'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; sub?: string }
 type NavGroup = { id: string; label: string; icon: LucideIcon; items: NavItem[] }
-
-const topLinks: NavItem[] = [
-  { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/app/leads', label: 'Leads', icon: Users },
-  { to: '/app/conexao', label: 'Conexão Meta', icon: Link2 },
-]
-
-const bottomLinks: NavItem[] = [
-  { to: '/app/equipe', label: 'Equipe', icon: Users },
-  { to: '/app/configuracoes', label: 'Configurações', icon: Settings },
-  { to: '/pricing', label: 'Planos', icon: CreditCard },
-]
 
 function navItemClass(isActive: boolean): string {
   return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -37,6 +26,19 @@ function navItemClass(isActive: boolean): string {
 export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useI18n()
+
+  const topLinks: NavItem[] = [
+    { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    { to: '/app/leads', label: t('Leads', 'Leads'), icon: Users },
+    { to: '/app/conexao', label: t('Conexões Meta', 'Meta Connections'), icon: Link2 },
+  ]
+
+  const bottomLinks: NavItem[] = [
+    { to: '/app/equipe', label: t('Equipe', 'Team'), icon: Users },
+    { to: '/app/configuracoes', label: t('Configurações', 'Settings'), icon: Settings },
+    { to: '/pricing', label: t('Planos', 'Plans'), icon: CreditCard },
+  ]
   const [planType, setPlanType] = useState<string | null>(null)
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [waNumber, setWaNumber] = useState<string | null>(null)
@@ -54,14 +56,14 @@ export default function Sidebar() {
   const groups: NavGroup[] = [
     {
       id: 'atendimento',
-      label: 'Atendimento ao Cliente',
+      label: t('Atendimento ao Cliente', 'Customer Service'),
       icon: Headphones,
       items: [
         ...(!blocked('whatsapp') ? [
           { to: '/app/whatsapp', label: 'WhatsApp', icon: MessageSquare, sub: waNumber ?? undefined },
         ] : []),
         ...(!blocked('ia') ? [
-          { to: '/app/ia', label: 'IA & Conhecimento', icon: Zap },
+          { to: '/app/ia', label: t('IA & Conhecimento', 'AI & Knowledge'), icon: Zap },
         ] : []),
         ...(!blocked('whatsapp') ? [
           { to: '/app/templates', label: 'Templates', icon: FileText },
@@ -74,8 +76,8 @@ export default function Sidebar() {
       label: 'Instagram',
       icon: Camera,
       items: [
-        { to: '/app/publicar', label: 'Publicar & Automação', icon: Send },
-        { to: '/app/instagram-dm', label: 'Direct', icon: MessageSquare },
+        { to: '/app/publicar', label: t('Publicar & Automação', 'Publish & Automation'), icon: Send },
+        { to: '/app/instagram-dm', label: t('Direct', 'Direct Messages'), icon: MessageSquare },
       ],
     }] : []),
     ...(!blocked('ads') ? [{
@@ -83,7 +85,7 @@ export default function Sidebar() {
       label: 'Meta Ads',
       icon: Megaphone,
       items: [
-        { to: '/app/marketing', label: 'Campanhas', icon: Megaphone },
+        { to: '/app/marketing', label: t('Campanhas', 'Campaigns'), icon: Megaphone },
       ],
     }] : []),
   ].filter((g) => g.items.length > 0)
@@ -150,7 +152,7 @@ export default function Sidebar() {
       {/* Main nav */}
       <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2 mt-1">
-          Principal
+          {t('Principal', 'Main')}
         </p>
         {topLinks.map((link) => {
           const Icon = link.icon
@@ -221,14 +223,14 @@ export default function Sidebar() {
           <>
             <div className="h-px bg-white/[0.05] my-3 mx-2" />
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2">
-              Agência
+              {t('Agência', 'Agency')}
             </p>
             <NavLink
               to="/app/clientes"
               className={({ isActive }) => navItemClass(isActive)}
             >
               <Building2 size={15} strokeWidth={1.75} />
-              <span className="flex-1">Clientes</span>
+              <span className="flex-1">{t('Clientes', 'Clients')}</span>
               <ChevronRight size={12} className="opacity-40" />
             </NavLink>
           </>
@@ -238,7 +240,7 @@ export default function Sidebar() {
           <>
             <div className="h-px bg-white/[0.05] my-3 mx-2" />
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2">
-              Sistema
+              {t('Sistema', 'System')}
             </p>
             <NavLink
               to="/app/super-admin"
@@ -272,11 +274,12 @@ export default function Sidebar() {
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[#5a5a6e] hover:bg-white/[0.04] hover:text-red-400 transition-all w-full mt-1"
         >
           <LogOut size={15} strokeWidth={1.75} />
-          Sair
+          {t('Sair', 'Log out')}
         </button>
+        <LanguageToggle compact className="mt-2 self-center" />
         <div className="mt-2.5 pt-2 border-t border-white/[0.04] px-1 text-center">
           <p className="text-[10px] text-sky-400/70 tracking-tight font-medium">
-            {BRANDING.developedBy}
+            {t(BRANDING.developedBy, 'Developed by Destrava')}
           </p>
         </div>
       </div>

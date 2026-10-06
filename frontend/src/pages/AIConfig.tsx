@@ -5,6 +5,7 @@ import {
   CreditCard, AlertTriangle, Save,
 } from 'lucide-react'
 import api from '../services/api'
+import { useI18n } from '../i18n'
 
 interface AIConfigData {
   enabled: boolean
@@ -34,13 +35,13 @@ interface Usage {
   fallback_rate: number
 }
 
-const statusLabel: Record<string, { label: string; color: string }> = {
-  processing: { label: 'Processando…', color: 'text-amber-400' },
-  ready: { label: 'Pronto', color: 'text-green-400' },
-  failed: { label: 'Falhou', color: 'text-red-400' },
-}
-
 export default function AIConfig() {
+  const { t } = useI18n()
+  const statusLabel: Record<string, { label: string; color: string }> = {
+    processing: { label: t('Processando…', 'Processing…'), color: 'text-amber-400' },
+    ready: { label: t('Pronto', 'Ready'), color: 'text-green-400' },
+    failed: { label: t('Falhou', 'Failed'), color: 'text-red-400' },
+  }
   const navigate = useNavigate()
   const [cfg, setCfg] = useState<AIConfigData | null>(null)
   const [usage, setUsage] = useState<Usage | null>(null)
@@ -62,7 +63,7 @@ export default function AIConfig() {
       ])
       setCfg(c.data); setUsage(u.data); setDocs(d.data)
     } catch {
-      setError('Erro ao carregar a configuração da IA.')
+      setError(t('Erro ao carregar a configuração da IA.', 'Failed to load the AI settings.'))
     }
   }, [])
 
@@ -88,9 +89,9 @@ export default function AIConfig() {
       const { data } = await api.put<AIConfigData>('/ai/config', partial)
       setCfg(data)
       setApiKey('')
-      setSuccess('Configuração salva!')
+      setSuccess(t('Configuração salva!', 'Settings saved!'))
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro ao salvar.')
+      setError(err.response?.data?.detail || t('Erro ao salvar.', 'Failed to save.'))
     } finally { setSaving(false) }
   }
 
@@ -103,36 +104,36 @@ export default function AIConfig() {
       const form = new FormData()
       form.append('file', file)
       await api.post('/ai/knowledge/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setSuccess('PDF enviado — indexando em segundo plano.')
+      setSuccess(t('PDF enviado — indexando em segundo plano.', 'PDF uploaded — indexing in the background.'))
       setDocs((await api.get<KnowledgeDoc[]>('/ai/knowledge')).data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Erro no upload do PDF.')
+      setError(err.response?.data?.detail || t('Erro no upload do PDF.', 'PDF upload failed.'))
     } finally { setUploading(false) }
   }
 
   async function deleteDoc(id: string) {
-    if (!confirm('Remover este documento da base de conhecimento?')) return
+    if (!confirm(t('Remover este documento da base de conhecimento?', 'Remove this document from the knowledge base?'))) return
     try {
       await api.delete(`/ai/knowledge/${id}`)
       setDocs((prev) => prev.filter((d) => d.id !== id))
-    } catch { setError('Erro ao remover documento.') }
+    } catch { setError(t('Erro ao remover documento.', 'Failed to remove document.')) }
   }
 
   async function reindexDoc(id: string) {
     try {
       await api.post(`/ai/knowledge/${id}/reindex`)
       setDocs((await api.get<KnowledgeDoc[]>('/ai/knowledge')).data)
-    } catch (err: any) { setError(err.response?.data?.detail || 'Erro ao reindexar.') }
+    } catch (err: any) { setError(err.response?.data?.detail || t('Erro ao reindexar.', 'Failed to reindex.')) }
   }
 
   async function viewChunks(doc: KnowledgeDoc) {
     try {
       const { data } = await api.get(`/ai/knowledge/${doc.id}/chunks`)
       setChunksOf({ doc, chunks: data })
-    } catch { setError('Erro ao carregar os chunks.') }
+    } catch { setError(t('Erro ao carregar os trechos.', 'Failed to load the chunks.')) }
   }
 
-  if (!cfg) return <div className="text-[#555] text-sm">Carregando…</div>
+  if (!cfg) return <div className="text-[#555] text-sm">{error || t('Carregando…', 'Loading…')}</div>
 
   const pct = Math.min(100, Math.round((cfg.tokens_used_month / Math.max(1, cfg.token_limit_monthly)) * 100))
   const nearLimit = pct >= 80
@@ -141,12 +142,20 @@ export default function AIConfig() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-[#e2e2e8] mb-2 flex items-center gap-2">
-        <Bot size={22} className="text-indigo-400" /> IA de Atendimento
+        <Bot size={22} className="text-indigo-400" /> {t('Assistente de IA', 'AI Assistant')}
       </h2>
-      <p className="text-[#555] text-sm mb-6">
-        Gemini 2.5 Flash + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo;
-        se ficar indisponível, a conversa vai automaticamente para a fila humana.
+      <p className="text-[#555] text-sm mb-3">
+        {t(
+          'Gemini 2.5 Flash + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo; se ficar indisponível, a conversa vai automaticamente para a fila humana.',
+          'Gemini 2.5 Flash + your knowledge base (RAG). The AI replies on WhatsApp when the conversation bot is on; if it is unavailable, the conversation automatically goes to the human queue.',
+        )}
       </p>
+      <div className="mb-6 bg-sky-900/10 border border-sky-500/20 rounded-lg px-4 py-3 text-[12px] text-sky-200/80 max-w-3xl">
+        {t(
+          'Regras fixas da plataforma (aplicadas a todo prompt): o assistente responde só sobre o seu negócio, se identifica como automatizado quando perguntado, transfere para um humano quando o cliente pedir e nunca solicita senhas ou dados de cartão. Quem envia SAIR/STOP não recebe resposta automática.',
+          'Fixed platform rules (applied to every prompt): the assistant only answers about your business, identifies itself as automated when asked, hands off to a human when the customer asks, and never requests passwords or card data. Contacts who send STOP get no automated reply.',
+        )}
+      </div>
 
       {error && <div className="mb-4 bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>}
       {success && <div className="mb-4 bg-green-900/20 border border-green-500/20 text-green-400 text-sm rounded-lg px-4 py-3">{success}</div>}
@@ -158,8 +167,8 @@ export default function AIConfig() {
             {/* Toggle global */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-[#e2e2e8] font-semibold text-sm">IA ativa</h3>
-                <p className="text-[#555] text-xs mt-0.5">Desligada, as conversas seguem para os bots por palavra-chave e a fila humana.</p>
+                <h3 className="text-[#e2e2e8] font-semibold text-sm">{t('IA ativa', 'AI enabled')}</h3>
+                <p className="text-[#555] text-xs mt-0.5">{t('Desligada, as conversas seguem para os bots por palavra-chave e a fila humana.', 'When off, conversations go to keyword bots and the human queue.')}</p>
               </div>
               <button
                 onClick={() => save({ enabled: !cfg.enabled })}
@@ -173,14 +182,14 @@ export default function AIConfig() {
             {/* API key */}
             <div>
               <label className="block text-xs font-medium text-[#666] mb-1 flex items-center gap-1.5">
-                <KeyRound size={12} /> API key da Gemini {cfg.has_api_key && <span className="text-green-400">• configurada</span>}
+                <KeyRound size={12} /> {t('API key da Gemini', 'Gemini API key')} {cfg.has_api_key && <span className="text-green-400">• {t('configurada', 'configured')}</span>}
               </label>
               <div className="flex gap-2">
                 <input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={cfg.has_api_key ? '•••••••••••• (só preencha para trocar)' : 'Cole a API key do Google AI Studio'}
+                  placeholder={cfg.has_api_key ? t('•••••••••••• (só preencha para trocar)', '•••••••••••• (fill in only to change)') : t('Cole a API key do Google AI Studio', 'Paste your Google AI Studio API key')}
                   className="flex-1 px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg text-sm focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
                 <button
@@ -188,7 +197,7 @@ export default function AIConfig() {
                   disabled={saving || !apiKey.trim()}
                   className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg text-sm font-medium"
                 >
-                  Salvar
+                  {t('Salvar', 'Save')}
                 </button>
               </div>
             </div>
@@ -196,7 +205,7 @@ export default function AIConfig() {
             {/* System prompt */}
             <div>
               <label className="block text-xs font-medium text-[#666] mb-1">
-                System prompt (regras fixas — injetado em toda resposta)
+                {t('Instruções do assistente (system prompt)', 'Assistant instructions (system prompt)')}
               </label>
               <textarea
                 value={cfg.system_prompt}
@@ -208,7 +217,7 @@ export default function AIConfig() {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1">Temperatura</label>
+                <label className="block text-xs font-medium text-[#666] mb-1">{t('Temperatura', 'Temperature')}</label>
                 <input
                   type="number" step="0.1" min="0" max="2"
                   value={cfg.temperature}
@@ -217,7 +226,7 @@ export default function AIConfig() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1">Top-K do RAG</label>
+                <label className="block text-xs font-medium text-[#666] mb-1">{t('Top-K do RAG', 'RAG Top-K')}</label>
                 <input
                   type="number" min="1" max="10"
                   value={cfg.rag_top_k}
@@ -226,7 +235,7 @@ export default function AIConfig() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1" title="Anti-loop: acima disso a IA ignora o remetente por 1 min">Msgs/min por contato</label>
+                <label className="block text-xs font-medium text-[#666] mb-1" title={t('Anti-loop: acima disso a IA ignora o remetente por 1 min', 'Anti-loop: above this the AI ignores the sender for 1 min')}>{t('Msgs/min por contato', 'Msgs/min per contact')}</label>
                 <input
                   type="number" min="1" max="200"
                   value={cfg.sender_rate_limit_per_min}
@@ -246,19 +255,19 @@ export default function AIConfig() {
               disabled={saving}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-lg text-sm flex items-center justify-center gap-2"
             >
-              <Save size={15} /> {saving ? 'Salvando…' : 'Salvar configuração'}
+              <Save size={15} /> {saving ? t('Salvando…', 'Saving…') : t('Salvar configuração', 'Save settings')}
             </button>
           </div>
 
           {/* Uso de tokens */}
           <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[#e2e2e8] font-semibold text-sm">Uso de tokens (mês)</h3>
+              <h3 className="text-[#e2e2e8] font-semibold text-sm">{t('Uso de tokens (mês)', 'Token usage (month)')}</h3>
               <button
                 onClick={() => navigate('/pricing')}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 rounded-lg text-xs font-semibold"
               >
-                <CreditCard size={13} /> Comprar mais créditos
+                <CreditCard size={13} /> {t('Ver planos', 'See plans')}
               </button>
             </div>
             <div className="flex items-baseline gap-2 mb-2">
@@ -266,7 +275,7 @@ export default function AIConfig() {
               <span className="text-[#555] text-sm">/ {cfg.token_limit_monthly.toLocaleString()} tokens</span>
               {nearLimit && (
                 <span className="flex items-center gap-1 text-amber-400 text-xs font-medium">
-                  <AlertTriangle size={12} /> {pct}% da cota
+                  <AlertTriangle size={12} /> {pct}% {t('da cota', 'of quota')}
                 </span>
               )}
             </div>
@@ -280,13 +289,13 @@ export default function AIConfig() {
             {usage && (
               <>
                 <p className="text-[#555] text-xs mb-2">
-                  Últimos 14 dias · taxa de fallback: <b className={usage.fallback_rate > 10 ? 'text-amber-400' : 'text-[#8a8a9e]'}>{usage.fallback_rate}%</b>
+                  {t('Últimos 14 dias · taxa de transferência para humano', 'Last 14 days · human handoff rate')}: <b className={usage.fallback_rate > 10 ? 'text-amber-400' : 'text-[#8a8a9e]'}>{usage.fallback_rate}%</b>
                 </p>
                 <div className="flex items-end gap-1 h-16">
                   {usage.series.map((p) => (
                     <div
                       key={p.day}
-                      title={`${p.day}: ${p.tokens.toLocaleString()} tokens · ${p.messages} respostas · ${p.fallbacks} fallbacks`}
+                      title={`${p.day}: ${p.tokens.toLocaleString()} tokens · ${p.messages} ${t('respostas', 'replies')} · ${p.fallbacks} ${t('transferências', 'handoffs')}`}
                       className="flex-1 bg-indigo-500/60 hover:bg-indigo-400 rounded-t min-w-[4px] transition-colors"
                       style={{ height: `${Math.max(3, (p.tokens / maxDayTokens) * 100)}%` }}
                     />
@@ -300,10 +309,10 @@ export default function AIConfig() {
         {/* ---------- Coluna 2: base de conhecimento ---------- */}
         <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-6">
           <h3 className="text-[#e2e2e8] font-semibold text-sm mb-1 flex items-center gap-2">
-            <FileText size={15} className="text-emerald-400" /> Base de conhecimento (RAG)
+            <FileText size={15} className="text-emerald-400" /> {t('Base de conhecimento (RAG)', 'Knowledge base (RAG)')}
           </h3>
           <p className="text-[#555] text-xs mb-4">
-            Envie PDFs (catálogo, FAQ, políticas). O conteúdo vira contexto e a IA responde com as informações do seu negócio.
+            {t('Envie PDFs (catálogo, FAQ, políticas). O conteúdo vira contexto e a IA responde com as informações do seu negócio.', 'Upload PDFs (catalog, FAQ, policies). The content becomes context and the AI answers with your business information.')}
           </p>
 
           <label className={`flex items-center justify-center gap-2 w-full border border-dashed rounded-lg px-3 py-6 text-sm cursor-pointer transition-colors mb-4 ${
@@ -311,11 +320,11 @@ export default function AIConfig() {
           }`}>
             <input type="file" accept="application/pdf" onChange={handleUpload} disabled={uploading} className="hidden" />
             <Upload size={16} />
-            {uploading ? 'Enviando…' : 'Enviar PDF (máx. 20 MB)'}
+            {uploading ? t('Enviando…', 'Uploading…') : t('Enviar PDF (máx. 20 MB)', 'Upload PDF (max 20 MB)')}
           </label>
 
           {docs.length === 0 ? (
-            <p className="text-[#555] text-sm text-center py-4">Nenhum documento indexado ainda.</p>
+            <p className="text-[#555] text-sm text-center py-4">{t('Nenhum documento indexado ainda.', 'No documents indexed yet.')}</p>
           ) : (
             <div className="space-y-2.5">
               {docs.map((d) => (
@@ -325,22 +334,22 @@ export default function AIConfig() {
                     <p className="text-[#e2e2e8] text-sm truncate">{d.filename}</p>
                     <p className="text-xs mt-0.5">
                       <span className={statusLabel[d.status]?.color || 'text-[#555]'}>{statusLabel[d.status]?.label || d.status}</span>
-                      {d.status === 'ready' && <span className="text-[#555]"> · {d.chunk_count} chunks</span>}
+                      {d.status === 'ready' && <span className="text-[#555]"> · {d.chunk_count} {t('trechos', 'chunks')}</span>}
                       {d.error && <span className="text-red-400"> · {d.error}</span>}
                     </p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     {d.status === 'ready' && (
-                      <button onClick={() => viewChunks(d)} title="Ver chunks"
+                      <button onClick={() => viewChunks(d)} title={t('Ver trechos', 'View chunks')}
                         className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[#888] flex items-center justify-center">
                         <Eye size={14} />
                       </button>
                     )}
-                    <button onClick={() => reindexDoc(d.id)} title="Reindexar"
+                    <button onClick={() => reindexDoc(d.id)} title={t('Reindexar', 'Reindex')}
                       className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-indigo-500/20 text-[#888] hover:text-indigo-400 flex items-center justify-center">
                       <RefreshCw size={14} />
                     </button>
-                    <button onClick={() => deleteDoc(d.id)} title="Remover"
+                    <button onClick={() => deleteDoc(d.id)} title={t('Remover', 'Remove')}
                       className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-red-500/20 text-[#888] hover:text-red-400 flex items-center justify-center">
                       <Trash2 size={14} />
                     </button>
@@ -357,11 +366,11 @@ export default function AIConfig() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8" onClick={() => setChunksOf(null)}>
           <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold text-white mb-1">{chunksOf.doc.filename}</h3>
-            <p className="text-[#555] text-xs mb-4">{chunksOf.chunks.length} chunks indexados</p>
+            <p className="text-[#555] text-xs mb-4">{chunksOf.chunks.length} {t('trechos indexados', 'indexed chunks')}</p>
             <div className="space-y-2">
               {chunksOf.chunks.map((c) => (
                 <div key={c.index} className="bg-[#0a0a0f] border border-white/[0.05] rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#444] mb-1">Chunk {c.index + 1}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[#444] mb-1">{t('Trecho', 'Chunk')} {c.index + 1}</p>
                   <p className="text-[#c0c0d0] text-xs leading-relaxed">{c.content.slice(0, 400)}{c.content.length > 400 ? '…' : ''}</p>
                 </div>
               ))}

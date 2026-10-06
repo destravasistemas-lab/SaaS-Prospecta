@@ -61,18 +61,32 @@ async def test_api_connections_endpoint_isolates_tenant(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_delete_rejects_wrong_tenant(client, db_session):
+async def test_delete_rejects_wrong_tenant(client, db_session, make_user):
     conn = _make_connection("owner-account", "instagram", "page-owner")
     db_session.add(conn)
     await db_session.flush()
     await db_session.refresh(conn)
 
-    # Attempt to delete from a different tenant
+    # Attacker authenticated in another tenant, even passing the victim's account_id
+    _, headers = await make_user()
     resp = await client.delete(
         f"/api/v1/auth/meta/connections/{conn.id}",
-        params={"account_id": "attacker-account"},
+        params={"account_id": "owner-account"},
+        headers=headers,
     )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_ignores_foreign_account_id(client, db_session, make_user):
+    db_session.add(_make_connection("victim-account", "ads", "page-victim"))
+    await db_session.flush()
+    _, headers = await make_user()
+    resp = await client.get(
+        "/api/v1/auth/meta/connections", params={"account_id": "victim-account"}, headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json() == []
 
 
 @pytest.mark.asyncio

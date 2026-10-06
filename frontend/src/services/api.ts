@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getLang } from '../i18n'
 
 // Em produção com o backend em host separado (ex.: Fly), defina VITE_API_URL no
 // build (ex.: https://api.seudominio.com). Em dev / docker-compose, deixe vazio:
@@ -19,6 +20,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
+  config.headers['X-Lang'] = getLang()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

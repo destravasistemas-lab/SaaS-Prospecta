@@ -18,6 +18,10 @@ class LeadResponse(BaseModel):
     score_label: Optional[str] = None
     score_notes: Optional[str] = None
     last_scored_at: Optional[datetime] = None
+    whatsapp_opt_in: bool = False
+    whatsapp_opt_in_at: Optional[datetime] = None
+    whatsapp_opt_in_source: Optional[str] = None
+    whatsapp_opted_out_at: Optional[datetime] = None
     captured_at: datetime
     created_at: datetime
 
@@ -33,10 +37,16 @@ class LeadUpdate(BaseModel):
     ig_user_id: Optional[str] = None
 
 
+class LeadConsentUpdate(BaseModel):
+    """Registers (or withdraws) the contact's consent to receive WhatsApp messages from the business."""
+    whatsapp_opt_in: bool
+    source: str = "manual"
+
+
 class AccountResponse(BaseModel):
     id: str
     brand_name: str
-    meta_page_id: str
+    meta_page_id: Optional[str] = None
     meta_page_name: Optional[str] = None
     plan_type: str = "autonomo"
     onboarding_step: int = 0

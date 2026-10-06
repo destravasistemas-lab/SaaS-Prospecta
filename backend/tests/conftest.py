@@ -56,3 +56,24 @@ async def client(db_session):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def make_user(db_session):
+    """Creates an account + user and returns (tenant_id, auth_headers)."""
+    import uuid
+    from app.core.security import create_access_token, hash_password
+    from app.models.account import Account
+    from app.models.user import User
+
+    async def _make(role: str = "admin", tenant_id: str | None = None):
+        tid = tenant_id or str(uuid.uuid4())
+        if not await db_session.get(Account, tid):
+            db_session.add(Account(id=tid, brand_name="Test"))
+        uid = str(uuid.uuid4())
+        db_session.add(User(id=uid, tenant_id=tid, username=f"{uid}@t.com",
+                            password_hash=hash_password("x"), role=role))
+        await db_session.flush()
+        return tid, {"Authorization": f"Bearer {create_access_token(uid, tid, role)}"}
+
+    return _make

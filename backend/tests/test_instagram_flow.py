@@ -274,6 +274,12 @@ async def test_outbound_send_uses_instagram_service_for_ig_conversation(client, 
     conv = Conversation(id=str(uuid.uuid4()), tenant_id=account.id, customer_id=lead.id, channel="instagram")
     db_session.add(conv)
     await db_session.flush()
+    # Cliente escreveu agora há pouco → janela de 24h aberta
+    db_session.add(Message(
+        tenant_id=account.id, conversation_id=conv.id, sender="PSID_6", text="Oi",
+        direction="inbound", wa_id="PSID_6", status="delivered",
+    ))
+    await db_session.flush()
 
     headers = {"Authorization": f"Bearer {create_access_token(user.id, account.id, 'admin')}"}
 
@@ -296,3 +302,37 @@ async def test_outbound_send_uses_instagram_service_for_ig_conversation(client, 
     assert data["status"] == "sent"
     mock_send.assert_called_once_with(ANY, "PSID_6", "Oi! Como posso ajudar?")
     mock_wa_send.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_outbound_instagram_blocked_outside_24h_window(client, db_session):
+    account, _ = await _ig_tenant(db_session, "IG_BIZ_007")
+    user = User(id=str(uuid.uuid4()), tenant_id=account.id, username="agent_ig7",
+                password_hash="x", role="admin", is_active=True)
+    lead = Lead(id=str(uuid.uuid4()), account_id=account.id, instagram_handle="PSID_7",
+                name="Cliente", source="manual", status="new")
+    db_session.add_all([user, lead])
+    await db_session.flush()
+    conv = Conversation(id=str(uuid.uuid4()), tenant_id=account.id, customer_id=lead.id, channel="instagram")
+    db_session.add(conv)
+    await db_session.flush()
+    from datetime import datetime, timedelta, timezone
+    db_session.add(Message(
+        tenant_id=account.id, conversation_id=conv.id, sender="PSID_7", text="Oi",
+        direction="inbound", wa_id="PSID_7", status="delivered",
+        created_at=datetime.now(timezone.utc) - timedelta(hours=30),
+    ))
+    await db_session.flush()
+
+    headers = {"Authorization": f"Bearer {create_access_token(user.id, account.id, 'admin')}",
+               "X-Lang": "en"}
+    with patch("app.services.instagram_service.send_dm", new_callable=AsyncMock) as mock_send:
+        resp = await client.post(
+            f"/api/v1/conversations/{conv.id}/messages",
+            json={"text": "Hello again", "direction": "outbound"},
+            headers=headers,
+        )
+    assert resp.status_code == 422
+    assert resp.json()["detail"]["code"] == "outside_24h_window"
+    assert "Instagram" in resp.json()["detail"]["message"]
+    mock_send.assert_not_called()

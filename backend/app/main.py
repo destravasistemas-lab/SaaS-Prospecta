@@ -1,7 +1,10 @@
 import asyncio
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.openapi.utils import get_openapi
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -9,6 +12,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.i18n import parse_lang, set_lang, reset_lang, translate_detail
 from app.routes import auth, webhook, dashboard, leads, accounts, automations, privacy, instagram, instagram_api
 from app.routes import auth_jwt, conversations, messages, ws, whatsapp, payments, tenants, clients
 from app.routes import auth_email
@@ -26,6 +30,7 @@ import app.models.subscription      # noqa: F401
 import app.models.schedule          # noqa: F401
 import app.models.client_assignment # noqa: F401
 import app.models.ai                # noqa: F401
+import app.models.privacy           # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 
@@ -73,6 +78,12 @@ _MIGRATIONS = [
     # Módulos bloqueados por conta (agência-mãe controla as dependentes;
     # super admin controla qualquer conta)
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS blocked_modules JSON",
+
+    # WhatsApp consent (opt-in / opt-out) — required for business-initiated messages
+    "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opt_in BOOLEAN NOT NULL DEFAULT FALSE",
+    "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opt_in_at TIMESTAMPTZ",
+    "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opt_in_source VARCHAR(50)",
+    "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opted_out_at TIMESTAMPTZ",
 ]
 
 
@@ -103,11 +114,97 @@ async def _start_scheduler():
     await scheduler_loop()
 
 
+API_DESCRIPTION = """
+Multi-tenant REST API for **WhatsApp Business (Cloud API)**, **Instagram** and **Meta Ads**
+management: shared inbox, automations, AI assistant, post scheduling and ad campaigns.
+
+### Authentication
+1. `POST /api/v1/auth/login` with `{"username": "...", "password": "..."}`.
+2. Copy the `access_token` and click **Authorize** (top right) — paste the token only.
+
+### Language
+Error messages follow the `X-Lang` header (`en` or `pt`). If absent, `Accept-Language` is used.
+
+### Meta platform compliance
+- WhatsApp: free-form messages only inside the 24-hour customer service window; outside it,
+  only approved templates to contacts that opted in. Opt-out keywords (STOP, SAIR, PARAR…)
+  are honored automatically.
+- Instagram: DMs only inside the 24-hour messaging window; comment → DM uses Private Replies
+  (one per comment, within 7 days).
+- Data deletion and deauthorization callbacks: `/api/v1/privacy/*`.
+"""
+
+OPENAPI_TAGS = [
+    {"name": "auth-jwt", "description": "Login, registration, tokens and team users."},
+    {"name": "auth", "description": "Meta OAuth (Facebook Login for Business) and connections."},
+    {"name": "instagram", "description": "Instagram Business Login (OAuth)."},
+    {"name": "instagram-api", "description": "Instagram publishing, scheduling, media, insights and DMs."},
+    {"name": "whatsapp", "description": "WhatsApp Cloud API: Embedded Signup, messages, templates, broadcasts."},
+    {"name": "conversations", "description": "Unified inbox conversations (WhatsApp + Instagram)."},
+    {"name": "messages", "description": "Messages inside a conversation."},
+    {"name": "leads", "description": "Leads / contacts, consent (opt-in) and scoring."},
+    {"name": "automations", "description": "Keyword and comment → DM automations."},
+    {"name": "marketing", "description": "Meta Marketing API: campaigns, ad sets, creatives, ads, insights."},
+    {"name": "ai", "description": "AI customer-service assistant (Gemini + knowledge base)."},
+    {"name": "webhook", "description": "Meta webhooks (signature-verified)."},
+    {"name": "privacy", "description": "Privacy policy, data deletion and deauthorize callbacks."},
+    {"name": "dashboard", "description": "Dashboard metrics."},
+    {"name": "clients", "description": "Agency → client workspaces."},
+    {"name": "payments", "description": "Subscriptions (Asaas)."},
+]
+
 app = FastAPI(
-    title=settings.app_name,
+    title=f"{settings.app_name} API",
     version="1.0.0",
+    description=API_DESCRIPTION,
+    openapi_tags=OPENAPI_TAGS,
+    contact={"name": "Destrava Sistemas", "email": "contato@destravasistemas.com.br"},
+    swagger_ui_parameters={"persistAuthorization": True, "displayRequestDuration": True},
     lifespan=lifespan,
 )
+
+
+def _custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        tags=app.openapi_tags,
+        contact=app.contact,
+    )
+    # Login is JSON (not OAuth2 form) — expose the scheme as a plain Bearer JWT
+    # so the "Authorize" button in Swagger UI just takes the access token.
+    schemes = schema.setdefault("components", {}).setdefault("securitySchemes", {})
+    if "OAuth2PasswordBearer" in schemes:
+        schemes["OAuth2PasswordBearer"] = {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _custom_openapi
+
+
+@app.middleware("http")
+async def language_middleware(request: Request, call_next):
+    token = set_lang(parse_lang(request.headers.get("x-lang"), request.headers.get("accept-language")))
+    try:
+        return await call_next(request)
+    finally:
+        reset_lang(token)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def translated_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    lang = parse_lang(request.headers.get("x-lang"), request.headers.get("accept-language"))
+    token = set_lang(lang)
+    try:
+        exc.detail = translate_detail(exc.detail)
+    finally:
+        reset_lang(token)
+    return await http_exception_handler(request, exc)
 
 app.add_middleware(
     CORSMiddleware,
@@ -118,7 +215,7 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health():
     return {"status": "ok"}
 

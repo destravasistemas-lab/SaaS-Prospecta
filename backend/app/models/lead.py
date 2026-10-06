@@ -53,6 +53,17 @@ class Lead(Base):
     pending_auto_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Passar para atendente humano no próximo DM recebido (fim do fluxo do bot).
     pending_handoff: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Consentimento do WhatsApp: templates (mensagens iniciadas pela empresa)
+    # só podem ir para quem deu opt-in e não pediu para sair (opt-out).
+    whatsapp_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    whatsapp_opt_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # "manual" | "lead_form" | "csv_import" | "customer_request"
+    whatsapp_opt_in_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    whatsapp_opted_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def can_receive_whatsapp_templates(self) -> bool:
+        return bool(self.whatsapp_opt_in) and self.whatsapp_opted_out_at is None
     source: Mapped[LeadSource] = mapped_column(
         SAEnum(LeadSource, name="lead_source", create_constraint=True),
         nullable=False,

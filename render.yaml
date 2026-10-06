@@ -1,0 +1,112 @@
+# Render Blueprint — Dashboard > New > Blueprint > conecte este repositório.
+# Cria: banco PostgreSQL, Redis (Key Value), backend FastAPI e frontend estático.
+# Variáveis com "sync: false" são pedidas no painel na criação.
+
+databases:
+  - name: prospecta-db
+    plan: basic-256mb          # o plano free expira em 30 dias
+    region: virginia
+    databaseName: prospecta
+    user: prospecta
+
+services:
+  - type: keyvalue
+    name: prospecta-redis
+    plan: free
+    region: virginia
+    ipAllowList: []            # só acesso pela rede interna do Render
+
+  - type: web
+    name: prospecta-api
+    runtime: python
+    plan: starter              # o free "dorme" após 15 min e a Meta desativa webhooks que não respondem
+    region: virginia
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # 1 worker: o agendador de posts roda dentro do processo (vários workers = posts duplicados)
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --proxy-headers --forwarded-allow-ips '*'
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prospecta-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: prospecta-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: META_API_VERSION
+        value: v21.0
+      # Gere com: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: FERNET_KEY
+        sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_WEBHOOK_VERIFY_TOKEN
+        sync: false
+      - key: WHATSAPP_CONFIG_ID
+        sync: false
+      - key: IG_APP_ID
+        sync: false
+      - key: IG_APP_SECRET
+        sync: false
+      # https://prospecta-api.onrender.com/api/v1/auth/meta/callback
+      - key: META_REDIRECT_URI
+        sync: false
+      # https://prospecta-api.onrender.com/api/v1/auth/instagram/callback
+      - key: IG_REDIRECT_URI
+        sync: false
+      # https://prospecta-api.onrender.com
+      - key: PUBLIC_BASE_URL
+        sync: false
+      # https://prospecta-web.onrender.com
+      - key: APP_URL
+        sync: false
+      # ["https://prospecta-web.onrender.com"]
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SUPPORT_EMAIL
+        value: contato@destravasistemas.com.br
+      - key: SUPER_ADMIN_EMAILS
+        sync: false
+      # Opcionais (deixe vazio se não usar)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false
+
+  - type: web
+    name: prospecta-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      # https://prospecta-api.onrender.com  (sem barra no final)
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

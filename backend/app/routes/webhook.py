@@ -85,7 +85,8 @@ async def receive_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON payload.")
 
-    logger.info("Webhook received: %s", payload)
+    logger.info("Webhook received: object=%s entries=%d", payload.get("object"), len(payload.get("entry", [])))
+    logger.debug("Webhook payload: %s", payload)
 
     obj = payload.get("object", "")
 
@@ -911,6 +912,24 @@ async def handle_whatsapp_message(
             "last_updated": conv.last_updated.isoformat(),
         })
 
+        # Opt-out / opt-in por palavra-chave (STOP, SAIR, PARAR… / START, VOLTAR).
+        # Política do WhatsApp: pedidos de saída precisam ser respeitados — o
+        # contato deixa de receber templates e o bot/IA não responde a essa mensagem.
+        from app.services import messaging_policy
+        if messaging_policy.is_opt_out(text_body):
+            messaging_policy.mark_opt_out(lead)
+            await db.flush()
+            await _send_wpp_system_reply(
+                conn, tenant_id, conv, wa_from, messaging_policy.opt_out_reply(text_body or ""), db,
+            )
+            logger.info("Opt-out WhatsApp registrado: lead %s", lead.id)
+            await dispatch_event("whatsapp_opt_out", tenant_id, {"lead_id": lead.id})
+            continue
+        if messaging_policy.is_opt_in(text_body):
+            messaging_policy.mark_opt_in(lead, "customer_request")
+            await db.flush()
+            logger.info("Opt-in WhatsApp registrado: lead %s", lead.id)
+
         # Auto-reply por keyword para WhatsApp (se configurado e bot ativo na conversa)
         kw_matched = False
         if text_body and conv.bot_active:
@@ -978,6 +997,29 @@ async def handle_whatsapp_message(
         await dispatch_event("whatsapp_message", tenant_id, msg_data)
 
 
+async def _send_wpp_system_reply(conn, tenant_id: str, conv, wa_to: str, text: str, db: AsyncSession) -> None:
+    """Resposta automática do sistema (ex.: confirmação de opt-out) — dentro da janela de 24h."""
+    from app.services import whatsapp_service
+    try:
+        token = decrypt_token(conn.access_token_encrypted)
+        resp = await whatsapp_service.send_text(token, conn.phone_number_id, wa_to, text)
+    except Exception as exc:
+        logger.warning("Falha ao enviar resposta do sistema WhatsApp: %s", exc)
+        return
+    msg = Message(
+        tenant_id=tenant_id, conversation_id=conv.id, sender="bot", text=text,
+        direction="outbound", wa_id=wa_to, status="sent",
+        message_id=(resp.get("messages") or [{}])[0].get("id"), is_within_24h_window=True,
+    )
+    db.add(msg)
+    await db.flush()
+    await ws_manager.broadcast(tenant_id, "new_message", {
+        "id": msg.id, "conversation_id": conv.id, "sender": "bot", "text": text,
+        "direction": "outbound", "wa_id": wa_to, "status": "sent",
+        "created_at": msg.created_at.isoformat(),
+    })
+
+
 # ---------------------------------------------------------------------------
 # Pluggable event dispatcher
 # ---------------------------------------------------------------------------
@@ -991,7 +1033,7 @@ async def dispatch_event(event_type: str, tenant_id: str, payload: dict) -> None
         except Exception as exc:
             logger.warning("dispatch_event: failed to reach n8n (%s)", exc)
     else:
-        logger.info("dispatch_event (no n8n URL): %s", event)
+        logger.debug("dispatch_event (no n8n URL): %s", event)
 
 
 # ---------------------------------------------------------------------------

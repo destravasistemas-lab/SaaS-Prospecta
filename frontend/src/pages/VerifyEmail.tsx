@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { useI18n } from '../i18n'
 
 export default function VerifyEmail() {
+  const { t } = useI18n()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -11,17 +13,17 @@ export default function VerifyEmail() {
   useEffect(() => {
     if (!token) {
       setStatus('error')
-      setMessage('Token de verificação não encontrado.')
+      setMessage(t('Token de verificação não encontrado.', 'Verification token not found.'))
       return
     }
     api.post('/auth/verify-email', { token })
       .then(() => {
         setStatus('success')
-        setMessage('Email confirmado com sucesso!')
+        setMessage(t('E-mail confirmado com sucesso!', 'Email confirmed successfully!'))
       })
       .catch((err) => {
         setStatus('error')
-        setMessage(err.response?.data?.detail || 'Erro ao confirmar email.')
+        setMessage(err.response?.data?.detail || t('Erro ao confirmar e-mail.', 'Failed to confirm email.'))
       })
   }, [token])
 
@@ -35,7 +37,7 @@ export default function VerifyEmail() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <p className="text-sm text-white/40">Confirmando seu email...</p>
+            <p className="text-sm text-white/40">{t('Confirmando seu e-mail...', 'Confirming your email...')}</p>
           </>
         )}
 
@@ -46,10 +48,10 @@ export default function VerifyEmail() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Email confirmado</h2>
+            <h2 className="text-xl font-semibold text-white mb-2">{t('E-mail confirmado', 'Email confirmed')}</h2>
             <p className="text-sm text-white/40 mb-6">{message}</p>
             <Link to="/login" className="text-sm text-indigo-400 hover:text-indigo-300 no-underline">
-              Fazer login →
+              {t('Fazer login →', 'Sign in →')}
             </Link>
           </>
         )}
@@ -61,10 +63,10 @@ export default function VerifyEmail() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Erro</h2>
+            <h2 className="text-xl font-semibold text-white mb-2">{t('Erro', 'Error')}</h2>
             <p className="text-sm text-white/40 mb-6">{message}</p>
             <Link to="/login" className="text-sm text-indigo-400 hover:text-indigo-300 no-underline">
-              Voltar ao login →
+              {t('Voltar ao login →', 'Back to sign in →')}
             </Link>
           </>
         )}

@@ -39,6 +39,19 @@ HISTORY_CUSTOMER_MSGS = 8   # últimas mensagens do cliente
 HISTORY_AI_MSGS = 2         # últimos outbounds da IA
 MAX_CONTEXT_CHARS = 24_000  # teto de segurança da janela de contexto
 
+# Regras fixas anexadas ao prompt do tenant — WhatsApp Business Solution Terms:
+# assistente restrito ao negócio (sem IA de propósito geral), transparente
+# sobre ser automatizado e sempre com caminho para atendimento humano.
+POLICY_GUARDRAILS = (
+    "\n\n[Regras obrigatórias da plataforma]\n"
+    "- Você é o assistente virtual automatizado desta empresa. Se perguntarem, diga que é um assistente automatizado.\n"
+    "- Responda apenas sobre os produtos, serviços e atendimento desta empresa. Recuse educadamente "
+    "pedidos fora desse escopo (não atue como assistente de IA de uso geral).\n"
+    "- Se o cliente pedir para falar com uma pessoa, diga que vai transferir para um atendente humano.\n"
+    "- Nunca peça senhas, dados completos de cartão ou documentos sensíveis.\n"
+    "- Responda no idioma do cliente."
+)
+
 
 async def get_ai_config(db: AsyncSession, account_id: str) -> AIConfig | None:
     result = await db.execute(select(AIConfig).where(AIConfig.account_id == account_id))
@@ -199,7 +212,8 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
     for attempt in range(3):
         try:
             answer, tokens_used = await gemini_service.generate_content(
-                api_key, cfg.system_prompt, contents, temperature=cfg.temperature,
+                api_key, (cfg.system_prompt or "") + POLICY_GUARDRAILS, contents,
+                temperature=cfg.temperature,
             )
             break
         except GeminiRateLimited:

@@ -15,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -28,6 +28,7 @@ from app.models.message import Message
 from app.models.lead import Lead
 from app.core.config import settings
 from app.services import whatsapp_service
+from app.services import messaging_policy
 from app.services.meta_token_service import encrypt_token, decrypt_token, exchange_code_for_token
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,10 @@ class SendTemplateRequest(BaseModel):
     variables: list[str] = Field(default_factory=list,
                                   description="Valores para {{1}}, {{2}}, etc.")
     conversation_id: str | None = None
+    opt_in_confirmed: bool = Field(
+        default=False,
+        description="Agent confirms the contact gave WhatsApp opt-in (recorded on the lead).",
+    )
 
 
 class BroadcastRequest(BaseModel):
@@ -378,6 +383,9 @@ async def send_interactive(
     to = body.to or await _resolve_recipient(body.conversation_id, current_user.tenant_id, db)
     if not to:
         raise HTTPException(400, "Destinatário não identificado nesta conversa.")
+    await messaging_policy.require_whatsapp_window(
+        db, current_user.tenant_id, conv_id=body.conversation_id,
+    )
 
     if body.kind == "buttons":
         if not body.buttons:
@@ -569,6 +577,9 @@ async def send_text(
 ):
     """Envia mensagem de texto livre (válida apenas dentro da janela de 24h)."""
     conn = await _get_conn_or_404(current_user.tenant_id, db)
+    await messaging_policy.require_whatsapp_window(
+        db, current_user.tenant_id, conv_id=body.conversation_id, sender_id=body.to,
+    )
     token = decrypt_token(conn.access_token_encrypted)
 
     result = await whatsapp_service.send_text(token, conn.phone_number_id, body.to, body.text)
@@ -592,8 +603,12 @@ async def send_template(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Envia template aprovado — funciona fora da janela de 24h."""
+    """Envia template aprovado — funciona fora da janela de 24h (exige opt-in do contato)."""
     conn = await _get_conn_or_404(current_user.tenant_id, db)
+    lead = await _lead_for_recipient(current_user.tenant_id, body.to, body.conversation_id, db)
+    if body.opt_in_confirmed and lead and lead.whatsapp_opted_out_at is None and not lead.whatsapp_opt_in:
+        messaging_policy.mark_opt_in(lead, "manual")
+    messaging_policy.require_template_consent(lead)
     token = decrypt_token(conn.access_token_encrypted)
 
     components = []
@@ -866,13 +881,13 @@ async def broadcast_audience(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Quantos leads têm número de telefone (público do disparo em massa)."""
-    result = await db.execute(
-        select(func.count(Lead.id)).where(
-            Lead.account_id == current_user.tenant_id, Lead.phone.isnot(None)
-        )
-    )
-    return {"count": result.scalar() or 0}
+    """Público do disparo em massa: leads com telefone E opt-in ativo para WhatsApp."""
+    base = [Lead.account_id == current_user.tenant_id, Lead.phone.isnot(None)]
+    with_phone = (await db.execute(select(func.count(Lead.id)).where(*base))).scalar() or 0
+    eligible = (await db.execute(select(func.count(Lead.id)).where(
+        *base, Lead.whatsapp_opt_in.is_(True), Lead.whatsapp_opted_out_at.is_(None),
+    ))).scalar() or 0
+    return {"count": eligible, "with_phone": with_phone, "without_opt_in": with_phone - eligible}
 
 
 @router.post("/broadcast")
@@ -881,7 +896,7 @@ async def broadcast_template(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Dispara um template para todos os leads que têm número de telefone."""
+    """Dispara um template para os leads com telefone e opt-in ativo (opt-outs são sempre excluídos)."""
     if current_user.role != "admin":
         raise HTTPException(403, "Apenas admins podem disparar em massa.")
     conn = await _get_conn_or_404(current_user.tenant_id, db)
@@ -891,7 +906,10 @@ async def broadcast_template(
         raise HTTPException(400, "Não foi possível ler as credenciais do WhatsApp. Reconecte o número.")
 
     q = select(Lead).where(
-        Lead.account_id == current_user.tenant_id, Lead.phone.isnot(None)
+        Lead.account_id == current_user.tenant_id,
+        Lead.phone.isnot(None),
+        Lead.whatsapp_opt_in.is_(True),
+        Lead.whatsapp_opted_out_at.is_(None),
     )
     if body.lead_ids:
         q = q.where(Lead.id.in_(body.lead_ids))
@@ -942,6 +960,26 @@ async def broadcast_template(
 # Private helpers
 # ---------------------------------------------------------------------------
 
+async def _lead_for_recipient(
+    tenant_id: str, to: str, conv_id: str | None, db: AsyncSession,
+) -> Lead | None:
+    if conv_id:
+        conv = await db.get(Conversation, conv_id)
+        if conv and conv.tenant_id == tenant_id and conv.customer_id:
+            lead = await db.get(Lead, conv.customer_id)
+            if lead:
+                return lead
+    from app.core.phone import normalize_phone
+    phone = normalize_phone(to) or to
+    result = await db.execute(
+        select(Lead).where(
+            Lead.account_id == tenant_id,
+            or_(Lead.phone == phone, Lead.instagram_handle == to),
+        ).limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
 async def _get_conn_or_404(tenant_id: str, db: AsyncSession) -> MetaConnection:
     result = await db.execute(
         select(MetaConnection).where(
@@ -971,16 +1009,16 @@ async def _save_outbound(
 ) -> None:
     """Persists an outbound message and broadcasts it via WebSocket."""
     if not conv_id:
-        # Try to find active conversation for this recipient
+        # Find the conversation of THIS recipient (by the last message exchanged with them)
         result = await db.execute(
-            select(Conversation).where(
-                Conversation.tenant_id == tenant_id,
-                Conversation.status == "active",
-            ).order_by(Conversation.last_updated.desc()).limit(1)
+            select(Message.conversation_id).where(
+                Message.tenant_id == tenant_id,
+                Message.wa_id == wa_to,
+            ).order_by(Message.created_at.desc()).limit(1)
         )
-        conv = result.scalar_one_or_none()
-        if conv:
-            conv_id = conv.id
+        row = result.first()
+        if row:
+            conv_id = row[0]
 
     if not conv_id:
         return  # No conversation context — skip saving

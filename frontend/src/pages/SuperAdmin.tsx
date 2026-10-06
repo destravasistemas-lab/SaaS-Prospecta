@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Shield, Building2, Save } from 'lucide-react'
 import api from '../services/api'
+import { useI18n, tr } from '../i18n'
 
 interface Tenant {
   id: string
@@ -18,13 +19,14 @@ const MODULES: { key: string; label: string }[] = [
   { key: 'ia', label: 'IA' },
 ]
 
-const PLAN_LABEL: Record<string, string> = {
-  autonomo: 'Autônomo',
-  agencia: 'Agência',
-  dependente: 'Empresa-filha',
+const PLAN_LABEL: Record<string, [string, string]> = {
+  autonomo: ['Autônomo', 'Business'],
+  agencia: ['Agência', 'Agency'],
+  dependente: ['Empresa-filha', 'Client business'],
 }
 
 export default function SuperAdmin() {
+  useI18n()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -40,8 +42,8 @@ export default function SuperAdmin() {
       setTenants(data)
     } catch (err: any) {
       setError(err.response?.status === 403
-        ? 'Acesso restrito. Seu email precisa estar em SUPER_ADMIN_EMAILS.'
-        : 'Erro ao carregar os tenants.')
+        ? tr('Acesso restrito. Seu e-mail precisa estar em SUPER_ADMIN_EMAILS.', 'Restricted access. Your email must be in SUPER_ADMIN_EMAILS.')
+        : tr('Erro ao carregar as contas.', 'Failed to load accounts.'))
     } finally {
       setLoading(false)
     }
@@ -66,7 +68,7 @@ export default function SuperAdmin() {
     try {
       await api.put(`/admin/tenants/${t.id}/modules`, { blocked_modules: t.blocked_modules })
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Erro ao salvar.')
+      alert(err.response?.data?.detail || tr('Erro ao salvar.', 'Failed to save.'))
     } finally {
       setSavingId(null)
     }
@@ -84,8 +86,10 @@ export default function SuperAdmin() {
           Super Admin
         </h1>
         <p className="text-[#555] text-sm mt-0.5">
-          Controle quais módulos cada conta do sistema pode usar. As empresas-filhas
-          herdam o bloqueio: se você desligar aqui, nem o admin delas consegue ativar.
+          {tr(
+            'Controle quais módulos cada conta do sistema pode usar. As empresas-filhas herdam o bloqueio: se você desligar aqui, nem o admin delas consegue ativar.',
+            'Control which modules each account can use. Client businesses inherit the block: if you turn it off here, not even their admin can turn it on.',
+          )}
         </p>
       </div>
 
@@ -94,14 +98,14 @@ export default function SuperAdmin() {
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscar por nome ou tipo…"
+        placeholder={tr('Buscar por nome ou tipo…', 'Search by name or type…')}
         className="w-full mb-4 px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
       />
 
       {loading ? (
-        <p className="text-center text-[#555] text-sm py-10">Carregando…</p>
+        <p className="text-center text-[#555] text-sm py-10">{tr('Carregando…', 'Loading…')}</p>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-[#555] text-sm py-10">Nenhuma conta encontrada.</p>
+        <p className="text-center text-[#555] text-sm py-10">{tr('Nenhuma conta encontrada.', 'No accounts found.')}</p>
       ) : (
         <div className="space-y-2">
           {filtered.map((t) => (
@@ -111,10 +115,10 @@ export default function SuperAdmin() {
                   <Building2 size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#e2e2e8] truncate">{t.brand_name || '(sem nome)'}</p>
+                  <p className="text-sm font-semibold text-[#e2e2e8] truncate">{t.brand_name || tr('(sem nome)', '(no name)')}</p>
                   <p className="text-[11px] text-[#555]">
-                    {PLAN_LABEL[t.plan_type || ''] || t.plan_type || '—'}
-                    {t.parent_account_id && ' · filha'} · {t.user_count} usuário(s)
+                    {PLAN_LABEL[t.plan_type || ''] ? tr(...PLAN_LABEL[t.plan_type || '']) : t.plan_type || '—'}
+                    {t.parent_account_id && tr(' · filha', ' · client')} · {t.user_count} {tr('usuário(s)', 'user(s)')}
                   </p>
                 </div>
                 <button
@@ -123,7 +127,7 @@ export default function SuperAdmin() {
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors"
                 >
                   <Save size={12} />
-                  {savingId === t.id ? 'Salvando…' : 'Salvar'}
+                  {savingId === t.id ? tr('Salvando…', 'Saving…') : tr('Salvar', 'Save')}
                 </button>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">

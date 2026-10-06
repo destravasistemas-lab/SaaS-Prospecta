@@ -5,6 +5,7 @@ import {
   TrendingUp, GitMerge,
 } from 'lucide-react'
 import api from '../services/api'
+import { useI18n, tr } from '../i18n'
 
 interface Lead {
   id: string
@@ -21,22 +22,29 @@ interface Lead {
   score_notes: string | null
   last_scored_at: string | null
   captured_at: string
+  whatsapp_opt_in?: boolean
+  whatsapp_opt_in_at?: string | null
+  whatsapp_opt_in_source?: string | null
+  whatsapp_opted_out_at?: string | null
 }
 
-const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  new:       { label: 'Novo',         color: 'bg-blue-900/30 text-blue-300 border-blue-500/20',    dot: 'bg-blue-400' },
-  contacted: { label: 'Contactado',   color: 'bg-purple-900/30 text-purple-300 border-purple-500/20', dot: 'bg-purple-400' },
-  qualified: { label: 'Qualificado',  color: 'bg-yellow-900/30 text-yellow-300 border-yellow-500/20', dot: 'bg-yellow-400' },
-  converted: { label: 'Convertido',   color: 'bg-green-900/30 text-green-300 border-green-500/20',  dot: 'bg-green-400' },
-  lost:      { label: 'Perdido',      color: 'bg-red-900/30 text-red-300 border-red-500/20',       dot: 'bg-red-400' },
+const statusConfig: Record<string, { pt: string; en: string; color: string; dot: string }> = {
+  new:       { pt: 'Novo',        en: 'New',       color: 'bg-blue-900/30 text-blue-300 border-blue-500/20',    dot: 'bg-blue-400' },
+  contacted: { pt: 'Contactado',  en: 'Contacted', color: 'bg-purple-900/30 text-purple-300 border-purple-500/20', dot: 'bg-purple-400' },
+  qualified: { pt: 'Qualificado', en: 'Qualified', color: 'bg-yellow-900/30 text-yellow-300 border-yellow-500/20', dot: 'bg-yellow-400' },
+  converted: { pt: 'Convertido',  en: 'Converted', color: 'bg-green-900/30 text-green-300 border-green-500/20',  dot: 'bg-green-400' },
+  lost:      { pt: 'Perdido',     en: 'Lost',      color: 'bg-red-900/30 text-red-300 border-red-500/20',       dot: 'bg-red-400' },
 }
 
-const sourceLabel: Record<string, string> = {
-  instagram_comment: 'Comentário',
-  instagram_dm: 'DM',
-  instagram_form: 'Formulário',
-  manual: 'Manual',
+const statusLabel = (s: string) => (statusConfig[s] ? tr(statusConfig[s].pt, statusConfig[s].en) : s)
+
+const SOURCE_LABELS: Record<string, [string, string]> = {
+  instagram_comment: ['Comentário', 'Comment'],
+  instagram_dm: ['Mensagem', 'Message'],
+  instagram_form: ['Formulário', 'Lead form'],
+  manual: ['Manual', 'Manual'],
 }
+const sourceLabel = (s: string) => (SOURCE_LABELS[s] ? tr(SOURCE_LABELS[s][0], SOURCE_LABELS[s][1]) : s)
 
 function ScoreBadge({ label, score }: { label: string | null; score: number | null }) {
   if (!label || score === null) {
@@ -67,16 +75,17 @@ function ScoreBadge({ label, score }: { label: string | null; score: number | nu
 }
 
 function StatusPill({ status }: { status: string }) {
-  const cfg = statusConfig[status] ?? { label: status, color: 'bg-white/[0.06] text-[#888] border-white/[0.06]', dot: 'bg-gray-400' }
+  const cfg = statusConfig[status] ?? { pt: status, en: status, color: 'bg-white/[0.06] text-[#888] border-white/[0.06]', dot: 'bg-gray-400' }
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full border ${cfg.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
+      {tr(cfg.pt, cfg.en)}
     </span>
   )
 }
 
 export default function Leads() {
+  const { t, locale } = useI18n()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [scoring, setScoring] = useState(false)
@@ -135,8 +144,23 @@ export default function Leads() {
     } catch { /* ignore */ }
   }
 
+  async function toggleConsent(lead: Lead) {
+    const optIn = !(lead.whatsapp_opt_in && !lead.whatsapp_opted_out_at)
+    const msg = optIn
+      ? t(
+          'Confirmar que este contato aceitou receber mensagens da empresa no WhatsApp (opt-in)? A data e a origem ficam registradas.',
+          'Confirm this contact agreed to receive messages from the business on WhatsApp (opt-in)? The date and source are recorded.',
+        )
+      : t('Registrar opt-out? O contato não receberá mais templates.', 'Record opt-out? The contact will no longer receive templates.')
+    if (!confirm(msg)) return
+    try {
+      const { data } = await api.put(`/leads/${lead.id}/consent`, { whatsapp_opt_in: optIn, source: 'manual' })
+      setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, ...data } : l)))
+    } catch { /* ignore */ }
+  }
+
   async function handleDelete(leadId: string) {
-    if (!confirm('Remover este lead?')) return
+    if (!confirm(t('Remover este lead?', 'Remove this lead?'))) return
     try {
       await api.delete(`/leads/${leadId}`)
       setLeads((prev) => prev.filter((l) => l.id !== leadId))
@@ -153,7 +177,7 @@ export default function Leads() {
       setMergeSearch('')
       await loadLeads()
     } catch (err: any) {
-      setMergeError(err.response?.data?.detail || 'Erro ao mesclar leads.')
+      setMergeError(err.response?.data?.detail || t('Erro ao mesclar leads.', 'Failed to merge leads.'))
     } finally {
       setMerging(false)
     }
@@ -176,7 +200,8 @@ export default function Leads() {
       ))
       setTimeout(() => { setDmLead(null); setDmSuccess(false); setDmMessage('') }, 1500)
     } catch (err: any) {
-      setDmError(err.response?.data?.detail || 'Erro ao enviar DM.')
+      const detail = err.response?.data?.detail
+      setDmError(detail?.message || (typeof detail === 'string' ? detail : t('Erro ao enviar DM.', 'Failed to send DM.')))
     } finally {
       setDmSending(false)
     }
@@ -204,10 +229,10 @@ export default function Leads() {
         <div>
           <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
             <Users size={20} className="text-indigo-400" />
-            Leads
+            {t('Leads', 'Leads')}
           </h1>
           <p className="text-[#555] text-sm mt-0.5">
-            {leads.length} leads captados
+            {t(`${leads.length} leads captados`, `${leads.length} leads captured`)}
           </p>
         </div>
         <button
@@ -216,7 +241,7 @@ export default function Leads() {
           className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
         >
           <RefreshCw size={14} className={scoring ? 'animate-spin' : ''} />
-          {scoring ? 'Analisando...' : 'Analisar Leads'}
+          {scoring ? t('Analisando...', 'Analyzing...') : t('Analisar Leads', 'Score Leads')}
         </button>
       </div>
 
@@ -236,7 +261,7 @@ export default function Leads() {
             </div>
             <div>
               <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{hotCount}</p>
-              <p className="text-[11px] text-[#555] mt-0.5">Quentes</p>
+              <p className="text-[11px] text-[#555] mt-0.5">{t('Quentes', 'Hot')}</p>
             </div>
           </button>
 
@@ -253,7 +278,7 @@ export default function Leads() {
             </div>
             <div>
               <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{warmCount}</p>
-              <p className="text-[11px] text-[#555] mt-0.5">Mornos</p>
+              <p className="text-[11px] text-[#555] mt-0.5">{t('Mornos', 'Warm')}</p>
             </div>
           </button>
 
@@ -270,7 +295,7 @@ export default function Leads() {
             </div>
             <div>
               <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{coldCount}</p>
-              <p className="text-[11px] text-[#555] mt-0.5">Frios</p>
+              <p className="text-[11px] text-[#555] mt-0.5">{t('Frios', 'Cold')}</p>
             </div>
           </button>
 
@@ -284,7 +309,7 @@ export default function Leads() {
                   ? Math.round(leads.filter((l) => l.score !== null).reduce((acc, l) => acc + (l.score ?? 0), 0) / Math.max(leads.filter((l) => l.score !== null).length, 1))
                   : 0}
               </p>
-              <p className="text-[11px] text-[#555] mt-0.5">Score médio</p>
+              <p className="text-[11px] text-[#555] mt-0.5">{t('Score médio', 'Average score')}</p>
             </div>
           </div>
         </div>
@@ -298,7 +323,7 @@ export default function Leads() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome, @handle ou email..."
+            placeholder={t('Buscar por nome, @usuário ou e-mail...', 'Search by name, @handle or email...')}
             className="w-full pl-9 pr-4 py-2.5 bg-[#111118] border border-white/[0.06] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
           />
         </div>
@@ -308,19 +333,19 @@ export default function Leads() {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="px-3 py-2.5 bg-[#111118] border border-white/[0.06] text-[#888] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
         >
-          <option value="">Todos os status</option>
-          <option value="new">Novos</option>
-          <option value="contacted">Contactados</option>
-          <option value="qualified">Qualificados</option>
-          <option value="converted">Convertidos</option>
-          <option value="lost">Perdidos</option>
+          <option value="">{t('Todos os status', 'All statuses')}</option>
+          <option value="new">{t('Novos', 'New')}</option>
+          <option value="contacted">{t('Contactados', 'Contacted')}</option>
+          <option value="qualified">{t('Qualificados', 'Qualified')}</option>
+          <option value="converted">{t('Convertidos', 'Converted')}</option>
+          <option value="lost">{t('Perdidos', 'Lost')}</option>
         </select>
       </div>
 
       {/* Active filters */}
       {(filterScore || filterStatus) && (
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-[11px] text-[#444]">Filtros ativos:</span>
+          <span className="text-[11px] text-[#444]">{t('Filtros ativos:', 'Active filters:')}</span>
           {filterScore && (
             <button
               onClick={() => setFilterScore('')}
@@ -335,7 +360,7 @@ export default function Leads() {
               onClick={() => setFilterStatus('')}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-indigo-900/30 text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/50"
             >
-              Status: {statusConfig[filterStatus]?.label ?? filterStatus}
+              Status: {statusLabel(filterStatus)}
               <X size={10} />
             </button>
           )}
@@ -364,12 +389,12 @@ export default function Leads() {
             <Users size={24} className="text-indigo-400" />
           </div>
           <h3 className="text-base font-semibold text-[#e2e2e8] mb-1.5">
-            {leads.length === 0 ? 'Nenhum lead captado' : 'Nenhum resultado'}
+            {leads.length === 0 ? t('Nenhum lead captado', 'No leads captured') : t('Nenhum resultado', 'No results')}
           </h3>
           <p className="text-[#444] text-sm max-w-sm mx-auto">
             {leads.length === 0
-              ? 'Conecte sua conta Meta e configure a automação para captar leads pelo Instagram.'
-              : 'Tente ajustar os filtros ou a busca.'}
+              ? t('Conecte suas contas Meta: leads chegam por WhatsApp, Instagram e formulários de anúncios.', 'Connect your Meta accounts: leads arrive from WhatsApp, Instagram and ad forms.')
+              : t('Tente ajustar os filtros ou a busca.', 'Try adjusting the filters or search.')}
           </p>
         </div>
       ) : (
@@ -378,11 +403,12 @@ export default function Leads() {
             <thead>
               <tr className="border-b border-white/[0.05]">
                 <th className="text-left px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Lead</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Origem</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Origem', 'Source')}</th>
                 <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Score</th>
                 <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Status</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Data</th>
-                <th className="text-right px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Ações</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('WhatsApp', 'WhatsApp')}</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Data', 'Date')}</th>
+                <th className="text-right px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Ações', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -396,7 +422,7 @@ export default function Leads() {
                       </div>
                       <div>
                         <p className="text-[#d0d0e0] font-medium text-[13px] leading-tight">
-                          {lead.name || <span className="text-[#444] italic">sem nome</span>}
+                          {lead.name || <span className="text-[#444] italic">{t('sem nome', 'no name')}</span>}
                         </p>
                         <p className="text-[#555] text-[11px] mt-0.5">@{lead.instagram_handle}</p>
                         {lead.email && <p className="text-[#444] text-[10px]">{lead.email}</p>}
@@ -408,14 +434,14 @@ export default function Leads() {
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs text-[#555]">
-                        {sourceLabel[lead.source] ?? lead.source}
+                        {sourceLabel(lead.source)}
                       </span>
                       {lead.origin_ad_id && (
                         <span
-                          title={`Veio do anúncio ${lead.origin_ad_id}`}
+                          title={t(`Veio do anúncio ${lead.origin_ad_id}`, `Came from ad ${lead.origin_ad_id}`)}
                           className="text-[10px] px-1.5 py-0.5 rounded bg-violet-900/30 text-violet-300 border border-violet-500/20"
                         >
-                          📣 Anúncio
+                          📣 {t('Anúncio', 'Ad')}
                         </span>
                       )}
                     </div>
@@ -453,17 +479,42 @@ export default function Leads() {
                             }`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                            {cfg.label}
+                            {tr(cfg.pt, cfg.en)}
                           </button>
                         ))}
                       </div>
                     )}
                   </td>
 
+                  {/* WhatsApp consent */}
+                  <td className="px-4 py-3.5">
+                    {lead.phone ? (
+                      <button
+                        onClick={() => toggleConsent(lead)}
+                        title={
+                          lead.whatsapp_opt_in_at
+                            ? `${t('Opt-in em', 'Opt-in on')} ${new Date(lead.whatsapp_opt_in_at).toLocaleString(locale)} (${lead.whatsapp_opt_in_source || '—'})`
+                            : t('Clique para registrar o consentimento', 'Click to record consent')
+                        }
+                        className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                          lead.whatsapp_opted_out_at
+                            ? 'bg-red-900/20 text-red-300 border-red-500/20'
+                            : lead.whatsapp_opt_in
+                              ? 'bg-emerald-900/20 text-emerald-300 border-emerald-500/20'
+                              : 'bg-white/[0.04] text-[#666] border-white/[0.08]'
+                        }`}
+                      >
+                        {lead.whatsapp_opted_out_at ? 'Opt-out' : lead.whatsapp_opt_in ? 'Opt-in ✓' : t('Sem opt-in', 'No opt-in')}
+                      </button>
+                    ) : (
+                      <span className="text-[#444] text-xs">—</span>
+                    )}
+                  </td>
+
                   {/* Date */}
                   <td className="px-4 py-3.5">
                     <span className="text-[#444] text-xs">
-                      {new Date(lead.captured_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      {new Date(lead.captured_at).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}
                     </span>
                   </td>
 
@@ -478,7 +529,7 @@ export default function Leads() {
                           setDmSuccess(false)
                         }}
                         disabled={!lead.ig_user_id}
-                        title={lead.ig_user_id ? 'Enviar DM' : 'ID do Instagram não disponível'}
+                        title={lead.ig_user_id ? t('Enviar DM (somente até 24h após a última mensagem do cliente)', 'Send DM (only within 24h of the customer’s last message)') : t('ID do Instagram não disponível', 'Instagram ID not available')}
                         className="p-1.5 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
                         <MessageCircle size={13} />
@@ -489,13 +540,14 @@ export default function Leads() {
                           setMergeSearch('')
                           setMergeError('')
                         }}
-                        title="Mesclar com outro lead (mesma pessoa em outro canal)"
+                        title={t('Mesclar com outro lead (mesma pessoa em outro canal)', 'Merge with another lead (same person on another channel)')}
                         className="p-1.5 rounded-lg bg-white/[0.04] text-[#8a8a9e] hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
                       >
                         <GitMerge size={13} />
                       </button>
                       <button
                         onClick={() => handleDelete(lead.id)}
+                        title={t('Excluir', 'Delete')}
                         className="p-1.5 rounded-lg bg-red-900/20 text-red-400 hover:bg-red-900/40 transition-colors"
                       >
                         <Trash2 size={13} />
@@ -509,8 +561,8 @@ export default function Leads() {
 
           <div className="px-5 py-3 border-t border-white/[0.04] flex items-center justify-between">
             <p className="text-[11px] text-[#444]">
-              {filtered.length} de {leads.length} leads
-              {noScore > 0 && ` · ${noScore} sem score (clique em "Analisar Leads")`}
+              {t(`${filtered.length} de ${leads.length} leads`, `${filtered.length} of ${leads.length} leads`)}
+              {noScore > 0 && t(` · ${noScore} sem score (clique em "Analisar Leads")`, ` · ${noScore} without score (click "Score Leads")`)}
             </p>
           </div>
         </div>
@@ -524,9 +576,9 @@ export default function Leads() {
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <MessageCircle size={16} className="text-indigo-400" />
-                  Enviar DM
+                  {t('Enviar DM', 'Send DM')}
                 </h3>
-                <p className="text-xs text-[#555] mt-0.5">Para @{dmLead.instagram_handle}</p>
+                <p className="text-xs text-[#555] mt-0.5">{t('Para', 'To')} @{dmLead.instagram_handle}</p>
               </div>
               <button onClick={() => setDmLead(null)} className="text-[#444] hover:text-[#888] transition-colors">
                 <X size={18} />
@@ -538,7 +590,7 @@ export default function Leads() {
                 <div className="w-12 h-12 rounded-full bg-green-900/30 flex items-center justify-center mx-auto mb-3">
                   <Send size={20} className="text-green-400" />
                 </div>
-                <p className="text-green-400 font-medium">DM enviada com sucesso!</p>
+                <p className="text-green-400 font-medium">{t('DM enviada com sucesso!', 'DM sent successfully!')}</p>
               </div>
             ) : (
               <form onSubmit={handleSendDM} className="space-y-4">
@@ -547,12 +599,18 @@ export default function Leads() {
                     {dmError}
                   </div>
                 )}
+                <p className="text-[11px] text-[#666]">
+                  {t(
+                    'O Instagram só permite enviar mensagens até 24h após a última mensagem do cliente.',
+                    "Instagram only allows sending messages within 24 hours of the customer's last message.",
+                  )}
+                </p>
                 <div>
-                  <label className="block text-xs font-medium text-[#666] mb-1.5">Mensagem</label>
+                  <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Mensagem', 'Message')}</label>
                   <textarea
                     value={dmMessage}
                     onChange={(e) => setDmMessage(e.target.value)}
-                    placeholder="Escreva sua mensagem..."
+                    placeholder={t('Escreva sua mensagem...', 'Write your message...')}
                     rows={4}
                     className="w-full px-4 py-3 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
                   />
@@ -563,7 +621,7 @@ export default function Leads() {
                     onClick={() => setDmLead(null)}
                     className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors"
                   >
-                    Cancelar
+                    {t('Cancelar', 'Cancel')}
                   </button>
                   <button
                     type="submit"
@@ -571,7 +629,7 @@ export default function Leads() {
                     className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     <Send size={14} />
-                    {dmSending ? 'Enviando...' : 'Enviar'}
+                    {dmSending ? t('Enviando...', 'Sending...') : t('Enviar', 'Send')}
                   </button>
                 </div>
               </form>
@@ -588,14 +646,14 @@ export default function Leads() {
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <GitMerge size={16} className="text-indigo-400" />
-                  Mesclar leads
+                  {t('Mesclar leads', 'Merge leads')}
                 </h3>
                 <p className="text-xs text-[#555] mt-0.5">
-                  Escolha o lead que é a mesma pessoa. Ele será fundido em{' '}
+                  {t('Escolha o lead que é a mesma pessoa. Ele será fundido em', 'Pick the lead that is the same person. It will be merged into')}{' '}
                   <span className="text-[#c0c0d0] font-medium">
                     {mergeSurvivor.name || mergeSurvivor.instagram_handle}
                   </span>{' '}
-                  e removido.
+                  {t('e removido.', 'and removed.')}
                 </p>
               </div>
               <button onClick={() => setMergeSurvivor(null)} className="text-[#444] hover:text-[#888] transition-colors">
@@ -605,9 +663,9 @@ export default function Leads() {
 
             <div className="bg-indigo-900/15 border border-indigo-500/20 rounded-lg px-3 py-2 mb-3">
               <p className="text-[11px] text-indigo-300/90">
-                Manter (sobrevivente): <strong>{mergeSurvivor.name || mergeSurvivor.instagram_handle}</strong>
+                {t('Manter (sobrevivente)', 'Keep (survivor)')}: <strong>{mergeSurvivor.name || mergeSurvivor.instagram_handle}</strong>
                 {mergeSurvivor.phone && ` · ${mergeSurvivor.phone}`}
-                {' · '}{sourceLabel[mergeSurvivor.source] ?? mergeSurvivor.source}
+                {' · '}{sourceLabel(mergeSurvivor.source)}
               </p>
             </div>
 
@@ -623,7 +681,7 @@ export default function Leads() {
                 autoFocus
                 value={mergeSearch}
                 onChange={(e) => setMergeSearch(e.target.value)}
-                placeholder="Buscar o lead a mesclar (nome, @handle, telefone)…"
+                placeholder={t('Buscar o lead a mesclar (nome, @usuário, telefone)…', 'Search the lead to merge (name, @handle, phone)…')}
                 className="w-full pl-9 pr-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
               />
             </div>
@@ -657,18 +715,18 @@ export default function Leads() {
                       </p>
                       <p className="text-[11px] text-[#555] truncate">
                         {l.phone ? l.phone : `@${l.instagram_handle}`}
-                        {' · '}{sourceLabel[l.source] ?? l.source}
+                        {' · '}{sourceLabel(l.source)}
                       </p>
                     </div>
                     <GitMerge size={13} className="text-[#444] shrink-0" />
                   </button>
                 ))}
               {leads.filter((l) => l.id !== mergeSurvivor.id).length === 0 && (
-                <p className="text-center text-[#555] text-xs py-6">Não há outro lead para mesclar.</p>
+                <p className="text-center text-[#555] text-xs py-6">{t('Não há outro lead para mesclar.', 'There is no other lead to merge.')}</p>
               )}
             </div>
 
-            {merging && <p className="text-[11px] text-[#555] mt-3 text-center">Mesclando…</p>}
+            {merging && <p className="text-[11px] text-[#555] mt-3 text-center">{t('Mesclando…', 'Merging…')}</p>}
           </div>
         </div>
       )}

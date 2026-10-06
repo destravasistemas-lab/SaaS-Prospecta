@@ -41,7 +41,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 #     1. Inscription in the Meta Tech Provider Program
 #     2. Embedded Signup flow via the Facebook JS SDK (FB.login with a config_id)
 #     3. Receiving WABA data via postMessage, not a redirect callback
-#   TODO: replace PROVIDER_WHATSAPP flow with Embedded Signup after Tech Provider approval.
+#   The frontend uses Embedded Signup (/whatsapp/embedded-signup/*); this redirect
+#   flow is kept only as a fallback for the app owner's own WABA.
 # ---------------------------------------------------------------------------
 
 _PROVIDER_SCOPES: dict[str, str] = {
@@ -52,56 +53,36 @@ _PROVIDER_SCOPES: dict[str, str] = {
     ),
     PROVIDER_WHATSAPP: (
         "whatsapp_business_messaging,"
-        "whatsapp_business_management,"
-        "pages_show_list"
+        "whatsapp_business_management"
     ),
     PROVIDER_ADS: (
         "ads_management,"
         "ads_read,"
         "business_management,"
-        "pages_show_list"
+        "pages_show_list,"
+        "pages_read_engagement,"
+        "leads_retrieval"
     ),
 }
 
-# Legacy scopes used by the original onboarding flow
-_LEGACY_SCOPES = (
-    "instagram_basic,instagram_content_publish,"
-    "pages_read_engagement,pages_manage_metadata,"
-    "ads_management,ads_read"
-)
-
 
 # ---------------------------------------------------------------------------
-# Legacy endpoint (keeps onboarding flow working)
-# ---------------------------------------------------------------------------
-
-@router.get("/meta/login", response_model=MetaAuthUrlResponse)
-async def meta_login():
-    """Legacy: generate a Meta OAuth URL with combined scopes for onboarding."""
-    params = {
-        "client_id": settings.meta_app_id,
-        "redirect_uri": settings.meta_redirect_uri,
-        "scope": _LEGACY_SCOPES,
-        "response_type": "code",
-    }
-    auth_url = f"{settings.meta_dialog_url}?{urlencode(params)}"
-    return MetaAuthUrlResponse(auth_url=auth_url)
-
-
-# ---------------------------------------------------------------------------
-# New multi-provider start endpoint
+# Multi-provider start endpoint
 # ---------------------------------------------------------------------------
 
 @router.get("/meta/start", response_model=MetaAuthUrlResponse)
 async def meta_start(
-    account_id: str = Query(..., description="Tenant account_id"),
     provider: str = Query(..., description="instagram | whatsapp | ads"),
+    account_id: str | None = Query(None, description="Deprecated — the authenticated tenant is used"),
+    current_user: User = Depends(get_current_user),
 ):
     """Generate a provider-specific OAuth URL with a signed anti-CSRF state."""
     if provider not in PROVIDERS:
         raise HTTPException(status_code=400, detail=f"Provider must be one of: {', '.join(PROVIDERS)}")
+    if account_id and account_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
 
-    state = create_signed_state(account_id, provider)
+    state = create_signed_state(current_user.tenant_id, provider)
     params = {
         "client_id": settings.meta_app_id,
         "redirect_uri": settings.meta_redirect_uri,
@@ -117,7 +98,7 @@ async def meta_start(
 # Unified callback (handles both legacy and new multi-provider flows)
 # ---------------------------------------------------------------------------
 
-@router.get("/meta/callback", response_model=MetaCallbackResponse)
+@router.get("/meta/callback", include_in_schema=False)
 async def meta_callback(
     code: str = Query(None),
     state: str = Query(None),
@@ -127,13 +108,20 @@ async def meta_callback(
 ):
     # --- User denied permission ---
     if error:
-        raise HTTPException(
-            status_code=400,
-            detail=f"OAuth denied: {error_description or error}",
+        return RedirectResponse(
+            url=f"{settings.app_url}/oauth/success?{urlencode({'error': error_description or error})}",
+            status_code=302,
         )
 
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code.")
+
+    if not state:
+        raise HTTPException(status_code=400, detail="Missing state parameter.")
+    try:
+        state_payload = verify_signed_state(state)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
     # --- Exchange code for short-lived token ---
     async with httpx.AsyncClient() as client:
@@ -170,7 +158,8 @@ async def meta_callback(
             params={"fields": "id,name,accounts{id,name,access_token,instagram_business_account}", "access_token": access_token},
         )
     me_data = me_resp.json()
-    logger.info("Meta /me response: %s", me_data)
+    if "error" in me_data:
+        logger.warning("Meta /me failed: %s", me_data.get("error", {}).get("message"))
 
     meta_user_id = me_data.get("id")
     fb_user_name = me_data.get("name", "Unknown")
@@ -188,129 +177,87 @@ async def meta_callback(
     if page and "instagram_business_account" in page:
         ig_biz_id = page["instagram_business_account"].get("id")
 
-    # -----------------------------------------------------------------------
-    # New multi-provider flow (state present)
-    # -----------------------------------------------------------------------
-    if state:
-        try:
-            state_payload = verify_signed_state(state)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
+    tenant_account_id = state_payload["account_id"]
+    provider = state_payload["provider"]
 
-        tenant_account_id = state_payload["account_id"]
-        provider = state_payload["provider"]
+    # Verify tenant exists
+    result = await db.execute(select(Account).where(Account.id == tenant_account_id))
+    account = result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Conta não encontrada.")
 
-        # Verify tenant exists
-        result = await db.execute(select(Account).where(Account.id == tenant_account_id))
-        account = result.scalar_one_or_none()
-        if not account:
-            raise HTTPException(status_code=404, detail="Conta não encontrada.")
-
-        # Upsert MetaConnection
-        conn_result = await db.execute(
-            select(MetaConnection).where(
-                MetaConnection.account_id == tenant_account_id,
-                MetaConnection.provider == provider,
-            )
+    # Upsert MetaConnection
+    conn_result = await db.execute(
+        select(MetaConnection).where(
+            MetaConnection.account_id == tenant_account_id,
+            MetaConnection.provider == provider,
         )
-        connection = conn_result.scalar_one_or_none()
+    )
+    connection = conn_result.scalar_one_or_none()
 
-        ad_account_id: str | None = None
-        waba_id_val: str | None = None
+    ad_account_id: str | None = None
+    waba_id_val: str | None = None
 
-        if provider == PROVIDER_ADS:
-            ad_account_id = await _discover_ad_account(access_token, meta_user_id)
-            if not ad_account_id:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        "Nenhuma conta de anúncios encontrada para este usuário. "
-                        "Crie uma no Gerenciador de Anúncios da Meta primeiro."
-                    ),
-                )
-        elif provider == PROVIDER_WHATSAPP:
-            waba_id_val = await _discover_waba(access_token, meta_user_id)
-
-        if provider != PROVIDER_ADS and not page:
+    if provider == PROVIDER_ADS:
+        ad_account_id = await _discover_ad_account(access_token, meta_user_id)
+        if not ad_account_id:
             raise HTTPException(
                 status_code=400,
-                detail="Nenhuma Página do Facebook encontrada. Crie uma Página primeiro.",
+                detail=(
+                    "Nenhuma conta de anúncios encontrada para este usuário. "
+                    "Crie uma no Gerenciador de Anúncios da Meta primeiro."
+                ),
             )
+    elif provider == PROVIDER_WHATSAPP:
+        waba_id_val = await _discover_waba(access_token, meta_user_id)
 
-        # Ads: a Marketing API é chamada com o token de USUÁRIO (o token da
-        # página não carrega as permissões ads_management/ads_read).
-        token_to_store = access_token if provider == PROVIDER_ADS else page_access_token
-        encrypted_token = encrypt_token(token_to_store)
-        scopes_str = _PROVIDER_SCOPES.get(provider, "")
-
-        if connection:
-            connection.access_token_encrypted = encrypted_token
-            connection.expires_at = expires_at
-            connection.meta_user_id = meta_user_id
-            connection.page_id = page_id
-            connection.ig_business_account_id = ig_biz_id
-            connection.waba_id = waba_id_val
-            connection.ad_account_id = ad_account_id
-            connection.scopes = scopes_str
-            connection.status = STATUS_ACTIVE
-        else:
-            connection = MetaConnection(
-                account_id=tenant_account_id,
-                provider=provider,
-                meta_user_id=meta_user_id,
-                page_id=page_id,
-                ig_business_account_id=ig_biz_id,
-                waba_id=waba_id_val,
-                ad_account_id=ad_account_id,
-                access_token_encrypted=encrypted_token,
-                token_type="long_lived",
-                expires_at=expires_at,
-                scopes=scopes_str,
-                status=STATUS_ACTIVE,
-            )
-            db.add(connection)
-
-        await db.flush()
-        await db.refresh(account)
-
-        # Popup: redireciona para a página de sucesso do front, que avisa a
-        # janela principal via postMessage (OAUTH_SUCCESS) e se fecha sozinha.
-        return RedirectResponse(
-            url=f"{settings.app_url}/oauth/success?provider={provider}&username={page_name or ''}",
-            status_code=302,
+    if provider != PROVIDER_ADS and not page:
+        raise HTTPException(
+            status_code=400,
+            detail="Nenhuma Página do Facebook encontrada. Crie uma Página primeiro.",
         )
 
-    # -----------------------------------------------------------------------
-    # Legacy onboarding flow (no state)
-    # -----------------------------------------------------------------------
-    result = await db.execute(select(Account).where(Account.meta_page_id == page_id))
-    existing = result.scalar_one_or_none()
+    # Ads: a Marketing API é chamada com o token de USUÁRIO (o token da
+    # página não carrega as permissões ads_management/ads_read).
+    token_to_store = access_token if provider == PROVIDER_ADS else page_access_token
+    encrypted_token = encrypt_token(token_to_store)
+    scopes_str = _PROVIDER_SCOPES.get(provider, "")
 
-    if existing:
-        existing.meta_access_token = safe_encrypt_token(page_access_token)
-        existing.meta_page_name = page_name
-        existing.brand_name = fb_user_name
-        existing.onboarding_step = 2
-        account = existing
+    if connection:
+        connection.access_token_encrypted = encrypted_token
+        connection.expires_at = expires_at
+        connection.meta_user_id = meta_user_id
+        connection.page_id = page_id
+        connection.ig_business_account_id = ig_biz_id
+        connection.waba_id = waba_id_val
+        connection.ad_account_id = ad_account_id
+        connection.scopes = scopes_str
+        connection.status = STATUS_ACTIVE
     else:
-        account = Account(
-            brand_name=fb_user_name,
-            meta_page_id=page_id,
-            meta_page_name=page_name,
-            meta_access_token=safe_encrypt_token(page_access_token),
-            onboarding_step=2,
+        connection = MetaConnection(
+            account_id=tenant_account_id,
+            provider=provider,
+            meta_user_id=meta_user_id,
+            page_id=page_id,
+            ig_business_account_id=ig_biz_id,
+            waba_id=waba_id_val,
+            ad_account_id=ad_account_id,
+            access_token_encrypted=encrypted_token,
+            token_type="long_lived",
+            expires_at=expires_at,
+            scopes=scopes_str,
+            status=STATUS_ACTIVE,
         )
-        db.add(account)
+        db.add(connection)
 
     await db.flush()
     await db.refresh(account)
 
-    return MetaCallbackResponse(
-        success=True,
-        account_id=account.id,
-        brand_name=account.brand_name,
-        page_name=account.meta_page_name,
-        onboarding_step=account.onboarding_step,
+    # Popup: redireciona para a página de sucesso do front, que avisa a
+    # janela principal via postMessage (OAUTH_SUCCESS) e se fecha sozinha.
+    return RedirectResponse(
+        url=f"{settings.app_url}/oauth/success?provider={provider}&username={page_name or ''}",
+        status_code=302,
     )
 
 
@@ -320,13 +267,12 @@ async def meta_callback(
 
 @router.get("/meta/connections")
 async def list_connections(
-    account_id: str | None = Query(None),
+    account_id: str | None = Query(None, description="Deprecated — the authenticated tenant is used"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tid = account_id or current_user.tenant_id
     result = await db.execute(
-        select(MetaConnection).where(MetaConnection.account_id == tid)
+        select(MetaConnection).where(MetaConnection.account_id == current_user.tenant_id)
     )
     connections = result.scalars().all()
     return [_serialize_connection(c) for c in connections]
@@ -339,13 +285,17 @@ async def list_connections(
 @router.delete("/meta/connections/{connection_id}")
 async def delete_connection(
     connection_id: str,
-    account_id: str = Query(...),
+    account_id: str | None = Query(None, description="Deprecated — the authenticated tenant is used"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    """Disconnect an integration: revokes the app's access at Meta and deletes the stored token."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Acesso negado")
     result = await db.execute(
         select(MetaConnection).where(
             MetaConnection.id == connection_id,
-            MetaConnection.account_id == account_id,
+            MetaConnection.account_id == current_user.tenant_id,
         )
     )
     connection = result.scalar_one_or_none()
@@ -356,10 +306,17 @@ async def delete_connection(
     try:
         token = decrypt_token(connection.access_token_encrypted)
         async with httpx.AsyncClient() as client:
-            await client.delete(
-                f"{settings.meta_graph_url}/{connection.meta_user_id}/permissions",
-                params={"access_token": token},
-            )
+            if connection.provider == PROVIDER_WHATSAPP and connection.waba_id:
+                # Stop receiving this WABA's webhooks
+                await client.delete(
+                    f"{settings.meta_graph_url}/{connection.waba_id}/subscribed_apps",
+                    params={"access_token": token},
+                )
+            elif connection.meta_user_id:
+                await client.delete(
+                    f"{settings.meta_graph_url}/{connection.meta_user_id}/permissions",
+                    params={"access_token": token},
+                )
     except Exception as exc:
         logger.warning("Could not revoke Meta token: %s", exc)
 

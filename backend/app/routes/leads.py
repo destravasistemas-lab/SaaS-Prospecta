@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
@@ -13,7 +14,7 @@ from app.core.security import get_current_user
 from app.core.phone import normalize_phone
 from app.models.user import User
 from app.models.lead import Lead, LeadSource, LeadStatus
-from app.schemas import LeadResponse, LeadUpdate
+from app.schemas import LeadResponse, LeadUpdate, LeadConsentUpdate
 from app.services.lead_scoring import score_lead
 from app.services.lead_merge import merge_leads, auto_merge_by_phone, auto_merge_by_email
 
@@ -32,6 +33,8 @@ class MergeLeadsRequest(BaseModel):
 
 _NAME_COLS = {"nome", "name", "cliente", "contato", "nome completo"}
 _PHONE_COLS = {"telefone", "phone", "celular", "whatsapp", "numero", "número", "fone", "tel"}
+_OPTIN_COLS = {"opt_in", "optin", "opt-in", "consent", "consentimento", "whatsapp_opt_in"}
+_TRUTHY = {"1", "true", "sim", "yes", "s", "y", "x"}
 
 
 @router.post("/import")
@@ -43,6 +46,7 @@ async def import_leads_csv(
     """
     Importa leads em massa de um CSV com colunas de nome e telefone.
     Telefones são padronizados para 55DDDNUMERO; duplicados/ inválidos são pulados.
+    Coluna opcional `opt_in` (sim/yes/1) registra o consentimento para WhatsApp.
     """
     if current_user.role != "admin":
         raise HTTPException(403, "Apenas admins podem importar leads.")
@@ -66,6 +70,8 @@ async def import_leads_csv(
 
     name_col = find_col(reader.fieldnames, _NAME_COLS)
     phone_col = find_col(reader.fieldnames, _PHONE_COLS)
+    optin_col = find_col(reader.fieldnames, _OPTIN_COLS)
+    now = datetime.now(timezone.utc)
     if not phone_col:
         raise HTTPException(
             400,
@@ -90,7 +96,11 @@ async def import_leads_csv(
             skipped += 1
             continue
         name = (row.get(name_col) or "").strip() if name_col else ""
+        opted_in = bool(optin_col) and (row.get(optin_col) or "").strip().lower() in _TRUTHY
         db.add(Lead(
+            whatsapp_opt_in=opted_in,
+            whatsapp_opt_in_at=now if opted_in else None,
+            whatsapp_opt_in_source="csv_import" if opted_in else None,
             account_id=current_user.tenant_id,
             name=name or phone,
             instagram_handle=phone,
@@ -190,6 +200,38 @@ async def update_lead(
             lead = await auto_merge_by_email(lead, db)
 
     await score_lead(lead)
+    await db.flush()
+    await db.refresh(lead)
+    return lead
+
+
+@router.put("/{lead_id}/consent", response_model=LeadResponse)
+async def update_lead_consent(
+    lead_id: str,
+    data: LeadConsentUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Records WhatsApp opt-in (with timestamp and source) or opt-out for a lead.
+    Business-initiated (template) messages are only sent to opted-in leads.
+    """
+    result = await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.account_id == current_user.tenant_id)
+    )
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+
+    now = datetime.now(timezone.utc)
+    if data.whatsapp_opt_in:
+        lead.whatsapp_opt_in = True
+        lead.whatsapp_opt_in_at = now
+        lead.whatsapp_opt_in_source = data.source[:50]
+        lead.whatsapp_opted_out_at = None
+    else:
+        lead.whatsapp_opt_in = False
+        lead.whatsapp_opted_out_at = now
     await db.flush()
     await db.refresh(lead)
     return lead

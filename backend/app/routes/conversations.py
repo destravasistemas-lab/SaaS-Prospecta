@@ -19,6 +19,7 @@ from app.models.meta_connection import (
 from app.models.message import Message
 from app.services.meta_token_service import decrypt_token
 from app.services import whatsapp_service, instagram_service
+from app.services import messaging_policy
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -66,6 +67,7 @@ class StartConversationRequest(BaseModel):
     template_name: str
     template_language: str = "pt_BR"
     template_variables: list[str] = []
+    opt_in_confirmed: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +105,11 @@ async def start_conversation_with_template(
         )
         db.add(lead)
         await db.flush()
+
+    # Template = mensagem iniciada pela empresa → exige opt-in registrado.
+    if body.opt_in_confirmed and lead.whatsapp_opted_out_at is None and not lead.whatsapp_opt_in:
+        messaging_policy.mark_opt_in(lead, "manual")
+    messaging_policy.require_template_consent(lead)
 
     # Create conversation
     conv = Conversation(

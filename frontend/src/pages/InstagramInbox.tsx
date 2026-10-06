@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bot, Clock, UserCheck, Send, Power, Camera as InstagramIcon, Check, CheckCheck, Download } from 'lucide-react'
 import api, { WS_BASE } from '../services/api'
+import { useI18n, tr } from '../i18n'
+import { statusText } from './WhatsApp'
 
 interface Conversation {
   id: string
@@ -40,22 +42,22 @@ interface Message {
 // bot conversacional aqui (isso é do WhatsApp). Filas: Espera e Minhas.
 type Queue = 'espera' | 'minhas'
 
-const QUEUES: { id: Queue; label: string; icon: typeof Bot; color: string }[] = [
-  { id: 'espera', label: 'Espera', icon: Clock, color: 'text-amber-400' },
-  { id: 'minhas', label: 'Minhas', icon: UserCheck, color: 'text-indigo-400' },
+const QUEUES: { id: Queue; pt: string; en: string; icon: typeof Bot; color: string }[] = [
+  { id: 'espera', pt: 'Espera', en: 'Waiting', icon: Clock, color: 'text-amber-400' },
+  { id: 'minhas', pt: 'Minhas', en: 'Mine', icon: UserCheck, color: 'text-indigo-400' },
 ]
 
 function fmtTime(iso: string): string {
   const d = new Date(iso)
-  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleTimeString(tr('pt-BR', 'en-US'), { hour: '2-digit', minute: '2-digit' })
 }
 
 function MsgStatus({ status, error }: { status: string; error?: string }) {
   if (status === 'read') return <CheckCheck size={13} className="text-sky-400" />
   if (status === 'failed')
     return (
-      <span className="text-red-400 text-[10px]" title={error || 'Falha no envio'}>
-        falhou
+      <span className="text-red-400 text-[10px]" title={error || tr('Falha no envio', 'Send failed')}>
+        {tr('falhou', 'failed')}
       </span>
     )
   return <Check size={13} className="text-white/40" />
@@ -80,13 +82,14 @@ function MediaContent({ m }: { m: Message }) {
           className="flex items-center gap-2 text-[12px] underline decoration-white/30 hover:decoration-white"
         >
           <Download size={14} />
-          Baixar anexo
+          {tr('Baixar anexo', 'Download attachment')}
         </a>
       )
   }
 }
 
 export default function InstagramInbox() {
+  const { t } = useI18n()
   const myId = localStorage.getItem('user_id') || ''
 
   const [convs, setConvs] = useState<Conversation[]>([])
@@ -108,6 +111,8 @@ export default function InstagramInbox() {
   const hoursSinceLastInbound = lastInboundAt
     ? (Date.now() - new Date(lastInboundAt).getTime()) / 3_600_000
     : null
+
+  const windowClosed = hoursSinceLastInbound === null || hoursSinceLastInbound > 24
 
   function queueOf(c: Conversation): Queue {
     if (c.atendente_id && c.atendente_id === myId) return 'minhas'
@@ -189,20 +194,21 @@ export default function InstagramInbox() {
   }, [loadConvs])
 
   async function sendReply() {
-    const t = text.trim()
-    if (!t || !selected || sending) return
+    const body = text.trim()
+    if (!body || !selected || sending) return
     setSending(true)
     setText('')
     try {
       const { data } = await api.post(`/conversations/${selected.id}/messages`, {
-        text: t,
+        text: body,
         direction: 'outbound',
       })
       setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]))
       loadConvs()
     } catch (err: any) {
-      setText(t)
-      alert(err.response?.data?.detail || 'Erro ao enviar mensagem.')
+      setText(body)
+      const detail = err.response?.data?.detail
+      alert(detail?.message || (typeof detail === 'string' ? detail : t('Erro ao enviar mensagem.', 'Failed to send message.')))
     } finally {
       setSending(false)
     }
@@ -254,7 +260,7 @@ export default function InstagramInbox() {
               >
                 <Icon size={15} className={active ? q.color : ''} />
                 <span className="flex items-center gap-1">
-                  {q.label}
+                  {t(q.pt, q.en)}
                   <span className={`px-1 rounded ${active ? 'bg-white/10 text-[#c0c0d0]' : 'text-[#444]'}`}>
                     {counts[q.id]}
                   </span>
@@ -268,7 +274,7 @@ export default function InstagramInbox() {
         <div className="flex-1 overflow-y-auto">
           {visible.length === 0 ? (
             <div className="p-6 text-center text-[#4a4a5a] text-xs mt-8">
-              Nenhuma conversa nesta fila.
+              {t('Nenhuma conversa nesta fila.', 'No conversations in this queue.')}
             </div>
           ) : (
             visible.map((c) => {
@@ -286,9 +292,9 @@ export default function InstagramInbox() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium text-[#e2e2e8] truncate">
-                      {c.customer_name || 'Sem nome'}
+                      {c.customer_name || t('Sem nome', 'No name')}
                     </p>
-                    <p className="text-[11px] text-[#5a5a6e] truncate">{c.atendimento_status}</p>
+                    <p className="text-[11px] text-[#5a5a6e] truncate">{statusText(c.atendimento_status)}</p>
                   </div>
                   {c.unread_count > 0 && (
                     <span className="bg-pink-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shrink-0">
@@ -309,9 +315,9 @@ export default function InstagramInbox() {
             <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-4">
               <InstagramIcon size={28} className="text-pink-400/70" />
             </div>
-            <p className="text-[#e2e2e8] font-medium mb-1">Selecione uma conversa</p>
+            <p className="text-[#e2e2e8] font-medium mb-1">{t('Selecione uma conversa', 'Select a conversation')}</p>
             <p className="text-[#5a5a6e] text-sm max-w-xs">
-              As conversas aparecem aqui quando alguém manda DM no Instagram.
+              {t('As conversas aparecem aqui quando alguém manda mensagem no Instagram Direct.', 'Conversations show up here when someone messages you on Instagram Direct.')}
             </p>
           </div>
         ) : (
@@ -323,9 +329,9 @@ export default function InstagramInbox() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#e2e2e8] truncate">
-                  {selected.customer_name || 'Sem nome'}
+                  {selected.customer_name || t('Sem nome', 'No name')}
                 </p>
-                <p className="text-[11px] text-[#5a5a6e]">{selected.atendimento_status}</p>
+                <p className="text-[11px] text-[#5a5a6e]">{statusText(selected.atendimento_status)}</p>
               </div>
 
               {selected.atendente_id !== myId && (
@@ -334,13 +340,13 @@ export default function InstagramInbox() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold transition-colors"
                 >
                   <UserCheck size={13} />
-                  Assumir
+                  {t('Assumir', 'Take over')}
                 </button>
               )}
 
               <button
                 onClick={toggleBot}
-                title={selected.bot_active ? 'Bot ligado — clique para desligar' : 'Bot desligado — clique para ligar'}
+                title={selected.bot_active ? t('Bot ligado — clique para desligar', 'Bot on — click to turn off') : t('Bot desligado — clique para ligar', 'Bot off — click to turn on')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
                   selected.bot_active
                     ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
@@ -355,9 +361,9 @@ export default function InstagramInbox() {
             {/* Thread */}
             <div ref={threadRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
               {loadingMsgs ? (
-                <p className="text-center text-[#4a4a5a] text-xs mt-8">Carregando…</p>
+                <p className="text-center text-[#4a4a5a] text-xs mt-8">{t('Carregando…', 'Loading…')}</p>
               ) : messages.length === 0 ? (
-                <p className="text-center text-[#4a4a5a] text-xs mt-8">Nenhuma mensagem ainda.</p>
+                <p className="text-center text-[#4a4a5a] text-xs mt-8">{t('Nenhuma mensagem ainda.', 'No messages yet.')}</p>
               ) : (
                 messages.map((m) => {
                   const out = m.direction === 'outbound'
@@ -402,13 +408,14 @@ export default function InstagramInbox() {
               )}
             </div>
 
-            {/* Aviso informativo (não bloqueia — a política de janela do Instagram
-                é mais flexível que a do WhatsApp e depende de tags do Messenger Platform) */}
-            {hoursSinceLastInbound !== null && hoursSinceLastInbound > 24 && (
+            {/* Janela de 24h do Instagram (aplicada também no backend) */}
+            {windowClosed && !loadingMsgs && (
               <div className="mx-3 mb-2 bg-amber-900/15 border border-amber-500/20 rounded-xl px-4 py-2.5">
                 <p className="text-amber-400/90 text-[12px]">
-                  O cliente não responde há mais de 24h — o envio pode ser recusado pela Meta
-                  fora da janela de atendimento padrão do Instagram.
+                  {t(
+                    'O Instagram só permite responder até 24h após a última mensagem do cliente. Aguarde o cliente escrever novamente.',
+                    "Instagram only allows replies within 24 hours of the customer's last message. Wait for the customer to write again.",
+                  )}
                 </p>
               </div>
             )}
@@ -423,12 +430,13 @@ export default function InstagramInbox() {
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() }
                   }}
                   rows={1}
-                  placeholder="Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)"
-                  className="flex-1 resize-none max-h-32 px-3.5 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a]"
+                  disabled={windowClosed}
+                  placeholder={windowClosed ? t('Janela de 24h fechada', '24h window closed') : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')}
+                  className="flex-1 resize-none max-h-32 px-3.5 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
                 />
                 <button
                   onClick={sendReply}
-                  disabled={!text.trim() || sending}
+                  disabled={!text.trim() || sending || windowClosed}
                   className="w-10 h-10 shrink-0 rounded-xl bg-pink-600 hover:bg-pink-500 disabled:opacity-40 text-white flex items-center justify-center transition-colors"
                 >
                   <Send size={16} />

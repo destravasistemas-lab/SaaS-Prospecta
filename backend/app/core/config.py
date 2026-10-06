@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from typing import List
 import json
@@ -8,6 +9,15 @@ class Settings(BaseSettings):
     debug: bool = False
 
     database_url: str = "postgresql+asyncpg://marketing_user:marketing_pass@localhost:5432/adstudioai"
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_asyncpg(cls, v: str) -> str:
+        # Render/Heroku entregam "postgres://" ou "postgresql://" — o app usa o driver async.
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+asyncpg://" + v[len(prefix):]
+        return v
 
     meta_app_id: str = ""
     meta_app_secret: str = ""
@@ -83,6 +93,7 @@ class Settings(BaseSettings):
     email_from: str = "noreply@adstudioai.com"
     email_from_name: str = "adStudioAI"
     app_url: str = "http://localhost:5173"
+    support_email: str = "contato@destravasistemas.com.br"
 
     # Super admins do sistema (emails separados por vírgula). Podem gerenciar
     # os módulos bloqueados de QUALQUER conta (agências e empresas).

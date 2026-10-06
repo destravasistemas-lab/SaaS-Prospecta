@@ -44,6 +44,24 @@ class CampaignCreate(BaseModel):
     objective: str = Field(default="OUTCOME_LEADS")
     status: str = Field(default="PAUSED")
     is_adset_budget_sharing_enabled: bool = Field(default=False)
+    special_ad_categories: list[str] = Field(
+        default_factory=lambda: ["NONE"],
+        description="Meta Special Ad Categories that must be declared (housing, employment, credit, politics…).",
+    )
+
+    @field_validator("special_ad_categories")
+    @classmethod
+    def _valid_categories(cls, v: list[str]) -> list[str]:
+        invalid = [c for c in v if c not in SPECIAL_AD_CATEGORIES]
+        if invalid:
+            raise ValueError(f"Invalid special ad categories: {invalid}")
+        return v or ["NONE"]
+
+
+SPECIAL_AD_CATEGORIES = {
+    "NONE", "EMPLOYMENT", "HOUSING", "FINANCIAL_PRODUCTS_SERVICES",
+    "ISSUES_ELECTIONS_POLITICS", "ONLINE_GAMBLING_AND_GAMING",
+}
 
 
 class CampaignUpdate(BaseModel):
@@ -427,6 +445,7 @@ async def api_create_campaign(
     ad_account_id = _require_ad_account(conn)
     result = await ads_service.create_campaign(
         token, ad_account_id, body.name, body.objective, body.status,
+        special_ad_categories=[c for c in body.special_ad_categories if c != "NONE"] or ["NONE"],
         is_adset_budget_sharing_enabled=body.is_adset_budget_sharing_enabled,
     )
     if "id" not in result:

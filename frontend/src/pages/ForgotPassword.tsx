@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { BRANDING } from '../config/branding'
+import { useI18n } from '../i18n'
 
 export default function ForgotPassword() {
+  const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
@@ -11,14 +13,14 @@ export default function ForgotPassword() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) { setError('Informe seu email.'); return }
+    if (!email.trim()) { setError(t('Informe seu e-mail.', 'Please enter your email.')); return }
     setLoading(true)
     setError('')
     try {
       await api.post('/auth/forgot-password', { email: email.trim() })
       setSent(true)
     } catch {
-      setError('Erro ao enviar email. Tente novamente.')
+      setError(t('Erro ao enviar e-mail. Tente novamente.', 'Failed to send email. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -33,12 +35,12 @@ export default function ForgotPassword() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Email enviado</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">{t('E-mail enviado', 'Email sent')}</h2>
           <p className="text-sm text-white/40 mb-6">
-            Se o email existir, você receberá um link de redefinição de senha.
+            {t('Se o e-mail existir, você receberá um link de redefinição de senha.', 'If the email exists, you will receive a password reset link.')}
           </p>
           <Link to="/login" className="text-sm text-indigo-400 hover:text-indigo-300 no-underline">
-            Voltar ao login →
+            {t('Voltar ao login →', 'Back to sign in →')}
           </Link>
         </div>
       </div>
@@ -58,8 +60,8 @@ export default function ForgotPassword() {
               <span className="ml-1 text-[10px] text-sky-400 font-normal">by {BRANDING.company}</span>
             </span>
           </Link>
-          <h1 className="text-xl font-semibold text-white mb-1">Esqueceu sua senha?</h1>
-          <p className="text-sm text-[#94a3b8]">Digite seu email e enviaremos um link para redefinir.</p>
+          <h1 className="text-xl font-semibold text-white mb-1">{t('Esqueceu sua senha?', 'Forgot your password?')}</h1>
+          <p className="text-sm text-[#94a3b8]">{t('Digite seu e-mail e enviaremos um link para redefinir.', "Enter your email and we'll send you a reset link.")}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -69,12 +71,12 @@ export default function ForgotPassword() {
             </div>
           )}
           <div className="mb-4">
-            <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">{t('E-mail', 'Email')}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
+              placeholder={t('seu@email.com', 'you@company.com')}
               className="w-full px-3.5 py-2.5 bg-[#070e22] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-[#475569] focus:border-sky-400 focus:shadow-[0_0_0_3px_rgba(56,189,248,0.15)]"
             />
           </div>
@@ -83,13 +85,13 @@ export default function ForgotPassword() {
             disabled={loading}
             className="w-full py-2.5 bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] text-white text-sm font-semibold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 shadow-lg shadow-[#0284c7]/25"
           >
-            {loading ? 'Enviando...' : 'Enviar link'}
+            {loading ? t('Enviando...', 'Sending...') : t('Enviar link', 'Send link')}
           </button>
         </form>
 
         <div className="text-center mt-4">
           <Link to="/login" className="text-xs text-sky-400/80 hover:text-sky-300 no-underline transition-colors">
-            ← Voltar ao login
+            {t('← Voltar ao login', '← Back to sign in')}
           </Link>
         </div>
       </div>
