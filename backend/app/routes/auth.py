@@ -61,6 +61,8 @@ _PROVIDER_SCOPES: dict[str, str] = {
         "business_management,"
         "pages_show_list,"
         "pages_read_engagement,"
+        "pages_manage_metadata,"
+        "pages_manage_ads,"
         "leads_retrieval"
     ),
 }
@@ -220,6 +222,11 @@ async def meta_callback(
     # Ads: a Marketing API é chamada com o token de USUÁRIO (o token da
     # página não carrega as permissões ads_management/ads_read).
     token_to_store = access_token if provider == PROVIDER_ADS else page_access_token
+
+    # Lead Ads: a Página precisa estar inscrita no app para o webhook "leadgen"
+    # chegar (exige pages_manage_metadata). Best-effort — não bloqueia a conexão.
+    if provider == PROVIDER_ADS and page_id and page:
+        await _subscribe_page_leadgen(page_id, page_access_token)
     encrypted_token = encrypt_token(token_to_store)
     scopes_str = _PROVIDER_SCOPES.get(provider, "")
 
@@ -444,6 +451,20 @@ def _serialize_connection(c: MetaConnection) -> dict:
         "scopes": c.scopes.split(",") if c.scopes else [],
         "created_at": c.created_at.isoformat(),
     }
+
+
+async def _subscribe_page_leadgen(page_id: str, page_token: str) -> None:
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{settings.meta_graph_url}/{page_id}/subscribed_apps",
+                params={"subscribed_fields": "leadgen", "access_token": page_token},
+            )
+        if resp.status_code >= 400:
+            logger.warning("Failed to subscribe page %s to leadgen: %s", page_id,
+                           resp.json().get("error", {}).get("message"))
+    except Exception as exc:
+        logger.warning("Failed to subscribe page %s to leadgen: %s", page_id, exc)
 
 
 async def _discover_ad_account(token: str, meta_user_id: str) -> str | None:

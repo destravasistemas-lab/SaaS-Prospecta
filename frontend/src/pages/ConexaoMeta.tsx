@@ -116,6 +116,8 @@ function providers(t: T): ProviderInfo[] {
         { scope: 'business_management', why: t('acessar contas de anúncios do Business', 'access Business ad accounts') },
         { scope: 'pages_show_list', why: t('escolher a Página dos anúncios', 'choose the Page for ads') },
         { scope: 'pages_read_engagement', why: t('usar posts da Página como anúncio', 'use Page posts as ads') },
+        { scope: 'pages_manage_metadata', why: t('inscrever a Página para receber leads por webhook', 'subscribe the Page to receive leads via webhook') },
+        { scope: 'pages_manage_ads', why: t('ler os leads dos formulários da Página', "read leads from the Page's forms") },
         { scope: 'leads_retrieval', why: t('receber leads dos formulários de Lead Ads', 'receive leads from Lead Ads forms') },
       ],
     },

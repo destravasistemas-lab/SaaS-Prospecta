@@ -31,9 +31,11 @@ Webhook fields: WhatsApp → `messages`; Instagram → `messages`, `comments`; P
 | `ads_management`, `ads_read` | Campanhas (criar/pausar/duplicar/excluir, métricas) |
 | `business_management` | Listar contas de anúncios do Business |
 | `pages_show_list`, `pages_read_engagement` | Página dos anúncios / impulsionar post |
+| `pages_manage_metadata` | Inscrever a Página no webhook `leadgen` ao conectar Meta Ads |
+| `pages_manage_ads` | Ler os dados do lead do formulário |
 | `leads_retrieval` | Leads de formulários de Lead Ads chegam em Leads |
 
-Removidos nesta versão: `/auth/meta/login` legado (pedia `instagram_basic`, `instagram_content_publish`, `pages_manage_metadata` sem uso) e `pages_show_list` do fluxo de WhatsApp.
+Removidos nesta versão: `/auth/meta/login` legado (pedia `instagram_basic` e `instagram_content_publish` via Facebook Login, sem uso) e `pages_show_list` do fluxo de WhatsApp.
 
 ## 3. Roteiro do vídeo (gravar com o app em **English** — seletor 🇺🇸 no rodapé da sidebar ou na tela de login)
 
