@@ -60,7 +60,7 @@ SECRET_KEY=uma_string_aleatoria_longa_e_segura
 CORS_ORIGINS=["http://localhost:5173","https://ngoc-subumbellate-jayce.ngrok-free.dev"]
 
 # ngrok (túnel para testes com Meta webhook)
-NGROK_AUTHTOKEN=34UhOfU7kacd1lnqQrSEoHEic7H_7NgzRUeGJp97zi9KbSBet
+NGROK_AUTHTOKEN=SEU_NGROK_AUTHTOKEN
 NGROK_DOMAIN=ngoc-subumbellate-jayce.ngrok-free.dev
 
 # n8n (opcional — se vazio, eventos são apenas logados)
@@ -89,7 +89,7 @@ Todos devem estar `healthy` ou `Up`.
 
 ```bash
 # Adicione o authtoken uma única vez
-ngrok config add-authtoken 34UhOfU7kacd1lnqQrSEoHEic7H_7NgzRUeGJp97zi9KbSBet
+ngrok config add-authtoken SEU_NGROK_AUTHTOKEN
 
 # Sobe o túnel
 ngrok http --url=ngoc-subumbellate-jayce.ngrok-free.dev 8000
