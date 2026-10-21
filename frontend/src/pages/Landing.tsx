@@ -569,6 +569,7 @@ export default function Landing() {
               <li><a href="#disparos" className="hover:text-white">{t('Disparos', 'Broadcasts')}</a></li>
               <li><a href="#trafego" className="hover:text-white">{t('Tráfego', 'Traffic')}</a></li>
               <li><Link to="/pricing" className="hover:text-white">{t('Preços', 'Pricing')}</Link></li>
+              <li><Link to="/guia" className="hover:text-white">{t('Guia do sistema', 'System guide')}</Link></li>
             </ul>
           </div>
           <div>

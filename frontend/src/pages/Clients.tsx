@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Client {
   id: string
@@ -68,7 +69,7 @@ function MetricCard({ icon: Icon, iconColor, value, label, sub }: {
   icon: React.ElementType; iconColor: string; value: string | number; label: string; sub?: string
 }) {
   return (
-    <div className="bg-[#111118] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.1] transition-colors">
+    <div className="bg-[#170e2c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.1] transition-colors">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${iconColor}`}>
         <Icon size={15} strokeWidth={1.75} />
       </div>
@@ -220,6 +221,7 @@ export default function Clients() {
           <p className="text-[#555] text-sm mt-0.5">
             {t('Gerencie as contas dos seus clientes como agência.', "Manage your clients' accounts as an agency.")}
           </p>
+          <HelpLink section="agencias" className="mt-1" />
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -279,7 +281,7 @@ export default function Clients() {
       {loading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-[#111118] rounded-xl border border-white/[0.06] p-5 animate-pulse">
+            <div key={i} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 animate-pulse">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-white/[0.04]" />
                 <div className="flex-1 space-y-2">
@@ -291,7 +293,7 @@ export default function Clients() {
           ))}
         </div>
       ) : clients.length === 0 ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-16 text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-16 text-center">
           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
             <Building2 size={24} className="text-indigo-400" />
           </div>
@@ -313,7 +315,7 @@ export default function Clients() {
             return (
               <div
                 key={client.id}
-                className="bg-[#111118] rounded-xl border border-white/[0.06] p-5 hover:border-white/[0.1] transition-colors"
+                className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 hover:border-white/[0.1] transition-colors"
               >
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
@@ -434,7 +436,7 @@ export default function Clients() {
       {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-base font-semibold text-white">{t('Novo Cliente', 'New Client')}</h3>
@@ -459,7 +461,7 @@ export default function Clients() {
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
                   placeholder={t('Ex: Padaria do João', "E.g. John's Bakery")}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
@@ -470,7 +472,7 @@ export default function Clients() {
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
                   placeholder={t('dono@empresa.com', 'owner@company.com')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
                 <p className="text-[10px] text-[#555] mt-1">
                   {t('O dono recebe um link de verificação neste e-mail — o login dele só ativa depois de confirmar.', 'The owner receives a verification link at this email — their login activates only after confirming.')}
@@ -484,7 +486,7 @@ export default function Clients() {
                   value={createUsername}
                   onChange={(e) => setCreateUsername(e.target.value)}
                   placeholder={t('Ex: padariajoao', 'E.g. johnsbakery')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
@@ -496,7 +498,7 @@ export default function Clients() {
                     value={createPassword}
                     onChange={(e) => setCreatePassword(e.target.value)}
                     placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
-                    className="w-full px-4 py-2.5 pr-10 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                    className="w-full px-4 py-2.5 pr-10 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                   />
                   <button
                     type="button"
@@ -515,7 +517,7 @@ export default function Clients() {
                   value={createFullName}
                   onChange={(e) => setCreateFullName(e.target.value)}
                   placeholder={t('Ex: João Silva', 'E.g. John Smith')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
@@ -543,7 +545,7 @@ export default function Clients() {
       {/* Modal: módulos do cliente (bloquear/liberar) */}
       {modulesOf && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
                 <Blocks size={16} className="text-indigo-400" /> {t('Módulos', 'Modules')} — {modulesOf.brand_name}
@@ -560,7 +562,7 @@ export default function Clients() {
               {MODULES.map((m) => {
                 const blocked = blockedDraft.includes(m.key)
                 return (
-                  <div key={m.key} className="flex items-center justify-between gap-3 bg-[#0a0a0f] border border-white/[0.05] rounded-lg p-3">
+                  <div key={m.key} className="flex items-center justify-between gap-3 bg-[#0f0820] border border-white/[0.05] rounded-lg p-3">
                     <div className="min-w-0">
                       <p className={`text-sm font-medium ${blocked ? 'text-[#555] line-through' : 'text-[#e2e2e8]'}`}>{t(...m.label)}</p>
                       <p className="text-[11px] text-[#555]">{t(...m.desc)}</p>

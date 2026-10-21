@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Repeat, Trash2, Pencil, X, Info } from 'lucide-react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
+import HelpLink from './HelpLink'
 
 interface Tpl {
   name: string
@@ -142,18 +143,19 @@ export default function AutoFollowUps() {
     }
   }
 
-  const input = 'w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none'
+  const input = 'w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none'
 
   return (
     <div>
-      <div className="flex items-start gap-3 bg-sky-900/10 border border-sky-500/20 rounded-xl px-4 py-3 mb-4">
-        <Info size={16} className="text-sky-400 shrink-0 mt-0.5" />
-        <p className="text-[12px] text-sky-200/80 leading-relaxed">
+      <div className="flex items-start gap-3 bg-violet-900/10 border border-violet-500/20 rounded-xl px-4 py-3 mb-4">
+        <Info size={16} className="text-violet-400 shrink-0 mt-0.5" />
+        <p className="text-[12px] text-violet-200/80 leading-relaxed">
           {t(
             'O follow-up automático funciona no WhatsApp: se o cliente não responder a um template em X dias, o sistema envia outro template aprovado — só para contatos com opt-in e no máximo uma vez por envio. No Instagram não é possível: a Meta só permite mensagens até 24h depois da última mensagem do cliente.',
             "Automatic follow-up works on WhatsApp: if the customer doesn't reply to a template within X days, the system sends another approved template — only to opted-in contacts and at most once per message. It isn't possible on Instagram: Meta only allows messages within 24 hours of the customer's last message.",
           )}
         </p>
+        <HelpLink section="follow-up" className="shrink-0 whitespace-nowrap" />
       </div>
 
       <div className="flex items-center justify-between mb-3">
@@ -172,7 +174,7 @@ export default function AutoFollowUps() {
       {loading ? (
         <p className="text-center text-[#555] text-sm py-10">{t('Carregando…', 'Loading…')}</p>
       ) : rules.length === 0 ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-10 text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-10 text-center">
           <Repeat size={22} className="text-indigo-400 mx-auto mb-3" />
           <p className="text-[#e2e2e8] text-sm font-medium mb-1">{t('Nenhuma regra ainda', 'No rules yet')}</p>
           <p className="text-[#555] text-xs">{t('Crie uma regra para reenviar automaticamente para quem não respondeu.', "Create a rule to automatically follow up with people who didn't reply.")}</p>
@@ -180,7 +182,7 @@ export default function AutoFollowUps() {
       ) : (
         <div className="space-y-2">
           {rules.map((r) => (
-            <div key={r.id} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4">
+            <div key={r.id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4">
               <div className="flex items-start gap-3">
                 <button
                   onClick={() => toggle(r)}
@@ -218,7 +220,7 @@ export default function AutoFollowUps() {
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">
                 {editing === 'new' ? t('Nova regra de follow-up', 'New follow-up rule') : t('Editar regra', 'Edit rule')}

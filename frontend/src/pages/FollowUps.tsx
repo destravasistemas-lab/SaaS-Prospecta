@@ -7,6 +7,7 @@ import {
 import api from '../services/api'
 import AutoFollowUps from '../components/AutoFollowUps'
 import { useI18n, tr } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Lead {
   id: string
@@ -193,10 +194,11 @@ export default function FollowUps() {
         <p className="text-[#555] text-sm mt-0.5">
           {t('Envie templates para contatos com opt-in e acompanhe quem respondeu e quem não.', "Send templates to opted-in contacts and track who replied and who didn't.")}
         </p>
+        <HelpLink section="disparos" className="mt-1" />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#111118] border border-white/[0.06] rounded-xl p-1 mb-5 w-fit flex-wrap">
+      <div className="flex gap-1 bg-[#170e2c] border border-white/[0.06] rounded-xl p-1 mb-5 w-fit flex-wrap">
         <button
           onClick={() => setTab('disparar')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -280,7 +282,7 @@ export default function FollowUps() {
           )}
 
           {leads.length === 0 ? (
-            <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-10 text-center">
+            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-10 text-center">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
                 <Users size={22} className="text-indigo-400" />
               </div>
@@ -288,7 +290,7 @@ export default function FollowUps() {
               <p className="text-[#555] text-xs">{t('Importe um CSV (nome, telefone, opt_in) ou registre o opt-in na página Leads.', 'Import a CSV (name, phone, opt_in) or record opt-in on the Leads page.')}</p>
             </div>
           ) : (
-            <div className="bg-[#111118] rounded-xl border border-white/[0.06] overflow-hidden">
+            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-hidden">
               <label className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.06] cursor-pointer">
                 <input type="checkbox" checked={selected.size === leads.length} onChange={toggleAll} className="accent-indigo-600" />
                 <span className="text-xs font-medium text-[#8a8a9e]">
@@ -321,14 +323,14 @@ export default function FollowUps() {
         ) : loading ? (
           <p className="text-center text-[#555] text-sm py-10">{t('Carregando…', 'Loading…')}</p>
         ) : pending.length === 0 ? (
-          <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-10 text-center">
+          <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-10 text-center">
             <p className="text-[#e2e2e8] text-sm font-medium mb-1">{t('Nenhum follow-up pendente 🎉', 'No pending follow-ups 🎉')}</p>
             <p className="text-[#555] text-xs">{t('Envios sem resposta aparecem aqui após 3 dias (e saem após 14).', 'Unanswered messages show up here after 3 days (and leave after 14).')}</p>
           </div>
         ) : (
           <div className="space-y-2">
             {pending.map((p) => (
-              <div key={p.conversation_id} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
+              <div key={p.conversation_id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0">
                   {p.customer_name.charAt(0).toUpperCase()}
                 </div>
@@ -358,14 +360,14 @@ export default function FollowUps() {
         noConnection ? (
           <NoConnection />
         ) : responded.length === 0 ? (
-          <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-10 text-center">
+          <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-10 text-center">
             <p className="text-[#e2e2e8] text-sm font-medium mb-1">{t('Ninguém respondeu ainda', 'Nobody has replied yet')}</p>
             <p className="text-[#555] text-xs">{t('Clientes que responderem aos envios aparecem aqui.', 'Customers who reply to your messages show up here.')}</p>
           </div>
         ) : (
           <div className="space-y-2">
             {responded.map((r) => (
-              <div key={r.conversation_id} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
+              <div key={r.conversation_id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
                   {r.customer_name.charAt(0).toUpperCase()}
                 </div>
@@ -388,7 +390,7 @@ export default function FollowUps() {
       {/* Modal de disparo */}
       {showDispatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Enviar template', 'Send template')}</h3>
               <button onClick={() => setShowDispatch(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
@@ -405,7 +407,7 @@ export default function FollowUps() {
               ) : (
                 <div className="space-y-1.5">
                   {tpls.map((tpl) => (
-                    <button key={tpl.name} onClick={() => pickTpl(tpl)} className="w-full text-left px-3 py-2.5 rounded-lg bg-[#0a0a0f] border border-white/[0.06] hover:border-indigo-500/40 transition-colors">
+                    <button key={tpl.name} onClick={() => pickTpl(tpl)} className="w-full text-left px-3 py-2.5 rounded-lg bg-[#0f0820] border border-white/[0.06] hover:border-indigo-500/40 transition-colors">
                       <p className="text-sm font-medium text-[#e2e2e8]">{tpl.name}</p>
                       <p className="text-xs text-[#555] truncate">{tpl.components?.find((c) => c.type === 'BODY')?.text}</p>
                     </button>
@@ -414,7 +416,7 @@ export default function FollowUps() {
               )
             ) : (
               <div>
-                <div className="bg-[#0a0a0f] border border-white/[0.06] rounded-lg p-3 mb-3">
+                <div className="bg-[#0f0820] border border-white/[0.06] rounded-lg p-3 mb-3">
                   <p className="text-sm font-medium text-[#e2e2e8]">{pickedTpl.name}</p>
                   <p className="text-xs text-[#555] mt-1">{pickedTpl.components?.find((c) => c.type === 'BODY')?.text}</p>
                 </div>
@@ -423,7 +425,7 @@ export default function FollowUps() {
                     {tplVars.map((v, i) => (
                       <div key={i}>
                         <label className="block text-[11px] text-[#666] mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
-                        <input value={v} onChange={(e) => setTplVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))} className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none" />
+                        <input value={v} onChange={(e) => setTplVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))} className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none" />
                       </div>
                     ))}
                   </div>
@@ -453,7 +455,7 @@ export default function FollowUps() {
 function NoConnection() {
   const { t } = useI18n()
   return (
-    <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-12 text-center">
+    <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-12 text-center">
       <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
         <AlertCircle size={24} className="text-amber-400" />
       </div>

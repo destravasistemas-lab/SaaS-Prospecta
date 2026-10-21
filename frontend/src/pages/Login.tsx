@@ -80,11 +80,11 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#0c0618] flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden font-sans">
 
       {/* glows */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[320px] bg-sky-500/15 blur-[120px] pointer-events-none" />
-      <div className="absolute -bottom-20 -right-20 w-[300px] h-[300px] bg-[#0284c7]/10 blur-[100px] pointer-events-none" />
+      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[320px] bg-violet-500/15 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-20 -right-20 w-[300px] h-[300px] bg-[#7c3aed]/10 blur-[100px] pointer-events-none" />
 
       {/* noise overlay */}
       <div className="absolute inset-0 opacity-[0.025] pointer-events-none"
@@ -94,12 +94,12 @@ export default function Login() {
       {/* top nav */}
       <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-7 py-[18px]">
         <a href="/" className="flex items-center gap-2 no-underline">
-          <div className="w-6 h-6 bg-gradient-to-br from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] rounded-md flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-sky-500/30">
+          <div className="w-6 h-6 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 rounded-md flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-violet-500/30">
             P
           </div>
           <span className="text-[13px] font-semibold text-white tracking-tight">
             {BRANDING.name}
-            <span className="ml-1.5 text-[10px] text-sky-400 font-normal">by {BRANDING.company}</span>
+            <span className="ml-1.5 text-[10px] text-violet-400 font-normal">by {BRANDING.company}</span>
           </span>
         </a>
         <LanguageToggle compact />
@@ -125,7 +125,7 @@ export default function Login() {
             }`}
           >
             {t('Entrar', 'Sign in')}
-            {tab === 'login' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />}
+            {tab === 'login' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-violet-400 rounded-full shadow-[0_0_8px_rgba(167,139,250,0.6)]" />}
           </button>
           <button
             onClick={() => setTab('signup')}
@@ -134,7 +134,7 @@ export default function Login() {
             }`}
           >
             {t('Criar conta', 'Sign up')}
-            {tab === 'signup' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-sky-400 rounded-full shadow-[0_0_8px_rgba(56,189,248,0.6)]" />}
+            {tab === 'signup' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-violet-400 rounded-full shadow-[0_0_8px_rgba(167,139,250,0.6)]" />}
           </button>
         </div>
 
@@ -159,7 +159,7 @@ export default function Login() {
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder={t('seu@email.com', 'you@company.com')}
                   autoComplete="username"
-                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
+                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.08)]"
                 />
               </div>
               <div className="mb-3">
@@ -173,14 +173,14 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
+                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.08)]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 bg-indigo-600 text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:bg-indigo-700 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(79,70,229,0.3)] active:translate-y-0 disabled:opacity-50"
+                className="w-full py-2.5 bg-indigo-600 text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:bg-indigo-700 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(124,58,237,0.3)] active:translate-y-0 disabled:opacity-50"
               >
                 <span className="relative z-10">{loading ? t('Entrando…', 'Signing in…') : t('Entrar na conta', 'Sign in')}</span>
               </button>
@@ -222,7 +222,7 @@ export default function Login() {
                   value={signupName}
                   onChange={(e) => setSignupName(e.target.value)}
                   placeholder={t('Seu nome', 'Your name')}
-                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
+                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.08)]"
                 />
               </div>
               <div className="mb-3">
@@ -234,7 +234,7 @@ export default function Login() {
                   value={signupEmail}
                   onChange={(e) => setSignupEmail(e.target.value)}
                   placeholder={t('seu@email.com', 'you@company.com')}
-                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
+                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.08)]"
                 />
               </div>
               <div className="mb-3">
@@ -246,7 +246,7 @@ export default function Login() {
                   value={signupPassword}
                   onChange={(e) => setSignupPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
+                  className="w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.1] text-white text-[13px] rounded-lg outline-none transition-all placeholder-white/20 hover:border-white/[0.18] focus:bg-white/[0.06] focus:border-indigo-500/60 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.08)]"
                 />
               </div>
 
@@ -255,20 +255,20 @@ export default function Login() {
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-0.5 accent-sky-500"
+                  className="mt-0.5 accent-violet-500"
                 />
                 <span>
                   {t('Li e aceito os', 'I have read and accept the')}{' '}
-                  <Link to="/terms" target="_blank" className="text-sky-400/80 hover:text-sky-300">{t('Termos de Serviço', 'Terms of Service')}</Link>{' '}
+                  <Link to="/terms" target="_blank" className="text-violet-400/80 hover:text-violet-300">{t('Termos de Serviço', 'Terms of Service')}</Link>{' '}
                   {t('e a', 'and the')}{' '}
-                  <Link to="/privacy" target="_blank" className="text-sky-400/80 hover:text-sky-300">{t('Política de Privacidade', 'Privacy Policy')}</Link>.
+                  <Link to="/privacy" target="_blank" className="text-violet-400/80 hover:text-violet-300">{t('Política de Privacidade', 'Privacy Policy')}</Link>.
                 </span>
               </label>
 
               <button
                 type="submit"
                 disabled={signupLoading}
-                className="w-full py-2.5 bg-gradient-to-r from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:brightness-110 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(2,132,199,0.35)] active:translate-y-0 disabled:opacity-50"
+                className="w-full py-2.5 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400 text-white text-[13px] font-semibold rounded-lg border-none cursor-pointer transition-all relative mt-1 tracking-tight hover:brightness-110 hover:-translate-y-[0.5px] hover:shadow-[0_4px_20px_rgba(124,58,237,0.35)] active:translate-y-0 disabled:opacity-50"
               >
                 <span className="relative z-10">{signupLoading ? t('Criando…', 'Creating…') : t('Criar conta grátis', 'Create free account')}</span>
               </button>
@@ -288,7 +288,7 @@ export default function Login() {
 
       {/* footer */}
       <div className="absolute bottom-[18px] left-0 right-0 text-center">
-        <p className="text-[11px] text-sky-400/80 mb-1 font-medium">
+        <p className="text-[11px] text-violet-400/80 mb-1 font-medium">
           {t(BRANDING.developedBy, 'Developed by Destrava')}
         </p>
         <p className="text-[11px] text-white/[0.2]">

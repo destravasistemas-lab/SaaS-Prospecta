@@ -141,7 +141,7 @@ export default function AccountSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute left-3 right-3 mt-1 z-50 bg-[#111118] border border-white/[0.1] rounded-lg shadow-xl shadow-black/40 py-1.5 max-h-80 overflow-y-auto">
+        <div className="absolute left-3 right-3 mt-1 z-50 bg-[#170e2c] border border-white/[0.1] rounded-lg shadow-xl shadow-black/40 py-1.5 max-h-80 overflow-y-auto">
           {/* Agency itself */}
           <button
             onClick={() => { setOpen(false); if (impersonating) switchToAgency() }}

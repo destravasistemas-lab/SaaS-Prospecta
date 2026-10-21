@@ -107,11 +107,11 @@ export default function Privacy() {
             {t('No Facebook/Instagram: Configurações → Apps e sites → remover', 'On Facebook/Instagram: Settings → Apps and websites → remove')} {BRANDING.name}.{' '}
             {t('Recebemos o pedido automaticamente e excluímos os dados.', 'We receive the request automatically and delete the data.')}
           </li>
-          <li>{t('Por e-mail', 'By email')}: <a href={`mailto:${email}`} className="text-sky-400 underline">{email}</a></li>
+          <li>{t('Por e-mail', 'By email')}: <a href={`mailto:${email}`} className="text-violet-400 underline">{email}</a></li>
         </ul>
         <p>
           {t('Instruções completas e consulta de status:', 'Full instructions and status lookup:')}{' '}
-          <Link to="/data-deletion" className="text-sky-400 underline">{t('Exclusão de Dados', 'Data Deletion')}</Link>
+          <Link to="/data-deletion" className="text-violet-400 underline">{t('Exclusão de Dados', 'Data Deletion')}</Link>
         </p>
       </LegalSection>
 
@@ -122,7 +122,7 @@ export default function Privacy() {
       <LegalSection title={t('10. Alterações e contato', '10. Changes and contact')}>
         <p>
           {t('Avisaremos sobre mudanças relevantes por e-mail ou no app. Dúvidas:', 'We will notify relevant changes by email or in the app. Questions:')}{' '}
-          <a href={`mailto:${email}`} className="text-sky-400 underline">{email}</a>
+          <a href={`mailto:${email}`} className="text-violet-400 underline">{email}</a>
         </p>
       </LegalSection>
     </LegalLayout>

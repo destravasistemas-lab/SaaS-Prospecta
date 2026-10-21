@@ -52,7 +52,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex flex-col">
+    <div className="min-h-screen bg-[#0f0820] flex flex-col">
       <div className="px-4 py-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
@@ -60,7 +60,7 @@ export default function Onboarding() {
             onClick={() => navigate('/')}
             className="text-base font-semibold text-white hover:text-indigo-400 transition-colors"
           >
-            {BRANDING.namePrefix}<span className="text-sky-400">{BRANDING.nameHighlight}</span>
+            {BRANDING.namePrefix}<span className="text-violet-400">{BRANDING.nameHighlight}</span>
           </button>
           <LanguageToggle compact />
           </div>
@@ -87,8 +87,8 @@ export default function Onboarding() {
                 key={opt.id}
                 className={`rounded-xl border p-6 flex flex-col transition-all cursor-pointer hover:scale-[1.02] ${
                   opt.featured
-                    ? 'bg-[#1a1850] border-indigo-500/40 shadow-xl shadow-indigo-900/20'
-                    : 'bg-[#111118] border-white/[0.06] hover:border-indigo-500/30'
+                    ? 'bg-[#2a1550] border-indigo-500/40 shadow-xl shadow-indigo-900/20'
+                    : 'bg-[#170e2c] border-white/[0.06] hover:border-indigo-500/30'
                 }`}
                 onClick={() => handleSelect(opt.id)}
               >

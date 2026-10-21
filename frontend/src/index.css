@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 body {
-  background-color: #030712;
+  background-color: #0c0618;
   color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ---------- Aurora Cristal Animada (fundo do hero da landing) ---------- */
@@ -31,8 +32,8 @@ body {
 /* Grade fina cristal que dá profundidade e visual tech refinado */
 .hero-grid {
   background-image:
-    linear-gradient(rgba(56, 189, 248, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.07) 1px, transparent 1px);
+    linear-gradient(rgba(167,139,250, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167,139,250, 0.07) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);

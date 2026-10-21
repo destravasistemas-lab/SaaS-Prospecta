@@ -99,7 +99,7 @@ export default function SuperAdmin() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={tr('Buscar por nome ou tipo…', 'Search by name or type…')}
-        className="w-full mb-4 px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+        className="w-full mb-4 px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
       />
 
       {loading ? (
@@ -109,7 +109,7 @@ export default function SuperAdmin() {
       ) : (
         <div className="space-y-2">
           {filtered.map((t) => (
-            <div key={t.id} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4">
+            <div key={t.id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center text-[#8a8a9e] shrink-0">
                   <Building2 size={16} />
@@ -140,7 +140,7 @@ export default function SuperAdmin() {
                       className={`px-3 py-2 rounded-lg border text-xs font-medium transition-colors ${
                         on
                           ? 'bg-green-600/10 border-green-500/40 text-green-300'
-                          : 'bg-[#0a0a0f] border-white/[0.08] text-[#555] line-through'
+                          : 'bg-[#0f0820] border-white/[0.08] text-[#555] line-through'
                       }`}
                     >
                       {m.label}

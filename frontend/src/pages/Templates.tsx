@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, Plus, RefreshCw, Trash2, X, Link2, AlertCircle, Send, Users } from 'lucide-react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Template {
   name: string
@@ -192,6 +193,7 @@ export default function Templates() {
           <p className="text-[#555] text-sm mt-0.5">
             {t('Mensagens aprovadas pela Meta para iniciar conversas ou falar fora da janela de 24h (somente com opt-in).', 'Meta-approved messages to start conversations or talk outside the 24h window (opt-in contacts only).')}
           </p>
+          <HelpLink section="templates" className="mt-1" />
         </div>
         {!noConnection && (
           <div className="flex gap-2">
@@ -215,7 +217,7 @@ export default function Templates() {
       </div>
 
       {/* Custo estimado do mês */}
-      <div className="bg-[#111118] border border-white/[0.06] rounded-xl p-4 mb-6">
+      <div className="bg-[#170e2c] border border-white/[0.06] rounded-xl p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-[#888]">{t('Custo estimado do mês (WhatsApp) — valores de referência; a cobrança é feita pela Meta', 'Estimated cost this month (WhatsApp) — reference values; billing is done by Meta')}</p>
           <p className="text-lg font-semibold text-[#e2e2e8]">{brl(costs?.total ?? 0)}</p>
@@ -225,7 +227,7 @@ export default function Templates() {
             const c = CATEGORIES[key]
             const b = costs?.breakdown[key.toLowerCase()]
             return (
-              <div key={key} className="bg-[#0a0a0f] border border-white/[0.05] rounded-lg p-3">
+              <div key={key} className="bg-[#0f0820] border border-white/[0.05] rounded-lg p-3">
                 <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded border w-fit ${c.badge}`}>{catLabel(c)}</p>
                 <p className="text-sm font-semibold text-[#e2e2e8] mt-2 leading-none">
                   {brl(c.cost)}<span className="text-[10px] text-[#444] font-normal"> {t('/mensagem', '/message')}</span>
@@ -243,7 +245,7 @@ export default function Templates() {
 
       {/* Estados */}
       {noConnection ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-12 text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-12 text-center">
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <AlertCircle size={24} className="text-amber-400" />
           </div>
@@ -262,7 +264,7 @@ export default function Templates() {
       ) : loading ? (
         <p className="text-center text-[#555] text-sm py-10">{t('Carregando…', 'Loading…')}</p>
       ) : templates.length === 0 ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-12 text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-12 text-center">
           <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
             <FileText size={24} className="text-emerald-400" />
           </div>
@@ -283,7 +285,7 @@ export default function Templates() {
             const cat = tpl.category ? CATEGORIES[tpl.category] : undefined
             const body = tpl.components?.find((c) => c.type === 'BODY')?.text
             return (
-              <div key={tpl.name} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4 hover:border-white/[0.1] transition-colors">
+              <div key={tpl.name} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 hover:border-white/[0.1] transition-colors">
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -322,7 +324,7 @@ export default function Templates() {
       {/* Modal criar */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo Template', 'New Template')}</h3>
               <button onClick={() => setShowCreate(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
@@ -342,7 +344,7 @@ export default function Templates() {
                   value={name}
                   onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
                   placeholder={t('ex: confirmacao_pedido', 'e.g. order_confirmation')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
@@ -351,7 +353,7 @@ export default function Templates() {
                 <select
                   value={tplLang}
                   onChange={(e) => setTplLang(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 >
                   {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
                 </select>
@@ -368,7 +370,7 @@ export default function Templates() {
                       className={`px-2 py-2 rounded-lg border text-xs font-medium transition-colors ${
                         category === key
                           ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300'
-                          : 'bg-[#0a0a0f] border-white/[0.08] text-[#666] hover:text-[#c0c0d0]'
+                          : 'bg-[#0f0820] border-white/[0.08] text-[#666] hover:text-[#c0c0d0]'
                       }`}
                     >
                       {catLabel(c)}
@@ -384,7 +386,7 @@ export default function Templates() {
                   value={headerText}
                   onChange={(e) => setHeaderText(e.target.value)}
                   placeholder={t('Ex: Seu pedido foi confirmado!', 'E.g. Your order is confirmed!')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
@@ -398,7 +400,7 @@ export default function Templates() {
                   onChange={(e) => setBodyText(e.target.value)}
                   rows={4}
                   placeholder={t('Olá {{1}}, seu pedido {{2}} está a caminho!', 'Hi {{1}}, your order {{2}} is on its way!')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
                 />
                 <p className="text-[10px] text-[#444] mt-1">{t('Use {{1}}, {{2}}… para variáveis que você preenche no envio.', 'Use {{1}}, {{2}}… for variables you fill in when sending.')}</p>
               </div>
@@ -409,7 +411,7 @@ export default function Templates() {
                   value={footerText}
                   onChange={(e) => setFooterText(e.target.value)}
                   placeholder={t('Ex: Equipe Minha Empresa', 'E.g. My Company Team')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
 
@@ -429,13 +431,13 @@ export default function Templates() {
       {/* Modal disparo em massa */}
       {bcTpl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Disparo em massa', 'Broadcast')}</h3>
               <button onClick={() => setBcTpl(null)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
             </div>
 
-            <div className="bg-[#0a0a0f] border border-white/[0.06] rounded-lg p-3 mb-4">
+            <div className="bg-[#0f0820] border border-white/[0.06] rounded-lg p-3 mb-4">
               <p className="text-[11px] text-[#666]">Template</p>
               <p className="text-sm font-medium text-[#e2e2e8]">{bcTpl.name}</p>
               {bodyOf(bcTpl) && <p className="text-xs text-[#555] mt-1">{bodyOf(bcTpl)}</p>}
@@ -457,7 +459,7 @@ export default function Templates() {
                       value={v}
                       onChange={(e) => setBcVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
                       placeholder={t(`valor para {{${i + 1}}}`, `value for {{${i + 1}}}`)}
-                      className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                      className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                     />
                   </div>
                 ))}

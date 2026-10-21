@@ -65,7 +65,7 @@ export default function DataDeletion() {
           <li>
             <strong className="text-[#cbd5e1]">{t('Por e-mail', 'By email')}:</strong>{' '}
             {t('envie um pedido para', 'send a request to')}{' '}
-            <a href={`mailto:${BRANDING.supportEmail}`} className="text-sky-400 underline">{BRANDING.supportEmail}</a>{' '}
+            <a href={`mailto:${BRANDING.supportEmail}`} className="text-violet-400 underline">{BRANDING.supportEmail}</a>{' '}
             {t('a partir do e-mail da conta. Concluímos em até 30 dias.', 'from your account email. We complete it within 30 days.')}
           </li>
         </ol>
@@ -77,12 +77,12 @@ export default function DataDeletion() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder={t('Código de confirmação', 'Confirmation code')}
-            className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-sky-500/50"
+            className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-violet-500/50"
           />
           <button
             type="submit"
             disabled={loading || !code.trim()}
-            className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-violet-500 hover:bg-violet-400 text-white text-sm font-medium disabled:opacity-50"
           >
             {loading ? t('Consultando…', 'Checking…') : t('Consultar', 'Check')}
           </button>

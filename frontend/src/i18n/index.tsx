@@ -94,7 +94,7 @@ export function LanguageToggle({ className = '', compact = false, light = false 
           className={`flex items-center gap-1 rounded-md px-2 py-1 font-medium transition-colors ${
             light
               ? lang === o.code ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-              : lang === o.code ? 'bg-sky-500/20 text-sky-200' : 'text-[#64748b] hover:text-white'
+              : lang === o.code ? 'bg-violet-500/20 text-violet-200' : 'text-[#64748b] hover:text-white'
           }`}
         >
           <span aria-hidden>{o.flag}</span>

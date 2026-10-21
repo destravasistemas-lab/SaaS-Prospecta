@@ -6,11 +6,11 @@ import { LanguageToggle, useI18n } from '../i18n'
 export default function LegalLayout({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
   const { t } = useI18n()
   return (
-    <div className="min-h-screen bg-[#030712] text-[#e2e8f0]">
+    <div className="min-h-screen bg-[#0c0618] text-[#e2e8f0]">
       <header className="border-b border-white/[0.06]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0284c7] to-[#38bdf8] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center">
               <span className="text-white font-bold text-xs">P</span>
             </div>
             <span className="text-sm font-semibold text-white">{BRANDING.name}</span>

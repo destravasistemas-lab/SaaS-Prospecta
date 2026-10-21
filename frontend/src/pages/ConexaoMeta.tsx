@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 type Provider = 'instagram' | 'whatsapp' | 'ads'
 
@@ -416,7 +417,7 @@ export default function ConexaoMeta() {
     return (
       <div>
         <h2 className="text-2xl font-bold text-[#e2e2e8] mb-6">{t('Conexões Meta', 'Meta Connections')}</h2>
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
           <p className="text-[#555] text-sm">{t('Complete o onboarding para conectar suas contas.', 'Complete onboarding to connect your accounts.')}</p>
         </div>
       </div>
@@ -428,7 +429,7 @@ export default function ConexaoMeta() {
     return (
       <div>
         <h2 className="text-2xl font-bold text-[#e2e2e8] mb-6">{t('Conexões Meta', 'Meta Connections')}</h2>
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
           <p className="text-[#555] text-sm">{t('Faça login primeiro para conectar suas contas.', 'Sign in first to connect your accounts.')}</p>
         </div>
       </div>
@@ -438,6 +439,7 @@ export default function ConexaoMeta() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-[#e2e2e8] mb-2">{t('Conexões Meta', 'Meta Connections')}</h2>
+      <HelpLink section="conexoes" className="mb-3" />
       <p className="text-[#555] text-sm mb-6 max-w-2xl">
         {t(
           'Conecte suas contas do Instagram, WhatsApp e Meta Ads. Pedimos apenas as permissões necessárias para cada recurso, e você pode desconectar a qualquer momento.',
@@ -466,7 +468,7 @@ export default function ConexaoMeta() {
             const needsAction = conn && conn.status !== 'active'
 
             return (
-              <div key={key} className="bg-[#111118] rounded-xl border border-white/[0.06] p-6">
+              <div key={key} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-2xl flex-shrink-0">
                   {icon}
@@ -514,7 +516,7 @@ export default function ConexaoMeta() {
               </div>
               <button
                 onClick={() => setShowPerms(showPerms === key ? null : key)}
-                className="mt-3 text-[11px] text-sky-400/80 hover:text-sky-300"
+                className="mt-3 text-[11px] text-violet-400/80 hover:text-violet-300"
               >
                 {showPerms === key ? '▾' : '▸'} {t('Permissões solicitadas e por quê', 'Permissions requested and why')}
               </button>
@@ -547,7 +549,7 @@ export default function ConexaoMeta() {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-[#111118] border border-white/[0.08] rounded-2xl w-full max-w-sm mx-4 overflow-hidden shadow-2xl">
+            <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-sm mx-4 overflow-hidden shadow-2xl">
               <div className={`h-1.5 bg-gradient-to-r ${gradientBar}`} />
 
               <div className="p-8 flex flex-col items-center text-center">
@@ -583,7 +585,7 @@ export default function ConexaoMeta() {
                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg`}>
                       <span className="text-3xl">{icon}</span>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center -mt-10 ml-10 mb-3 border-2 border-[#111118]">
+                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center -mt-10 ml-10 mb-3 border-2 border-[#170e2c]">
                       <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>

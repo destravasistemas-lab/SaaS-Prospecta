@@ -3,6 +3,7 @@ import { Bot, Clock, UserCheck, Send, Power, Camera as InstagramIcon, Check, Che
 import api, { WS_BASE } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import { statusText } from './WhatsApp'
+import HelpLink from '../components/HelpLink'
 
 interface Conversation {
   id: string
@@ -53,7 +54,7 @@ function fmtTime(iso: string): string {
 }
 
 function MsgStatus({ status, error }: { status: string; error?: string }) {
-  if (status === 'read') return <CheckCheck size={13} className="text-sky-400" />
+  if (status === 'read') return <CheckCheck size={13} className="text-violet-400" />
   if (status === 'failed')
     return (
       <span className="text-red-400 text-[10px]" title={error || tr('Falha no envio', 'Send failed')}>
@@ -237,7 +238,7 @@ export default function InstagramInbox() {
   return (
     <div className="flex gap-4 h-[calc(100vh-4rem)]">
       {/* ---------- Coluna esquerda: filas + lista ---------- */}
-      <div className="w-80 shrink-0 flex flex-col bg-[#0d0d13] border border-white/[0.06] rounded-xl overflow-hidden">
+      <div className="w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden">
         <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
           <h1 className="text-sm font-semibold text-[#e2e2e8] flex items-center gap-2">
             <InstagramIcon size={16} className="text-pink-400" />
@@ -309,7 +310,7 @@ export default function InstagramInbox() {
       </div>
 
       {/* ---------- Coluna direita: thread ---------- */}
-      <div className="flex-1 flex flex-col bg-[#0d0d13] border border-white/[0.06] rounded-xl overflow-hidden">
+      <div className="flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden">
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-4">
@@ -319,6 +320,7 @@ export default function InstagramInbox() {
             <p className="text-[#5a5a6e] text-sm max-w-xs">
               {t('As conversas aparecem aqui quando alguém manda mensagem no Instagram Direct.', 'Conversations show up here when someone messages you on Instagram Direct.')}
             </p>
+            <HelpLink section="instagram-direct" className="mt-3" />
           </div>
         ) : (
           <>
@@ -396,7 +398,7 @@ export default function InstagramInbox() {
                         </div>
                         {reaction && (
                           <div className={`absolute -bottom-3 ${out ? 'right-2' : 'left-2'}`}>
-                            <span className="bg-[#1a1a24] border border-white/[0.1] rounded-full px-1.5 py-px text-[11px] shadow">
+                            <span className="bg-[#20153a] border border-white/[0.1] rounded-full px-1.5 py-px text-[11px] shadow">
                               {reaction}
                             </span>
                           </div>
@@ -432,7 +434,7 @@ export default function InstagramInbox() {
                   rows={1}
                   disabled={windowClosed}
                   placeholder={windowClosed ? t('Janela de 24h fechada', '24h window closed') : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')}
-                  className="flex-1 resize-none max-h-32 px-3.5 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
+                  className="flex-1 resize-none max-h-32 px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
                 />
                 <button
                   onClick={sendReply}

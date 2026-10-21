@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Users, Plus, Trash2, X, Eye, EyeOff, Shield, User as UserIcon, Building2 } from 'lucide-react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Member {
   id: string
@@ -218,6 +219,7 @@ export default function Equipe() {
             {t('Equipe', 'Team')}
           </h1>
           <p className="text-[#555] text-sm mt-0.5">{t('Gerencie os usuários que acessam esta conta.', 'Manage the users who access this account.')}</p>
+          <HelpLink section="equipe" className="mt-1" />
         </div>
         <button
           onClick={openCreate}
@@ -235,7 +237,7 @@ export default function Equipe() {
       ) : (
         <div className="space-y-2">
           {active.map((m) => (
-            <div key={m.id} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
+            <div key={m.id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
                 {(m.full_name || m.username).charAt(0).toUpperCase()}
               </div>
@@ -299,7 +301,7 @@ export default function Equipe() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo Membro', 'New Member')}</h3>
               <button onClick={() => setShowCreate(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
@@ -310,13 +312,13 @@ export default function Equipe() {
 
               <div>
                 <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Usuário / login *', 'Username / login *')}</label>
-                <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t('ex: maria@empresa.com', 'e.g. mary@company.com')} className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]" />
+                <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t('ex: maria@empresa.com', 'e.g. mary@company.com')} className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]" />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Senha *', 'Password *')}</label>
                 <div className="relative">
-                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')} className="w-full px-4 py-2.5 pr-10 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]" />
+                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')} className="w-full px-4 py-2.5 pr-10 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]" />
                   <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#888]">
                     {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -325,7 +327,7 @@ export default function Equipe() {
 
               <div>
                 <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome completo (opcional)', 'Full name (optional)')}</label>
-                <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('Ex: Maria Silva', 'E.g. Mary Smith')} className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]" />
+                <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t('Ex: Maria Silva', 'E.g. Mary Smith')} className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]" />
               </div>
 
               <div>
@@ -340,7 +342,7 @@ export default function Equipe() {
                       key={r.id}
                       onClick={() => setRole(r.id)}
                       className={`px-3 py-2 rounded-lg border text-left transition-colors ${
-                        role === r.id ? 'bg-indigo-600/15 border-indigo-500/40' : 'bg-[#0a0a0f] border-white/[0.08] hover:border-white/[0.16]'
+                        role === r.id ? 'bg-indigo-600/15 border-indigo-500/40' : 'bg-[#0f0820] border-white/[0.08] hover:border-white/[0.16]'
                       }`}
                     >
                       <p className={`text-sm font-medium ${role === r.id ? 'text-indigo-300' : 'text-[#c0c0d0]'}`}>{r.label}</p>
@@ -353,7 +355,7 @@ export default function Equipe() {
               {role === 'agent' && (
                 <div>
                   <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Módulos que este agente acessa', 'Modules this agent can access')}</label>
-                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-[#0a0a0f] cursor-pointer mb-1.5">
+                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-[#0f0820] cursor-pointer mb-1.5">
                     <input type="checkbox" checked={createAllModules} onChange={() => setCreateAllModules(!createAllModules)} className="accent-indigo-600" />
                     <span className="text-sm text-[#c0c0d0]">{t('Todos os módulos da conta', 'All modules in the account')}</span>
                   </label>
@@ -362,7 +364,7 @@ export default function Equipe() {
                       {availableModules.map((m) => {
                         const on = createModules.has(m.key)
                         return (
-                          <label key={m.key} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${on ? 'bg-indigo-600/10 border-indigo-500/40' : 'bg-[#0a0a0f] border-white/[0.06] hover:border-white/[0.14]'}`}>
+                          <label key={m.key} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${on ? 'bg-indigo-600/10 border-indigo-500/40' : 'bg-[#0f0820] border-white/[0.06] hover:border-white/[0.14]'}`}>
                             <input type="checkbox" checked={on} onChange={() => toggleCreateModule(m.key)} className="accent-indigo-600" />
                             <span className={`text-xs ${on ? 'text-[#e2e2e8]' : 'text-[#8a8a9e]'}`}>{m.label}</span>
                           </label>
@@ -380,7 +382,7 @@ export default function Equipe() {
                     {clients.map((c) => {
                       const on = createClientIds.has(c.id)
                       return (
-                        <label key={c.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${on ? 'bg-indigo-600/10 border-indigo-500/40' : 'bg-[#0a0a0f] border-white/[0.06] hover:border-white/[0.14]'}`}>
+                        <label key={c.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${on ? 'bg-indigo-600/10 border-indigo-500/40' : 'bg-[#0f0820] border-white/[0.06] hover:border-white/[0.14]'}`}>
                           <input type="checkbox" checked={on} onChange={() => toggleCreateClient(c.id)} className="accent-indigo-600" />
                           <span className={`text-xs truncate ${on ? 'text-[#e2e2e8]' : 'text-[#8a8a9e]'}`}>{c.brand_name}</span>
                         </label>
@@ -404,7 +406,7 @@ export default function Equipe() {
       {/* Modal: atribuir empresas ao membro */}
       {assignMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white">{t('Empresas de', 'Companies for')} {assignMember.full_name || assignMember.username}</h3>
               <button onClick={() => setAssignMember(null)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
@@ -425,7 +427,7 @@ export default function Equipe() {
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                         checked
                           ? 'bg-indigo-600/10 border-indigo-500/40'
-                          : 'bg-[#0a0a0f] border-white/[0.06] hover:border-white/[0.14]'
+                          : 'bg-[#0f0820] border-white/[0.06] hover:border-white/[0.14]'
                       }`}
                     >
                       <input
@@ -463,14 +465,14 @@ export default function Equipe() {
       {/* Modal: módulos que o membro pode acessar */}
       {modulesMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white">{t('Módulos de', 'Modules for')} {modulesMember.full_name || modulesMember.username}</h3>
               <button onClick={() => setModulesMember(null)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
             </div>
             <p className="text-xs text-[#555] mb-4">{t('Escolha o que este agente pode acessar. (Módulos bloqueados pela agência não aparecem.)', 'Choose what this agent can access. (Modules blocked by the agency are not shown.)')}</p>
 
-            <label className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/[0.08] bg-[#0a0a0f] cursor-pointer mb-2">
+            <label className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/[0.08] bg-[#0f0820] cursor-pointer mb-2">
               <input type="checkbox" checked={moduleAll} onChange={() => setModuleAll(!moduleAll)} className="accent-indigo-600" />
               <span className="text-sm text-[#c0c0d0]">{t('Todos os módulos da conta', 'All modules in the account')}</span>
             </label>
@@ -480,7 +482,7 @@ export default function Equipe() {
                 {availableModules.map((m) => {
                   const on = moduleDraft.has(m.key)
                   return (
-                    <label key={m.key} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${on ? 'bg-indigo-600/10 border-indigo-500/40' : 'bg-[#0a0a0f] border-white/[0.06] hover:border-white/[0.14]'}`}>
+                    <label key={m.key} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${on ? 'bg-indigo-600/10 border-indigo-500/40' : 'bg-[#0f0820] border-white/[0.06] hover:border-white/[0.14]'}`}>
                       <input type="checkbox" checked={on} onChange={() => toggleModuleDraft(m.key)} className="accent-indigo-600" />
                       <span className={`text-sm ${on ? 'text-[#e2e2e8]' : 'text-[#8a8a9e]'}`}>{m.label}</span>
                     </label>

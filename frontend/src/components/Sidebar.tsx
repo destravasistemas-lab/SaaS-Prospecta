@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Megaphone, Link2, Send,
   Users, Settings, CreditCard, Building2, LogOut,
   ChevronRight, ChevronDown, MessageSquare, FileText, Clock,
-  Headphones, Camera, Zap, Shield,
+  Headphones, Camera, Zap, Shield, BookOpen,
   type LucideIcon,
 } from 'lucide-react'
 import api from '../services/api'
@@ -18,7 +18,7 @@ type NavGroup = { id: string; label: string; icon: LucideIcon; items: NavItem[] 
 function navItemClass(isActive: boolean): string {
   return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
     isActive
-      ? 'bg-sky-500/15 text-sky-200 border border-sky-400/30 shadow-sm shadow-sky-500/10'
+      ? 'bg-violet-500/15 text-violet-200 border border-violet-400/30 shadow-sm shadow-violet-500/10'
       : 'text-[#64748b] hover:bg-white/[0.04] hover:text-white'
   }`
 }
@@ -37,6 +37,7 @@ export default function Sidebar() {
   const bottomLinks: NavItem[] = [
     { to: '/app/equipe', label: t('Equipe', 'Team'), icon: Users },
     { to: '/app/configuracoes', label: t('Configurações', 'Settings'), icon: Settings },
+    { to: '/app/guia', label: t('Guia do sistema', 'System guide'), icon: BookOpen },
     { to: '/pricing', label: t('Planos', 'Plans'), icon: CreditCard },
   ]
   const [planType, setPlanType] = useState<string | null>(null)
@@ -125,21 +126,21 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-[#030712] min-h-screen flex flex-col border-r border-[#38bdf8]/10">
+    <aside className="w-64 bg-[#0c0618] min-h-screen flex flex-col border-r border-[#a78bfa]/10">
       {/* Logo */}
       <div className="px-5 pt-6 pb-4">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2.5 group"
         >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0284c7] via-[#0ea5e9] to-[#38bdf8] flex items-center justify-center shadow-lg shadow-[#0ea5e9]/30">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 flex items-center justify-center shadow-lg shadow-[#d946ef]/30">
             <span className="text-white font-bold text-sm tracking-tight">P</span>
           </div>
           <div className="flex flex-col text-left">
             <span className="text-sm font-semibold text-white tracking-tight">
-              {BRANDING.namePrefix}<span className="bg-gradient-to-r from-white via-sky-200 to-sky-400 bg-clip-text text-transparent">{BRANDING.nameHighlight}</span>{BRANDING.nameSuffix}
+              {BRANDING.namePrefix}<span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-orange-300 bg-clip-text text-transparent">{BRANDING.nameHighlight}</span>{BRANDING.nameSuffix}
             </span>
-            <span className="text-[10px] text-sky-400/90 font-medium tracking-wide flex items-center gap-1">
+            <span className="text-[10px] text-violet-400/90 font-medium tracking-wide flex items-center gap-1">
               by {BRANDING.company}
             </span>
           </div>
@@ -180,7 +181,7 @@ export default function Sidebar() {
                 onClick={() => toggleGroup(group.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                   hasActive && !isOpen
-                    ? 'text-sky-300'
+                    ? 'text-violet-300'
                     : 'text-[#64748b] hover:bg-white/[0.04] hover:text-white'
                 }`}
               >
@@ -278,7 +279,7 @@ export default function Sidebar() {
         </button>
         <LanguageToggle compact className="mt-2 self-center" />
         <div className="mt-2.5 pt-2 border-t border-white/[0.04] px-1 text-center">
-          <p className="text-[10px] text-sky-400/70 tracking-tight font-medium">
+          <p className="text-[10px] text-violet-400/70 tracking-tight font-medium">
             {t(BRANDING.developedBy, 'Developed by Destrava')}
           </p>
         </div>

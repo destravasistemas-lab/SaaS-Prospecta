@@ -28,7 +28,7 @@ export default function VerifyEmail() {
   }, [token])
 
   return (
-    <div className="min-h-screen bg-[#0c0c10] flex items-center justify-center px-5">
+    <div className="min-h-screen bg-[#0c0618] flex items-center justify-center px-5">
       <div className="text-center max-w-sm">
         {status === 'loading' && (
           <>

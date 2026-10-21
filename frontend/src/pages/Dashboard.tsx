@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
+import HelpLink from '../components/HelpLink'
 import type { DashboardData } from '../types'
 import { useI18n } from '../i18n'
 
@@ -52,7 +53,7 @@ function MetricCard({ icon, iconColor = 'blue', value, label, sub, trend }: {
     arrowDown: 'M12 5v14M19 12l-7 7-7-7',
   }
   return (
-    <div className="bg-[#111118] border border-white/[0.06] rounded-xl p-4 flex flex-col gap-0 hover:border-white/[0.12] transition-colors">
+    <div className="bg-[#170e2c] border border-white/[0.06] rounded-xl p-4 flex flex-col gap-0 hover:border-white/[0.12] transition-colors">
       <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
         style={{ background: col.bg, color: col.text }}>
         <Icon d={icons[icon]} size={17} />
@@ -122,9 +123,12 @@ export default function Dashboard() {
   return (
     <div>
       <div className="flex items-center justify-between mb-7">
-        <h1 className="text-lg font-semibold text-[#e2e2e8]">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold text-[#e2e2e8]">Dashboard</h1>
+          <HelpLink section="primeiros-passos" />
+        </div>
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-[#111118] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-[#555]">
+          <div className="flex items-center gap-1.5 bg-[#170e2c] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-[#555]">
             <Icon d="M3 4h18v18H3zM16 2v4M8 2v4M3 10h18" size={13} />
             {monthLabel}
           </div>

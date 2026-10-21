@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import { useI18n, tr } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Lead {
   id: string
@@ -67,7 +68,7 @@ function ScoreBadge({ label, score }: { label: string | null; score: number | nu
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-900/30 text-sky-300 border border-sky-500/20">
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-900/30 text-violet-300 border border-violet-500/20">
       <Snowflake size={10} />
       {score}
     </span>
@@ -234,6 +235,7 @@ export default function Leads() {
           <p className="text-[#555] text-sm mt-0.5">
             {t(`${leads.length} leads captados`, `${leads.length} leads captured`)}
           </p>
+          <HelpLink section="leads" className="mt-1" />
         </div>
         <button
           onClick={handleScoreAll}
@@ -253,7 +255,7 @@ export default function Leads() {
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
               filterScore === 'hot'
                 ? 'bg-orange-900/30 border-orange-500/30'
-                : 'bg-[#111118] border-white/[0.06] hover:border-orange-500/20'
+                : 'bg-[#170e2c] border-white/[0.06] hover:border-orange-500/20'
             }`}
           >
             <div className="w-8 h-8 rounded-lg bg-orange-900/30 flex items-center justify-center">
@@ -270,7 +272,7 @@ export default function Leads() {
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
               filterScore === 'warm'
                 ? 'bg-amber-900/30 border-amber-500/30'
-                : 'bg-[#111118] border-white/[0.06] hover:border-amber-500/20'
+                : 'bg-[#170e2c] border-white/[0.06] hover:border-amber-500/20'
             }`}
           >
             <div className="w-8 h-8 rounded-lg bg-amber-900/30 flex items-center justify-center">
@@ -286,12 +288,12 @@ export default function Leads() {
             onClick={() => setFilterScore(filterScore === 'cold' ? '' : 'cold')}
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
               filterScore === 'cold'
-                ? 'bg-sky-900/30 border-sky-500/30'
-                : 'bg-[#111118] border-white/[0.06] hover:border-sky-500/20'
+                ? 'bg-violet-900/30 border-violet-500/30'
+                : 'bg-[#170e2c] border-white/[0.06] hover:border-violet-500/20'
             }`}
           >
-            <div className="w-8 h-8 rounded-lg bg-sky-900/30 flex items-center justify-center">
-              <Snowflake size={15} className="text-sky-400" />
+            <div className="w-8 h-8 rounded-lg bg-violet-900/30 flex items-center justify-center">
+              <Snowflake size={15} className="text-violet-400" />
             </div>
             <div>
               <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{coldCount}</p>
@@ -299,7 +301,7 @@ export default function Leads() {
             </div>
           </button>
 
-          <div className="flex items-center gap-2.5 p-3 rounded-xl border bg-[#111118] border-white/[0.06]">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl border bg-[#170e2c] border-white/[0.06]">
             <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
               <TrendingUp size={15} className="text-[#555]" />
             </div>
@@ -324,14 +326,14 @@ export default function Leads() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('Buscar por nome, @usuário ou e-mail...', 'Search by name, @handle or email...')}
-            className="w-full pl-9 pr-4 py-2.5 bg-[#111118] border border-white/[0.06] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
+            className="w-full pl-9 pr-4 py-2.5 bg-[#170e2c] border border-white/[0.06] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
           />
         </div>
 
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2.5 bg-[#111118] border border-white/[0.06] text-[#888] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
+          className="px-3 py-2.5 bg-[#170e2c] border border-white/[0.06] text-[#888] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
         >
           <option value="">{t('Todos os status', 'All statuses')}</option>
           <option value="new">{t('Novos', 'New')}</option>
@@ -369,7 +371,7 @@ export default function Leads() {
 
       {/* Table */}
       {loading ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] overflow-hidden">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-hidden">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-5 py-3.5 border-b border-white/[0.04] animate-pulse">
               <div className="w-8 h-8 rounded-full bg-white/[0.04]" />
@@ -384,7 +386,7 @@ export default function Leads() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-16 text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-16 text-center">
           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
             <Users size={24} className="text-indigo-400" />
           </div>
@@ -398,7 +400,7 @@ export default function Leads() {
           </p>
         </div>
       ) : (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] overflow-hidden">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.05]">
@@ -469,7 +471,7 @@ export default function Leads() {
                       <ChevronDown size={10} className="text-[#333] group-hover/status:text-[#555] transition-colors" />
                     </button>
                     {editingStatus === lead.id && (
-                      <div className="absolute z-20 left-4 top-full mt-1 bg-[#1a1a24] border border-white/[0.1] rounded-xl shadow-xl py-1 min-w-[140px]">
+                      <div className="absolute z-20 left-4 top-full mt-1 bg-[#20153a] border border-white/[0.1] rounded-xl shadow-xl py-1 min-w-[140px]">
                         {Object.entries(statusConfig).map(([key, cfg]) => (
                           <button
                             key={key}
@@ -571,7 +573,7 @@ export default function Leads() {
       {/* DM Modal */}
       {dmLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
@@ -612,7 +614,7 @@ export default function Leads() {
                     onChange={(e) => setDmMessage(e.target.value)}
                     placeholder={t('Escreva sua mensagem...', 'Write your message...')}
                     rows={4}
-                    className="w-full px-4 py-3 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
+                    className="w-full px-4 py-3 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
                   />
                 </div>
                 <div className="flex gap-3">
@@ -641,7 +643,7 @@ export default function Leads() {
       {/* Merge modal */}
       {mergeSurvivor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-7 w-full max-w-lg">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-lg">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
@@ -682,7 +684,7 @@ export default function Leads() {
                 value={mergeSearch}
                 onChange={(e) => setMergeSearch(e.target.value)}
                 placeholder={t('Buscar o lead a mesclar (nome, @usuário, telefone)…', 'Search the lead to merge (name, @handle, phone)…')}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
+                className="w-full pl-9 pr-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
               />
             </div>
 

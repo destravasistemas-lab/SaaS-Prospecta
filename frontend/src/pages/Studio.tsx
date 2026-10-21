@@ -238,7 +238,7 @@ export default function Studio() {
       </div>
 
       {/* Content */}
-      <div className="bg-[#111118] rounded-2xl border border-white/[0.06] p-8">
+      <div className="bg-[#170e2c] rounded-2xl border border-white/[0.06] p-8">
         {error && (
           <div className="mb-6 bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">
             {error}
@@ -290,7 +290,7 @@ export default function Studio() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Ex: produto flutuando em fundo clean, câmera zoom-in suave, cores vibrantes"
-                className="w-full px-4 py-3 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] min-h-32"
+                className="w-full px-4 py-3 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] min-h-32"
               />
             </div>
 
@@ -337,7 +337,7 @@ export default function Studio() {
                 <select
                   value={config.duration}
                   onChange={(e) => setConfig({ ...config, duration: e.target.value as any })}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="5">5 segundos</option>
                   <option value="10">10 segundos</option>
@@ -351,7 +351,7 @@ export default function Studio() {
                 <select
                   value={config.format}
                   onChange={(e) => setConfig({ ...config, format: e.target.value as any })}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="9:16">9:16 (Stories/Reels)</option>
                   <option value="1:1">1:1 (Feed)</option>
@@ -364,7 +364,7 @@ export default function Studio() {
                 <select
                   value={config.style}
                   onChange={(e) => setConfig({ ...config, style: e.target.value as any })}
-                  className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="cinematographic">Cinematográfico</option>
                   <option value="dynamic">Dinâmico</option>
@@ -415,7 +415,7 @@ export default function Studio() {
         {/* Etapa 5: Resultado */}
         {currentStep === 'result' && generatedVideoUrl && (
           <div className="space-y-6">
-            <div className="bg-[#0a0a0f] rounded-xl overflow-hidden">
+            <div className="bg-[#0f0820] rounded-xl overflow-hidden">
               <video src={generatedVideoUrl} controls className="w-full" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -474,7 +474,7 @@ export default function Studio() {
                 value={publishData.caption}
                 onChange={(e) => setPublishData({ ...publishData, caption: e.target.value })}
                 placeholder="Escreva a legenda do seu vídeo..."
-                className="w-full px-4 py-3 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] min-h-24"
+                className="w-full px-4 py-3 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] min-h-24"
               />
               <p className="text-xs text-[#444] mt-1">{publishData.caption.length} caracteres</p>
             </div>
@@ -486,7 +486,7 @@ export default function Studio() {
                 value={publishData.hashtags}
                 onChange={(e) => setPublishData({ ...publishData, hashtags: e.target.value })}
                 placeholder="#prospecta #marketing #automacao"
-                className="w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
               />
             </div>
 

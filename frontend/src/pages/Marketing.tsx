@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Pause, Play, Trash2, ChevronRight, Building2, Copy, Download } from 'lucide-react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Campaign {
   id: string
@@ -239,10 +240,11 @@ export default function Marketing() {
         <div>
           <h2 className="text-2xl font-bold text-[#e2e2e8]">{t('Campanhas (Meta Ads)', 'Campaigns (Meta Ads)')}</h2>
           <p className="text-[#555] text-sm mt-1">{t('Gerencie suas campanhas de anúncios.', 'Manage your ad campaigns.')}</p>
+          <HelpLink section="campanhas" className="mt-1" />
         </div>
         <div className="flex items-center gap-2">
           {accounts.length > 1 && (
-            <div className="flex items-center gap-1.5 bg-[#111118] border border-white/[0.08] rounded-lg px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 bg-[#170e2c] border border-white/[0.08] rounded-lg px-2.5 py-1.5">
               <Building2 size={13} className="text-[#5a5a6e]" />
               <select
                 value={activeAccountId ?? ''}
@@ -251,14 +253,14 @@ export default function Marketing() {
                 className="bg-transparent text-[#e2e2e8] text-xs outline-none disabled:opacity-50"
               >
                 {accounts.map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[#111118]">
+                  <option key={a.id} value={a.id} className="bg-[#170e2c]">
                     {a.name} ({a.currency})
                   </option>
                 ))}
               </select>
             </div>
           )}
-          <div className="flex gap-1 bg-[#111118] border border-white/[0.08] rounded-lg p-1">
+          <div className="flex gap-1 bg-[#170e2c] border border-white/[0.08] rounded-lg p-1">
             {DATE_PRESETS.map((p) => (
               <button
                 key={p.value}
@@ -275,7 +277,7 @@ export default function Marketing() {
             onClick={exportCsv}
             disabled={exporting}
             title={t('Exportar leads dos anúncios (nome, telefone)', 'Export leads from ads (name, phone)')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#111118] border border-white/[0.08] text-[#8a8a9e] hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#170e2c] border border-white/[0.08] text-[#8a8a9e] hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-40"
           >
             <Download size={14} /> {exporting ? t('Exportando…', 'Exporting…') : t('Leads CSV', 'Leads CSV')}
           </button>
@@ -297,19 +299,19 @@ export default function Marketing() {
         <div className="mb-8 space-y-4">
           {/* Métricas de resultado — o que importa pra otimizar */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-indigo-900/40 to-[#111118] rounded-2xl border border-indigo-500/20 p-5 shadow-lg shadow-indigo-900/10 transition-transform hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-indigo-900/40 to-[#170e2c] rounded-2xl border border-indigo-500/20 p-5 shadow-lg shadow-indigo-900/10 transition-transform hover:-translate-y-1">
               <p className="text-indigo-300 text-xs mb-1 font-medium">{t('Gastos', 'Spend')}</p>
               <p className="text-2xl font-bold text-white">R$ {insights.spend.toFixed(2)}</p>
             </div>
-            <div className="bg-gradient-to-br from-emerald-900/40 to-[#111118] rounded-2xl border border-emerald-500/20 p-5 shadow-lg shadow-emerald-900/10 transition-transform hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-emerald-900/40 to-[#170e2c] rounded-2xl border border-emerald-500/20 p-5 shadow-lg shadow-emerald-900/10 transition-transform hover:-translate-y-1">
               <p className="text-emerald-300 text-xs mb-1 font-medium">{insights.result_label || t('Resultados', 'Results')}</p>
               <p className="text-2xl font-bold text-white">{insights.results ? insights.results.toLocaleString() : '—'}</p>
             </div>
-            <div className="bg-gradient-to-br from-amber-900/40 to-[#111118] rounded-2xl border border-amber-500/20 p-5 shadow-lg shadow-amber-900/10 transition-transform hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-amber-900/40 to-[#170e2c] rounded-2xl border border-amber-500/20 p-5 shadow-lg shadow-amber-900/10 transition-transform hover:-translate-y-1">
               <p className="text-amber-300 text-xs mb-1 font-medium">{t('Custo / resultado', 'Cost / result')}</p>
               <p className="text-2xl font-bold text-white">{insights.cost_per_result ? `R$ ${insights.cost_per_result.toFixed(2)}` : '—'}</p>
             </div>
-            <div className="bg-gradient-to-br from-violet-900/40 to-[#111118] rounded-2xl border border-violet-500/20 p-5 shadow-lg shadow-violet-900/10 transition-transform hover:-translate-y-1">
+            <div className="bg-gradient-to-br from-violet-900/40 to-[#170e2c] rounded-2xl border border-violet-500/20 p-5 shadow-lg shadow-violet-900/10 transition-transform hover:-translate-y-1">
               <p className="text-violet-300 text-xs mb-1 font-medium">ROAS</p>
               <p className="text-2xl font-bold text-white">{insights.roas ? `${insights.roas.toFixed(2)}×` : '—'}</p>
             </div>
@@ -326,7 +328,7 @@ export default function Marketing() {
               { label: 'CPM', value: `R$ ${insights.cpm.toFixed(2)}` },
               { label: t('Leads de anúncios', 'Leads from ads'), value: (attribution?.leads_from_ads ?? 0).toLocaleString() },
             ].map((m) => (
-              <div key={m.label} className="bg-[#111118] rounded-xl border border-white/[0.06] p-4">
+              <div key={m.label} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4">
                 <p className="text-[#666] text-xs mb-1">{m.label}</p>
                 <p className="text-lg font-bold text-[#e2e2e8]">{m.value}</p>
               </div>
@@ -337,7 +339,7 @@ export default function Marketing() {
 
       {/* Leads por anúncio — atribuição real (conversas/formulários, não cliques) */}
       {attribution && attribution.by_ad.length > 0 && (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-5 mb-8 max-w-3xl">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 mb-8 max-w-3xl">
           <h3 className="text-sm font-semibold text-[#e2e2e8] mb-1">📣 {t('Leads por anúncio', 'Leads by ad')}</h3>
           <p className="text-[#555] text-xs mb-4">
             {t('Leads que chegaram por Click-to-WhatsApp, Direct ou formulário — atribuídos ao anúncio de origem.', 'Leads that came from Click-to-WhatsApp, Direct or forms — attributed to the source ad.')}
@@ -370,7 +372,7 @@ export default function Marketing() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="bg-[#111118]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] p-16 text-center shadow-xl">
+        <div className="bg-[#170e2c]/80 backdrop-blur-md rounded-2xl border border-white/[0.06] p-16 text-center shadow-xl">
           <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Building2 size={32} className="text-indigo-400" />
           </div>
@@ -382,7 +384,7 @@ export default function Marketing() {
           {campaigns.map((c) => {
             const busy = busyCampaignId === c.id
             return (
-              <div key={c.id} className="bg-[#111118]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] p-5 flex items-center gap-4 hover:bg-white/[0.02] hover:border-white/[0.1] transition-all group">
+              <div key={c.id} className="bg-[#170e2c]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] p-5 flex items-center gap-4 hover:bg-white/[0.02] hover:border-white/[0.1] transition-all group">
                 <Link to={`/app/marketing/${c.id}`} className="flex-1 min-w-0 no-underline">
                   <div className="flex items-center gap-3">
                     <h4 className="text-white font-semibold text-base group-hover:text-indigo-400 transition-colors">
@@ -445,7 +447,7 @@ export default function Marketing() {
       {/* Modal criar campanha */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-8 w-full max-w-md">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-8 w-full max-w-md">
             <h3 className="text-lg font-bold text-white mb-6">{t('Nova Campanha', 'New Campaign')}</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
@@ -455,7 +457,7 @@ export default function Marketing() {
                   value={campName}
                   onChange={(e) => setCampName(e.target.value)}
                   placeholder={t('Ex: Captação Leads - Maio', 'E.g. Lead Generation - May')}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
                 />
               </div>
               <div>
@@ -463,7 +465,7 @@ export default function Marketing() {
                 <select
                   value={campObjective}
                   onChange={(e) => setCampObjective(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   {Object.entries(objectiveLabels).map(([k, v]) => (
                     <option key={k} value={k}>{v}</option>
@@ -475,7 +477,7 @@ export default function Marketing() {
                 <select
                   value={specialCategory}
                   onChange={(e) => setSpecialCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   {Object.entries(specialCategories).map(([k, v]) => (
                     <option key={k} value={k}>{v}</option>

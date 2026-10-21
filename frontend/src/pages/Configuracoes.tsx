@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n, type Lang } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 export default function Configuracoes() {
   const { t, lang, setLang } = useI18n()
@@ -32,13 +33,14 @@ export default function Configuracoes() {
     }
   }
 
-  const input = 'w-full px-4 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]'
+  const input = 'w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]'
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-[#e2e2e8] mb-6">{t('Configurações', 'Settings')}</h2>
+      <HelpLink section="privacidade" className="mb-4 block" />
       <div className="max-w-lg space-y-6">
-        <form onSubmit={saveBrand} className="bg-[#111118] rounded-xl border border-white/[0.06] p-6 space-y-4">
+        <form onSubmit={saveBrand} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-4">
           <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Empresa', 'Business')}</h3>
           <div>
             <label className="block text-sm font-medium text-[#666] mb-1">{t('Nome da marca', 'Brand name')}</label>
@@ -55,7 +57,7 @@ export default function Configuracoes() {
           </button>
         </form>
 
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-6 space-y-3">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-3">
           <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Idioma da interface', 'Interface language')}</h3>
           <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} className={input}>
             <option value="pt">Português (Brasil)</option>
@@ -63,7 +65,7 @@ export default function Configuracoes() {
           </select>
         </div>
 
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-6 space-y-3">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-3">
           <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Privacidade e dados', 'Privacy & data')}</h3>
           <p className="text-xs text-[#666]">
             {t(
@@ -72,11 +74,11 @@ export default function Configuracoes() {
             )}
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
-            <Link to="/app/conexao" className="text-sky-400 hover:text-sky-300">{t('Conexões Meta', 'Meta Connections')}</Link>
-            <Link to="/data-deletion" className="text-sky-400 hover:text-sky-300">{t('Exclusão de Dados', 'Data Deletion')}</Link>
-            <Link to="/privacy" className="text-sky-400 hover:text-sky-300">{t('Política de Privacidade', 'Privacy Policy')}</Link>
-            <Link to="/terms" className="text-sky-400 hover:text-sky-300">{t('Termos de Serviço', 'Terms of Service')}</Link>
-            <a href={`mailto:${BRANDING.supportEmail}`} className="text-sky-400 hover:text-sky-300">{BRANDING.supportEmail}</a>
+            <Link to="/app/conexao" className="text-violet-400 hover:text-violet-300">{t('Conexões Meta', 'Meta Connections')}</Link>
+            <Link to="/data-deletion" className="text-violet-400 hover:text-violet-300">{t('Exclusão de Dados', 'Data Deletion')}</Link>
+            <Link to="/privacy" className="text-violet-400 hover:text-violet-300">{t('Política de Privacidade', 'Privacy Policy')}</Link>
+            <Link to="/terms" className="text-violet-400 hover:text-violet-300">{t('Termos de Serviço', 'Terms of Service')}</Link>
+            <a href={`mailto:${BRANDING.supportEmail}`} className="text-violet-400 hover:text-violet-300">{BRANDING.supportEmail}</a>
           </div>
         </div>
 

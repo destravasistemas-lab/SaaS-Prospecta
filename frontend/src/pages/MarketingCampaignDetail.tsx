@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import { useI18n, tr } from '../i18n'
+import HelpLink from '../components/HelpLink'
 
 interface Campaign {
   id: string
@@ -154,11 +155,11 @@ function TargetingSearch({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={tr('Digite para buscar…', 'Type to search…')}
-          className="w-full pl-8 pr-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+          className="w-full pl-8 pr-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
         />
       </div>
       {q.trim().length >= 2 && (
-        <div className="mt-1 bg-[#0a0a0f] border border-white/[0.08] rounded-lg max-h-40 overflow-y-auto">
+        <div className="mt-1 bg-[#0f0820] border border-white/[0.08] rounded-lg max-h-40 overflow-y-auto">
           {searching ? (
             <p className="text-[11px] text-[#555] px-3 py-2">{tr('Buscando…', 'Searching…')}</p>
           ) : results.length === 0 ? (
@@ -524,6 +525,7 @@ export default function MarketingCampaignDetail() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-[#e2e2e8]">{campaign?.name || t('Campanha', 'Campaign')}</h2>
+          <HelpLink section="campanhas" className="mt-1" />
           {campaign && (
             <p className="text-[#555] text-sm mt-1">
               {campaign.status === 'ACTIVE' ? t('Ativa', 'Active') : t('Pausada', 'Paused')}
@@ -546,7 +548,7 @@ export default function MarketingCampaignDetail() {
 
       {/* Gráfico de gastos (últimos 30 dias) */}
       {insights.length > 0 && (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-5 mb-6">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 mb-6">
           <p className="text-[#555] text-xs mb-3">{t('Gastos por dia — últimos 30 dias', 'Daily spend — last 30 days')}</p>
           <div className="flex items-end gap-0.5 h-24">
             {insights.map((p) => (
@@ -562,10 +564,10 @@ export default function MarketingCampaignDetail() {
       )}
 
       {/* Desempenho por segmento (breakdowns) */}
-      <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-5 mb-6 max-w-4xl">
+      <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 mb-6 max-w-4xl">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <p className="text-sm font-semibold text-[#e2e2e8]">{t('Desempenho por segmento', 'Performance by segment')}</p>
-          <div className="flex gap-1 bg-[#0a0a0f] border border-white/[0.08] rounded-lg p-1">
+          <div className="flex gap-1 bg-[#0f0820] border border-white/[0.08] rounded-lg p-1">
             {BREAKDOWN_DIMS.map((d) => (
               <button
                 key={d.value}
@@ -615,7 +617,7 @@ export default function MarketingCampaignDetail() {
       {loading ? (
         <div className="text-[#555] text-sm">{t('Carregando...', 'Loading...')}</div>
       ) : adSets.length === 0 ? (
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-12 text-center">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-12 text-center">
           <p className="text-[#555]">{t('Nenhum conjunto de anúncios ainda. Crie um para começar a segmentar.', 'No ad sets yet. Create one to start targeting.')}</p>
         </div>
       ) : (
@@ -625,7 +627,7 @@ export default function MarketingCampaignDetail() {
             const busy = busyId === as.id
             const ads = adsBySet[as.id] || []
             return (
-              <div key={as.id} className="bg-[#111118]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] overflow-hidden hover:border-indigo-500/30 transition-all shadow-xl">
+              <div key={as.id} className="bg-[#170e2c]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] overflow-hidden hover:border-indigo-500/30 transition-all shadow-xl">
                 <div className="p-5 flex items-center gap-4">
                   <button onClick={() => toggleExpand(as.id)} className="text-[#5a5a6e] hover:text-white shrink-0">
                     {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -695,7 +697,7 @@ export default function MarketingCampaignDetail() {
                     ) : (
                       <div className="space-y-2">
                         {ads.map((ad) => (
-                          <div key={ad.id} className="flex items-center gap-4 bg-[#0a0a0f] border border-white/[0.04] rounded-xl p-3 hover:border-white/[0.1] transition-colors shadow-sm">
+                          <div key={ad.id} className="flex items-center gap-4 bg-[#0f0820] border border-white/[0.04] rounded-xl p-3 hover:border-white/[0.1] transition-colors shadow-sm">
                             {ad.thumbnail_url ? (
                               <img src={ad.thumbnail_url} className="w-12 h-12 rounded-lg object-cover shrink-0 shadow-md" alt="" />
                             ) : (
@@ -759,7 +761,7 @@ export default function MarketingCampaignDetail() {
       {/* Modal: novo conjunto de anúncios */}
       {showAdSetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg my-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg my-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo conjunto de anúncios', 'New ad set')}</h3>
               <button onClick={() => setShowAdSetModal(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
@@ -771,7 +773,7 @@ export default function MarketingCampaignDetail() {
                   value={asName}
                   onChange={(e) => setAsName(e.target.value)}
                   placeholder={t('Ex: Mulheres 25-45 — Grande SP', 'E.g. Women 25-45 — New York')}
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -780,7 +782,7 @@ export default function MarketingCampaignDetail() {
                   <input
                     type="number" step="0.01" min="1" value={asBudget}
                     onChange={(e) => setAsBudget(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -789,7 +791,7 @@ export default function MarketingCampaignDetail() {
                     type="number" step="0.01" min="0" value={asBid}
                     onChange={(e) => setAsBid(e.target.value)}
                     placeholder={t('Automático', 'Automatic')}
-                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -798,7 +800,7 @@ export default function MarketingCampaignDetail() {
                 <select
                   value={asOptGoal}
                   onChange={(e) => setAsOptGoal(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="REACH">{t('Alcance', 'Reach')}</option>
                   <option value="LINK_CLICKS">{t('Cliques no link', 'Link clicks')}</option>
@@ -817,7 +819,7 @@ export default function MarketingCampaignDetail() {
                   <input
                     type="number" min="13" max="65" value={asAgeMin}
                     onChange={(e) => setAsAgeMin(parseInt(e.target.value) || 18)}
-                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -825,7 +827,7 @@ export default function MarketingCampaignDetail() {
                   <input
                     type="number" min="13" max="65" value={asAgeMax}
                     onChange={(e) => setAsAgeMax(parseInt(e.target.value) || 65)}
-                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -856,7 +858,7 @@ export default function MarketingCampaignDetail() {
                   value={asCountries}
                   onChange={(e) => setAsCountries(e.target.value)}
                   placeholder="BR, PT"
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
@@ -892,7 +894,7 @@ export default function MarketingCampaignDetail() {
       {/* Modal: novo anúncio */}
       {showAdModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto">
-          <div className="bg-[#111118] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg my-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg my-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo anúncio', 'New ad')}</h3>
               <button onClick={() => setShowAdModal(null)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
@@ -905,7 +907,7 @@ export default function MarketingCampaignDetail() {
                   value={adName}
                   onChange={(e) => setAdName(e.target.value)}
                   placeholder={t('Ex: Anúncio — Carrossel Coleção Verão', 'E.g. Ad — Summer Collection Carousel')}
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
@@ -935,7 +937,7 @@ export default function MarketingCampaignDetail() {
                     onChange={(e) => setCreativeMessage(e.target.value)}
                     rows={3}
                     placeholder={t('Ex.: Frete grátis em compras acima de R$150!', 'E.g. Free shipping on orders over $50!')}
-                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
                   />
                 </div>
               )}
@@ -948,7 +950,7 @@ export default function MarketingCampaignDetail() {
                   value={creativeLinkUrl}
                   onChange={(e) => setCreativeLinkUrl(e.target.value)}
                   placeholder={t('https://seusite.com/promo', 'https://yoursite.com/promo')}
-                  className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
@@ -989,7 +991,7 @@ export default function MarketingCampaignDetail() {
                     value={creativeImageUrl}
                     onChange={(e) => setCreativeImageUrl(e.target.value)}
                     placeholder={t('https://cdn.seusite.com/produto.jpg', 'https://cdn.yoursite.com/product.jpg')}
-                    className="w-full px-3 py-2 bg-[#0a0a0f] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               )}
@@ -1010,18 +1012,18 @@ export default function MarketingCampaignDetail() {
                 <div className="space-y-2">
                   <label className="block text-[11px] text-[#666]">{t('Itens do carrossel (mín. 2)', 'Carousel cards (min. 2)')}</label>
                   {carouselItems.map((item, i) => (
-                    <div key={i} className="bg-[#0a0a0f] border border-white/[0.06] rounded-lg p-3 space-y-1.5">
+                    <div key={i} className="bg-[#0f0820] border border-white/[0.06] rounded-lg p-3 space-y-1.5">
                       <input
                         value={item.image_url}
                         onChange={(e) => setCarouselItems((prev) => prev.map((x, j) => (j === i ? { ...x, image_url: e.target.value } : x)))}
                         placeholder={t(`Imagem ${i + 1} — URL`, `Image ${i + 1} — URL`)}
-                        className="w-full px-2.5 py-1.5 bg-[#111118] border border-white/[0.06] text-[#e2e2e8] text-xs rounded-md focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-2.5 py-1.5 bg-[#170e2c] border border-white/[0.06] text-[#e2e2e8] text-xs rounded-md focus:border-indigo-500 focus:outline-none"
                       />
                       <input
                         value={item.message}
                         onChange={(e) => setCarouselItems((prev) => prev.map((x, j) => (j === i ? { ...x, message: e.target.value } : x)))}
                         placeholder={t('Título do card', 'Card title')}
-                        className="w-full px-2.5 py-1.5 bg-[#111118] border border-white/[0.06] text-[#e2e2e8] text-xs rounded-md focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-2.5 py-1.5 bg-[#170e2c] border border-white/[0.06] text-[#e2e2e8] text-xs rounded-md focus:border-indigo-500 focus:outline-none"
                       />
                     </div>
                   ))}

@@ -31,22 +31,22 @@ export default function Terms() {
         <p>{t('Você é responsável por cumprir as políticas da Meta, incluindo:', 'You are responsible for complying with Meta policies, including:')}</p>
         <ul className="list-disc list-inside space-y-1">
           <li>
-            <a href="https://www.whatsapp.com/legal/business-policy" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">
+            <a href="https://www.whatsapp.com/legal/business-policy" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
               {t('Política Comercial e de Mensagens do WhatsApp', 'WhatsApp Business & Messaging Policy')}
             </a>
           </li>
           <li>
-            <a href="https://www.facebook.com/policies/commerce" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">
+            <a href="https://www.facebook.com/policies/commerce" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
               {t('Políticas de Comércio da Meta', 'Meta Commerce Policies')}
             </a>
           </li>
           <li>
-            <a href="https://transparency.meta.com/policies/ad-standards/" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">
+            <a href="https://transparency.meta.com/policies/ad-standards/" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
               {t('Padrões de Publicidade da Meta', 'Meta Advertising Standards')}
             </a>
           </li>
           <li>
-            <a href="https://help.instagram.com/581066165581870" target="_blank" rel="noopener noreferrer" className="text-sky-400 underline">
+            <a href="https://help.instagram.com/581066165581870" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
               {t('Termos de Uso do Instagram', 'Instagram Terms of Use')}
             </a>
           </li>
@@ -74,7 +74,7 @@ export default function Terms() {
             'Você mantém a propriedade do seu conteúdo e dos dados dos seus clientes. Tratamos esses dados apenas para prestar o serviço, conforme a Política de Privacidade.',
             'You keep ownership of your content and your customers’ data. We process that data only to provide the service, as described in the Privacy Policy.',
           )}{' '}
-          <Link to="/privacy" className="text-sky-400 underline">{t('Política de Privacidade', 'Privacy Policy')}</Link>
+          <Link to="/privacy" className="text-violet-400 underline">{t('Política de Privacidade', 'Privacy Policy')}</Link>
         </p>
       </LegalSection>
 
@@ -116,7 +116,7 @@ export default function Terms() {
 
       <LegalSection title={t('10. Contato', '10. Contact')}>
         <p>
-          <a href={`mailto:${email}`} className="text-sky-400 underline">{email}</a>
+          <a href={`mailto:${email}`} className="text-violet-400 underline">{email}</a>
         </p>
       </LegalSection>
     </LegalLayout>

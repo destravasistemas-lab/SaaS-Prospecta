@@ -24,7 +24,7 @@ export default function OAuthSuccess() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center gap-4 px-4 text-center">
+    <div className="min-h-screen bg-[#0c0618] flex flex-col items-center justify-center gap-4 px-4 text-center">
       {error ? (
         <>
           <p className="text-white font-semibold">{t('A conexão não foi concluída', 'The connection was not completed')}</p>
@@ -36,7 +36,7 @@ export default function OAuthSuccess() {
           <p className="text-sm text-[#94a3b8]">{t('Você já pode fechar esta janela.', 'You can close this window now.')}</p>
         </>
       )}
-      <a href="/app/conexao" className="text-sm text-sky-400 underline">
+      <a href="/app/conexao" className="text-sm text-violet-400 underline">
         {t('Voltar para Conexões Meta', 'Back to Meta Connections')}
       </a>
     </div>

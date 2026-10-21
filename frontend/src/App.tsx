@@ -12,6 +12,7 @@ import AIConfig from './pages/AIConfig'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import DataDeletion from './pages/DataDeletion'
+import Guide, { PublicGuide } from './pages/Guide'
 import Pricing from './pages/Pricing'
 import CompletarCadastro from './pages/CompletarCadastro'
 import Clients from './pages/Clients'
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/data-deletion" element={<DataDeletion />} />
+        <Route path="/guia" element={<PublicGuide />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/completar-cadastro" element={<CompletarCadastro />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -58,6 +60,7 @@ export default function App() {
           <Route path="/app/followups" element={<FollowUps />} />
           <Route path="/app/leads" element={<Leads />} />
           <Route path="/app/configuracoes" element={<Configuracoes />} />
+          <Route path="/app/guia" element={<Guide />} />
           <Route path="/app/clientes" element={<Clients />} />
           <Route path="/app/super-admin" element={<SuperAdmin />} />
           <Route path="/app/marketing" element={<Marketing />} />

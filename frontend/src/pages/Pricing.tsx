@@ -103,14 +103,14 @@ export default function Pricing() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
+      <div className="flex items-center justify-center min-h-screen bg-[#0f0820]">
         <div className="text-[#555]">{t('Carregando planos...', 'Loading plans...')}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] py-12 px-4">
+    <div className="min-h-screen bg-[#0f0820] py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <button onClick={() => navigate(-1)} className="text-sm text-[#64748b] hover:text-white">← {t('Voltar', 'Back')}</button>
@@ -143,7 +143,7 @@ export default function Pricing() {
                   : 'border-white/[0.06] hover:border-white/[0.12]'
               }`}
             >
-              <div className="bg-[#111118] p-6 h-full flex flex-col">
+              <div className="bg-[#170e2c] p-6 h-full flex flex-col">
                 {plan.id === 'premium' && (
                   <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg">
                     {t('MAIS POPULAR', 'MOST POPULAR')}
@@ -209,7 +209,7 @@ export default function Pricing() {
           ))}
         </div>
 
-        <div className="bg-[#111118] rounded-xl border border-white/[0.06] p-8 max-w-2xl mx-auto">
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold text-white mb-6">{t('Perguntas Frequentes', 'FAQ')}</h2>
           <div className="space-y-4">
             <div>
