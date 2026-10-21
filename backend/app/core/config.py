@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     meta_webhook_verify_token: str = ""
 
     # WhatsApp Embedded Signup — Configuration ID from
-    # Meta App Dashboard > WhatsApp > Embedded Signup > Configurations
+    # Meta App Dashboard > Facebook Login for Business > Configurations
     whatsapp_config_id: str = ""
 
     # Instagram App (Basic Display / Instagram Login)

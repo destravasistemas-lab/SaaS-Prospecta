@@ -132,8 +132,8 @@ async def embedded_signup_config(
         raise HTTPException(
             status_code=503,
             detail=(
-                "Embedded Signup não configurado. Defina WHATSAPP_CONFIG_ID no .env "
-                "(Meta App Dashboard > WhatsApp > Embedded Signup > Configurations)."
+                "Embedded Signup não configurado. Defina a variável WHATSAPP_CONFIG_ID no servidor "
+                "(Meta App Dashboard > Login do Facebook para Empresas > Configurações)."
             ),
         )
 

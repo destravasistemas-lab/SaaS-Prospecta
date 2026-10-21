@@ -141,8 +141,8 @@ _EXACT: dict[str, str] = {
     "Erro ao publicar no Instagram.": "Failed to publish to Instagram.",
     "Requisição de verificação inválida.": "Invalid verification request.",
     "Token de verificação inválido.": "Invalid verification token.",
-    "Embedded Signup não configurado. Defina WHATSAPP_CONFIG_ID no .env (Meta App Dashboard > WhatsApp > Embedded Signup > Configurations).":
-        "Embedded Signup is not configured. Set WHATSAPP_CONFIG_ID in .env (Meta App Dashboard > WhatsApp > Embedded Signup > Configurations).",
+    "Embedded Signup não configurado. Defina a variável WHATSAPP_CONFIG_ID no servidor (Meta App Dashboard > Login do Facebook para Empresas > Configurações).":
+        "Embedded Signup is not configured. Set the WHATSAPP_CONFIG_ID variable on the server (Meta App Dashboard > Facebook Login for Business > Configurations).",
     "Apenas admins podem conectar o WhatsApp.": "Only admins can connect WhatsApp.",
     "Destinatário não identificado nesta conversa.": "Recipient not identified in this conversation.",
     "Mensagem sem wamid — não é possível reagir.": "Message has no wamid — cannot react.",
