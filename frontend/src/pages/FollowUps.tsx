@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, MessageSquare, CheckCircle2, AlertCircle, Link2, ArrowRight,
-  Send, Upload, Users, X,
+  Send, Upload, Users, X, Repeat,
 } from 'lucide-react'
 import api from '../services/api'
+import AutoFollowUps from '../components/AutoFollowUps'
 import { useI18n, tr } from '../i18n'
 
 interface Lead {
@@ -29,6 +30,7 @@ interface PendingItem {
   template_name: string
   sent_at: string
   days_since: number
+  auto_followup?: boolean
 }
 
 interface RespondedItem {
@@ -53,7 +55,7 @@ const fmtPhone = (p: string | null) => {
   return p
 }
 
-type Tab = 'disparar' | 'pending' | 'responded'
+type Tab = 'disparar' | 'pending' | 'responded' | 'auto'
 
 export default function FollowUps() {
   const { t } = useI18n()
@@ -225,7 +227,18 @@ export default function FollowUps() {
           {t('Responderam', 'Replied')}
           <span className="text-[10px] bg-white/10 rounded px-1.5">{responded.length}</span>
         </button>
+        <button
+          onClick={() => setTab('auto')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            tab === 'auto' ? 'bg-fuchsia-500/15 text-fuchsia-300' : 'text-[#5a5a6e] hover:text-[#c0c0d0]'
+          }`}
+        >
+          <Repeat size={14} />
+          {t('Automático', 'Automatic')}
+        </button>
       </div>
+
+      {tab === 'auto' && <AutoFollowUps />}
 
       {/* ---------- Aba DISPARAR ---------- */}
       {tab === 'disparar' && (
@@ -322,6 +335,11 @@ export default function FollowUps() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#e2e2e8] truncate">{p.customer_name}</p>
                   <p className="text-[11px] text-[#555]">
+                    {p.auto_followup && (
+                      <span className="mr-1.5 text-[10px] font-semibold rounded bg-fuchsia-500/15 text-fuchsia-300 px-1.5 py-0.5">
+                        {t('follow-up automático', 'automatic follow-up')}
+                      </span>
+                    )}
                     Template <span className="text-[#8a8a9e]">{p.template_name}</span> {t('em', 'on')} {fmtDate(p.sent_at)} ·{' '}
                     <span className="text-amber-400 font-medium">{t(`${p.days_since} dias sem resposta`, `${p.days_since} days without reply`)}</span>
                   </p>

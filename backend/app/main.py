@@ -31,6 +31,7 @@ import app.models.schedule          # noqa: F401
 import app.models.client_assignment # noqa: F401
 import app.models.ai                # noqa: F401
 import app.models.privacy           # noqa: F401
+import app.models.followup          # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 

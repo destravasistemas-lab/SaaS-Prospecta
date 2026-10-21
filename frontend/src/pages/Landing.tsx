@@ -109,7 +109,7 @@ function BroadcastMock() {
         ))}
       </div>
       <div className="mt-5 rounded-2xl bg-violet-50 px-4 py-3 text-xs text-violet-800 flex items-center gap-2">
-        <Repeat size={14} /> {t('Lista de quem não respondeu após 3 dias, pronta para o follow-up', "List of who didn't reply after 3 days, ready for follow-up")}
+        <Repeat size={14} /> {t('Follow-up automático para quem não respondeu em 3 dias', "Automatic follow-up for those who didn't reply in 3 days")}
       </div>
       <p className="text-[10px] text-slate-400 mt-3 text-center">{t('Números ilustrativos', 'Illustrative numbers')}</p>
     </div>
@@ -191,6 +191,13 @@ export default function Landing() {
       a: t(
         'Sim, com templates aprovados pela Meta e apenas para contatos que aceitaram receber (opt-in). Quem responde SAIR é removido automaticamente. Isso protege a qualidade e a reputação do seu número.',
         'Yes, with Meta-approved templates and only to contacts who agreed to receive them (opt-in). Anyone who replies STOP is removed automatically. This protects the quality and reputation of your number.',
+      ),
+    },
+    {
+      q: t('Como funciona o follow-up automático?', 'How does automatic follow-up work?'),
+      a: t(
+        'Você define: se o cliente não responder a um template em X dias, o sistema envia outro template aprovado, uma única vez e só no horário escolhido. Funciona no WhatsApp; no Instagram a Meta não permite mensagens depois de 24h sem resposta.',
+        "You set it up: if the customer doesn't reply to a template within X days, the system sends another approved template, only once and only during the hours you choose. It works on WhatsApp; on Instagram Meta doesn't allow messages after 24 hours without a reply.",
       ),
     },
     {
@@ -363,7 +370,7 @@ export default function Landing() {
               {[
                 { icon: Filter, text: t('Importe sua lista por CSV e escolha quem recebe', 'Import your list via CSV and choose who receives it') },
                 { icon: UserCheck, text: t('Opt-in registrado e opt-out automático (SAIR/STOP)', 'Recorded opt-in and automatic opt-out (STOP)') },
-                { icon: Repeat, text: t('Veja quem não respondeu (3 a 14 dias) e faça o follow-up', "See who didn't reply (3 to 14 days) and follow up") },
+                { icon: Repeat, text: t('Follow-up automático para quem não respondeu, no horário que você escolher', "Automatic follow-up for those who didn't reply, at the hours you choose") },
                 { icon: MessageCircle, text: t('Respostas caem na caixa de entrada da equipe', "Replies land in the team's inbox") },
               ].map((item) => {
                 const Icon = item.icon

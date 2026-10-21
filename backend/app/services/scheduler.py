@@ -127,10 +127,23 @@ async def cleanup_orphan_media() -> None:
         logger.info("Limpeza de órfãos: %d arquivo(s) removido(s) do bucket", removed)
 
 
+async def _run_followups() -> None:
+    from app.services.followup_service import run_due_followups
+    async with async_session() as db:
+        try:
+            await run_due_followups(db)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+
+
 async def scheduler_loop():
     logger.info("Scheduler started (polling every %ds)", _POLL_INTERVAL)
     _cleanup_every = 24 * 60 * 60  # 1x por dia
+    _followup_every = 10 * 60      # follow-up automático a cada 10 min
     last_cleanup = 0.0
+    last_followup = 0.0
     while True:
         try:
             now = datetime.now(timezone.utc)
@@ -156,6 +169,13 @@ async def scheduler_loop():
                 except Exception as e:
                     logger.error("Orphan cleanup error: %s", e)
                 last_cleanup = loop_now
+
+            if loop_now - last_followup >= _followup_every:
+                try:
+                    await _run_followups()
+                except Exception as e:
+                    logger.error("Follow-up run error: %s", e)
+                last_followup = loop_now
 
         except Exception as e:
             logger.error("Scheduler error: %s", e)

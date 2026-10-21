@@ -26,7 +26,9 @@ from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.lead import Lead
+from app.models.followup import FollowUpRule, FollowUpDispatch
 from app.core.config import settings
+from app.core.i18n import t
 from app.services import whatsapp_service
 from app.services import messaging_policy
 from app.services.meta_token_service import encrypt_token, decrypt_token, exchange_code_for_token
@@ -789,8 +791,8 @@ async def followups(
     # Nomes de templates de marketing (do cache sincronizado da Meta).
     # Se o cache estiver vazio, considera todos os templates.
     mkt_names = {
-        t.get("name") for t in (conn.meta_templates or [])
-        if str(t.get("category", "")).upper() == "MARKETING"
+        tpl.get("name") for tpl in (conn.meta_templates or [])
+        if str(tpl.get("category", "")).upper() == "MARKETING"
     }
 
     # Últimos disparos de template por conversa (30 dias)
@@ -839,6 +841,7 @@ async def followups(
             "phone": phone,
             "template_name": m.template_name,
             "sent_at": m.created_at.isoformat(),
+            "auto_followup": m.sender == "followup",
         }
         if reply:
             responded.append({**base, "replied_at": reply.created_at.isoformat()})
@@ -850,6 +853,148 @@ async def followups(
     pending.sort(key=lambda x: x["days_since"], reverse=True)
     responded.sort(key=lambda x: x["replied_at"], reverse=True)
     return {"pending": pending, "responded": responded}
+
+
+# ---------------------------------------------------------------------------
+# Follow-up automático (somente WhatsApp — o Instagram não permite mensagens
+# iniciadas pela empresa fora da janela de 24h)
+# ---------------------------------------------------------------------------
+
+class FollowUpRuleIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    enabled: bool = True
+    delay_days: int = Field(3, ge=1, le=13, description="Dias sem resposta antes do follow-up")
+    trigger_template: str | None = Field(
+        default=None, description="Só segue envios deste template (vazio = qualquer template)"
+    )
+    template_name: str = Field(..., min_length=1, description="Template aprovado enviado no follow-up")
+    template_language: str = "pt_BR"
+    variables: list[str] = Field(default_factory=list)
+    send_hour_start: int = Field(9, ge=0, le=23)
+    send_hour_end: int = Field(20, ge=1, le=24)
+
+
+def _serialize_rule(rule: FollowUpRule, stats: dict[str, dict]) -> dict:
+    st = stats.get(rule.id, {})
+    return {
+        "id": rule.id,
+        "name": rule.name,
+        "enabled": rule.enabled,
+        "delay_days": rule.delay_days,
+        "trigger_template": rule.trigger_template,
+        "template_name": rule.template_name,
+        "template_language": rule.template_language,
+        "variables": rule.variables or [],
+        "send_hour_start": rule.send_hour_start,
+        "send_hour_end": rule.send_hour_end,
+        "sent_count": st.get("sent", 0),
+        "skipped_count": st.get("skipped", 0),
+        "failed_count": st.get("failed", 0),
+        "last_sent_at": st.get("last_sent_at"),
+        "created_at": rule.created_at.isoformat() if rule.created_at else None,
+    }
+
+
+async def _rule_stats(tenant_id: str, db: AsyncSession) -> dict[str, dict]:
+    rows = (await db.execute(
+        select(FollowUpDispatch.rule_id, FollowUpDispatch.status, FollowUpDispatch.created_at)
+        .where(FollowUpDispatch.account_id == tenant_id)
+    )).all()
+    stats: dict[str, dict] = {}
+    for rule_id, status_, created in rows:
+        st = stats.setdefault(rule_id, {})
+        st[status_] = st.get(status_, 0) + 1
+        if status_ == "sent" and created and (not st.get("last_sent_at") or created.isoformat() > st["last_sent_at"]):
+            st["last_sent_at"] = created.isoformat()
+    return stats
+
+
+def _validate_rule(body: FollowUpRuleIn, conn: MetaConnection) -> None:
+    if body.send_hour_end <= body.send_hour_start:
+        raise HTTPException(422, t(
+            "O horário final precisa ser depois do inicial.", "The end hour must be after the start hour.",
+        ))
+    templates = conn.meta_templates or []
+    if templates:
+        match = next((tpl for tpl in templates if tpl.get("name") == body.template_name), None)
+        if not match:
+            raise HTTPException(422, t(
+                "Template não encontrado. Sincronize os templates e tente de novo.",
+                "Template not found. Sync your templates and try again.",
+            ))
+        if match.get("status") and match["status"] != "APPROVED":
+            raise HTTPException(422, t(
+                "Só templates aprovados pela Meta podem ser usados no follow-up.",
+                "Only Meta-approved templates can be used for follow-ups.",
+            ))
+
+
+@router.get("/followup-rules")
+async def list_followup_rules(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Regras de follow-up automático do tenant, com contagem de envios."""
+    rules = (await db.execute(
+        select(FollowUpRule).where(FollowUpRule.account_id == current_user.tenant_id)
+        .order_by(FollowUpRule.created_at.asc())
+    )).scalars().all()
+    stats = await _rule_stats(current_user.tenant_id, db)
+    return [_serialize_rule(r, stats) for r in rules]
+
+
+@router.post("/followup-rules", status_code=201)
+async def create_followup_rule(
+    body: FollowUpRuleIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cria uma regra: após N dias sem resposta, envia um template aprovado (só contatos com opt-in)."""
+    if current_user.role != "admin":
+        raise HTTPException(403, "Acesso negado")
+    conn = await _get_conn_or_404(current_user.tenant_id, db)
+    _validate_rule(body, conn)
+    rule = FollowUpRule(account_id=current_user.tenant_id, **body.model_dump())
+    db.add(rule)
+    await db.flush()
+    await db.refresh(rule)
+    return _serialize_rule(rule, {})
+
+
+@router.put("/followup-rules/{rule_id}")
+async def update_followup_rule(
+    rule_id: str,
+    body: FollowUpRuleIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Acesso negado")
+    rule = await db.get(FollowUpRule, rule_id)
+    if not rule or rule.account_id != current_user.tenant_id:
+        raise HTTPException(404, t("Regra não encontrada.", "Rule not found."))
+    conn = await _get_conn_or_404(current_user.tenant_id, db)
+    _validate_rule(body, conn)
+    for field, value in body.model_dump().items():
+        setattr(rule, field, value)
+    await db.flush()
+    await db.refresh(rule)
+    return _serialize_rule(rule, await _rule_stats(current_user.tenant_id, db))
+
+
+@router.delete("/followup-rules/{rule_id}", status_code=204)
+async def delete_followup_rule(
+    rule_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Acesso negado")
+    rule = await db.get(FollowUpRule, rule_id)
+    if not rule or rule.account_id != current_user.tenant_id:
+        raise HTTPException(404, t("Regra não encontrada.", "Rule not found."))
+    await db.delete(rule)
+    await db.flush()
 
 
 async def _get_or_create_conv_for_lead(tenant_id: str, lead_id: str, db: AsyncSession) -> Conversation:

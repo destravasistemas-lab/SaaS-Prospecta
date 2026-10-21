@@ -94,6 +94,8 @@ class Settings(BaseSettings):
     email_from_name: str = "adStudioAI"
     app_url: str = "http://localhost:5173"
     support_email: str = "contato@destravasistemas.com.br"
+    # Fuso usado na janela de envio do follow-up automático (Brasília = -3, sem horário de verão)
+    followup_utc_offset_hours: int = -3
 
     # Super admins do sistema (emails separados por vírgula). Podem gerenciar
     # os módulos bloqueados de QUALQUER conta (agências e empresas).

@@ -47,6 +47,7 @@ Grave um vídeo por permissão (ou um vídeo com capítulos). Mostre sempre: log
 4. **whatsapp_business_messaging** — de outro celular, mande "Hi" para o número → mensagem aparece no inbox → responda (janela 24h ativa) → mostre a resposta chegando no celular.
 5. **Opt-in e template** — Leads → clique em "No opt-in" de um contato → confirme → WhatsApp → Send template (marque a confirmação de opt-in) → template chega.
 6. **Opt-out** — no celular envie `STOP` → resposta automática de confirmação → em Leads o contato fica "Opt-out" → Templates → Broadcast mostra que ele é excluído.
+6b. **Follow-up automático** — Follow-ups → Automatic → New rule (template aprovado, 3 dias, 9h–20h) → mostre que só contatos com opt-in entram e que é enviado uma única vez.
 7. **whatsapp_business_management** — Templates → New Template → Submit for approval → Sync.
 8. **Instagram Login** — Connect Instagram → autorizar → conectado.
 9. **content_publish** — Publish & Automation → upload de imagem → Publish Now → mostre o post no Instagram.
@@ -81,6 +82,7 @@ Grave um vídeo por permissão (ou um vídeo com capítulos). Mostre sempre: log
 - Tokens de acesso e payloads com dados pessoais eram gravados em log → removido.
 - Envio livre no WhatsApp (`/whatsapp/send`, interativo) ignorava a janela de 24h → bloqueado fora da janela.
 - Disparo em massa ia para todos os leads com telefone → só para opt-in; opt-out por palavra-chave.
+- Follow-up automático (só WhatsApp): template aprovado, uma vez por envio, só opt-in, janela de horário configurável.
 - Instagram DM sem verificação de janela de 24h → bloqueado fora da janela.
 - IA com regras fixas: escopo restrito ao negócio, identifica-se como automatizada, transfere para humano.
 - Campanhas com Categoria Especial de Anúncio.
