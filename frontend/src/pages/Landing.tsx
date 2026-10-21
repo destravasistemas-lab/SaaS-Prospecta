@@ -1,88 +1,145 @@
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  Inbox, Bot, BarChart3, Users, ShieldCheck, Lock, Clock, CheckCircle2,
-  ArrowRight, ChevronDown, Target, Building2, MessageCircle, Camera, Megaphone,
-  KeyRound, Trash2, PlugZap, Reply, Check, Layers, UserCheck, CalendarClock,
+  ArrowRight, ArrowDown, Bot, Check, ChevronDown, Clock, MessageCircle, Camera, Megaphone,
+  Send, Zap, Target, ShieldCheck, Users, Building2, ShoppingBag, GraduationCap, Stethoscope,
+  Home, Reply, Link2, UserCheck, BarChart3, Repeat, Filter, Sparkles, X,
 } from 'lucide-react'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
 
 const FONT = { fontFamily: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" }
+const GRADIENT = 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400'
+const GRADIENT_TEXT = 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-500 bg-clip-text text-transparent'
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <span className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-extrabold text-sm shadow-sm">
+      <span className={`w-8 h-8 rounded-xl ${GRADIENT} flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-fuchsia-500/30`}>
         P
       </span>
-      <span className={`font-extrabold text-lg tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>
-        {BRANDING.name}
-      </span>
+      <span className={`font-extrabold text-lg tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>{BRANDING.name}</span>
     </span>
   )
 }
 
-function PhoneMockup() {
+function SectionTag({ icon: Icon, children }: { icon: typeof Zap; children: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 text-violet-700 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+      <Icon size={13} /> {children}
+    </span>
+  )
+}
+
+/** Hero: post → comentário com palavra-chave → resposta + Direct automáticos. */
+function KeywordFlow() {
   const { t } = useI18n()
   return (
-    <div className="relative mx-auto w-full max-w-[340px]">
-      {/* Floating card: lead source */}
-      <div className="hidden sm:flex absolute -left-16 top-16 z-10 items-center gap-2.5 bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 px-3.5 py-2.5">
-        <span className="w-8 h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center">
-          <Megaphone size={15} />
-        </span>
-        <span className="text-left">
-          <span className="block text-[11px] text-slate-500">{t('Novo lead', 'New lead')}</span>
-          <span className="block text-xs font-bold text-slate-900">{t('Anúncio Click-to-WhatsApp', 'Click-to-WhatsApp ad')}</span>
-        </span>
-      </div>
-
-      {/* Floating card: consent */}
-      <div className="hidden sm:flex absolute -right-12 bottom-24 z-10 items-center gap-2 bg-white rounded-2xl shadow-xl shadow-slate-900/10 border border-slate-100 px-3.5 py-2.5">
-        <CheckCircle2 size={16} className="text-emerald-500" />
-        <span className="text-xs font-bold text-slate-900">{t('Opt-in registrado', 'Opt-in recorded')}</span>
-      </div>
-
-      {/* Phone */}
-      <div className="rounded-[2.5rem] bg-slate-900 p-2.5 shadow-2xl shadow-emerald-900/20">
-        <div className="rounded-[2rem] overflow-hidden bg-[#f4f1ea]">
-          <div className="bg-emerald-600 px-4 pt-5 pb-3 flex items-center gap-3">
-            <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm">L</span>
-            <span className="text-left">
-              <span className="block text-white text-sm font-semibold leading-tight">Lucas Mendes</span>
-              <span className="block text-emerald-100 text-[11px]">{t('online', 'online')}</span>
+    <div className="relative w-full max-w-md mx-auto">
+      <div className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-violet-200/60 via-fuchsia-200/50 to-orange-200/60 blur-2xl" aria-hidden />
+      <div className="relative space-y-3">
+        {/* Post */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-violet-900/10 overflow-hidden">
+          <div className="flex items-center gap-2.5 px-4 py-3">
+            <span className={`w-8 h-8 rounded-full ${GRADIENT} p-[2px]`}>
+              <span className="w-full h-full rounded-full bg-white flex items-center justify-center text-[11px] font-bold text-slate-800">SF</span>
             </span>
+            <span className="text-sm font-bold text-slate-900">studiofit</span>
+            <span className="ml-auto text-[11px] text-slate-400">{t('Patrocinado', 'Sponsored')}</span>
           </div>
-          <div className="px-3 py-4 space-y-2.5 min-h-[330px] text-[13px] text-left">
-            <div className="max-w-[80%] bg-white rounded-2xl rounded-tl-sm px-3 py-2 text-slate-800 shadow-sm">
-              {t('Oi! Vi o anúncio de vocês. Quanto custa o plano para agências?', 'Hi! I saw your ad. How much is the agency plan?')}
-              <span className="block text-right text-[10px] text-slate-400 mt-0.5">10:02</span>
-            </div>
-            <div className="max-w-[85%] ml-auto bg-emerald-100 rounded-2xl rounded-tr-sm px-3 py-2 text-slate-800 shadow-sm">
-              <span className="block text-[10px] font-semibold text-emerald-700 mb-0.5">{t('Assistente virtual · automatizado', 'Virtual assistant · automated')}</span>
-              {t(
-                'Olá, Lucas! O plano Agência inclui vários clientes em ambientes separados. Quer que eu chame um consultor?',
-                'Hi Lucas! The Agency plan includes multiple clients in separate workspaces. Want me to bring in a consultant?',
-              )}
-              <span className="block text-right text-[10px] text-slate-400 mt-0.5">10:02</span>
-            </div>
-            <div className="max-w-[60%] bg-white rounded-2xl rounded-tl-sm px-3 py-2 text-slate-800 shadow-sm">
-              {t('Quero sim 🙌', 'Yes please 🙌')}
-              <span className="block text-right text-[10px] text-slate-400 mt-0.5">10:03</span>
-            </div>
-            <div className="flex justify-center">
-              <span className="text-[10px] bg-white/80 text-slate-500 rounded-full px-2.5 py-1">
-                {t('Ana assumiu a conversa', 'Ana took over the conversation')}
+          <div className="h-32 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 flex items-center justify-center px-6 text-center">
+            <p className="text-white font-extrabold text-xl leading-tight drop-shadow">
+              {t('Comente QUERO e receba o desafio de 7 dias', 'Comment WANT and get the 7-day challenge')}
+            </p>
+          </div>
+          <div className="px-4 py-3 space-y-2 text-[13px] text-left">
+            <p><b>ana.lima</b> <span className="text-slate-700">{t('QUERO 🙋‍♀️', 'WANT 🙋‍♀️')}</span></p>
+            <p className="pl-4 text-slate-600">
+              <b className="text-slate-900">studiofit</b> {t('Te mandei no Direct, Ana! 📩', 'Sent it to your DMs, Ana! 📩')}
+              <span className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-violet-600 bg-violet-50 rounded px-1.5 py-0.5">
+                <Zap size={10} /> {t('automático', 'automatic')}
               </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-center"><ArrowDown size={20} className="text-fuchsia-500" /></div>
+
+        {/* Direct */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-violet-900/10 p-4 text-left">
+          <p className="text-[11px] font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+            <Camera size={12} /> Instagram Direct
+          </p>
+          <div className="space-y-2 text-[13px]">
+            <div className={`ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-white ${GRADIENT}`}>
+              {t('Oi Ana! Aqui está o seu desafio 💪 Responde SIM que eu te mando o link.', "Hi Ana! Here's your challenge 💪 Reply YES and I'll send you the link.")}
             </div>
-            <div className="max-w-[80%] ml-auto bg-emerald-100 rounded-2xl rounded-tr-sm px-3 py-2 text-slate-800 shadow-sm">
-              {t('Oi Lucas, aqui é a Ana! Te mando a proposta agora 😉', "Hi Lucas, Ana here! Sending you the proposal now 😉")}
-              <span className="block text-right text-[10px] text-slate-400 mt-0.5">10:04 ✓✓</span>
+            <div className="max-w-[40%] rounded-2xl rounded-tl-sm px-3 py-2 bg-slate-100 text-slate-800">{t('SIM!', 'YES!')}</div>
+            <div className={`ml-auto max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-white ${GRADIENT}`}>
+              {t('Perfeito! 🎉 studiofit.com/desafio — qualquer dúvida, a equipe te responde aqui.', 'Great! 🎉 studiofit.com/challenge — any questions, our team replies right here.')}
             </div>
           </div>
         </div>
       </div>
-      <p className="text-center text-[11px] text-slate-400 mt-3">{t('Ilustração do produto', 'Product illustration')}</p>
+      <p className="relative text-center text-[11px] text-slate-400 mt-3">{t('Ilustração do produto', 'Product illustration')}</p>
+    </div>
+  )
+}
+
+function BroadcastMock() {
+  const { t } = useI18n()
+  const rows = [
+    { label: t('Enviadas', 'Sent'), value: '1.240', w: 'w-full', c: 'bg-violet-500' },
+    { label: t('Entregues', 'Delivered'), value: '1.198', w: 'w-[96%]', c: 'bg-fuchsia-500' },
+    { label: t('Lidas', 'Read'), value: '903', w: 'w-[73%]', c: 'bg-orange-400' },
+    { label: t('Responderam', 'Replied'), value: '214', w: 'w-[18%]', c: 'bg-emerald-500' },
+  ]
+  return (
+    <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-violet-900/10 p-6 text-left">
+      <div className="flex items-center justify-between">
+        <p className="font-bold text-slate-900 flex items-center gap-2"><Send size={16} className="text-violet-600" /> {t('Disparo: volta_as_aulas', 'Broadcast: back_to_school')}</p>
+        <span className="text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5">{t('Template aprovado', 'Approved template')}</span>
+      </div>
+      <p className="text-xs text-slate-500 mt-1">{t('Lista: alunos 2025 · somente contatos com opt-in', 'List: 2025 students · opted-in contacts only')}</p>
+      <div className="mt-5 space-y-3.5">
+        {rows.map((r) => (
+          <div key={r.label}>
+            <div className="flex justify-between text-xs mb-1"><span className="text-slate-600">{r.label}</span><span className="font-bold text-slate-900">{r.value}</span></div>
+            <div className="h-2 rounded-full bg-slate-100 overflow-hidden"><div className={`h-full rounded-full ${r.w} ${r.c}`} /></div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 rounded-2xl bg-violet-50 px-4 py-3 text-xs text-violet-800 flex items-center gap-2">
+        <Repeat size={14} /> {t('Lista de quem não respondeu após 3 dias, pronta para o follow-up', "List of who didn't reply after 3 days, ready for follow-up")}
+      </div>
+      <p className="text-[10px] text-slate-400 mt-3 text-center">{t('Números ilustrativos', 'Illustrative numbers')}</p>
+    </div>
+  )
+}
+
+function AdsMock() {
+  const { t } = useI18n()
+  const ads = [
+    { name: t('Reels — Depoimento', 'Reels — Testimonial'), leads: 86, cpl: 'R$ 2,90', best: true },
+    { name: t('Carrossel — Oferta', 'Carousel — Offer'), leads: 41, cpl: 'R$ 5,10', best: false },
+    { name: t('Imagem — Cupom', 'Image — Coupon'), leads: 17, cpl: 'R$ 9,40', best: false },
+  ]
+  return (
+    <div className="bg-slate-900 rounded-3xl p-6 text-left shadow-2xl shadow-violet-900/30">
+      <p className="font-bold text-white flex items-center gap-2"><BarChart3 size={16} className="text-orange-400" /> {t('Leads por anúncio · 30 dias', 'Leads by ad · 30 days')}</p>
+      <div className="mt-5 space-y-2.5">
+        {ads.map((a) => (
+          <div key={a.name} className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${a.best ? 'bg-white/10 ring-1 ring-orange-400/50' : 'bg-white/5'}`}>
+            <span className="flex-1 text-sm text-slate-200 truncate">{a.name}</span>
+            <span className="text-sm font-bold text-white w-10 text-right">{a.leads}</span>
+            <span className="text-xs text-slate-400 w-16 text-right">{a.cpl}</span>
+            {a.best && <span className="text-[10px] font-bold rounded-full bg-orange-400 text-slate-900 px-2 py-0.5">{t('Melhor', 'Best')}</span>}
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex justify-between text-[11px] text-slate-400 px-1">
+        <span>{t('Anúncio', 'Ad')}</span><span>{t('Leads · custo por lead', 'Leads · cost per lead')}</span>
+      </div>
+      <p className="text-[10px] text-slate-500 mt-3 text-center">{t('Números ilustrativos', 'Illustrative numbers')}</p>
     </div>
   )
 }
@@ -90,79 +147,69 @@ function PhoneMockup() {
 export default function Landing() {
   const navigate = useNavigate()
   const { t } = useI18n()
+  const goSignup = () => navigate('/login')
 
-  const channels = [
-    {
-      icon: MessageCircle,
-      color: 'bg-emerald-100 text-emerald-700',
-      name: 'WhatsApp Business',
-      desc: t('Cloud API oficial, conectada pelo Cadastro Incorporado da Meta.', "Official Cloud API, connected through Meta's Embedded Signup."),
-    },
-    {
-      icon: Camera,
-      color: 'bg-pink-100 text-pink-600',
-      name: 'Instagram',
-      desc: t('Direct, comentários, publicação e métricas da conta profissional.', 'Direct, comments, publishing and insights for professional accounts.'),
-    },
-    {
-      icon: Megaphone,
-      color: 'bg-violet-100 text-violet-600',
-      name: 'Meta Ads',
-      desc: t('Campanhas, conjuntos, anúncios e leads de formulários.', 'Campaigns, ad sets, ads and lead form leads.'),
-    },
+  const engines = [
+    { icon: Zap, title: t('Automação', 'Automation'), desc: t('Comentário vira Direct, Direct vira lead, lead vira atendimento — no automático.', 'Comments become DMs, DMs become leads, leads become conversations — automatically.'), href: '#automacao' },
+    { icon: Send, title: t('Disparos', 'Broadcasts'), desc: t('Templates no WhatsApp para sua lista com opt-in, com follow-up de quem não respondeu.', "WhatsApp templates to your opted-in list, with follow-up for those who didn't reply."), href: '#disparos' },
+    { icon: Megaphone, title: t('Tráfego', 'Paid traffic'), desc: t('Crie e gerencie campanhas e veja quais anúncios trazem lead de verdade.', 'Create and manage campaigns and see which ads bring real leads.'), href: '#trafego' },
   ]
 
-  const steps = [
-    { icon: PlugZap, title: t('Conecte', 'Connect'), desc: t('Entre com sua conta da Meta e escolha o que liberar. Sem senhas compartilhadas.', 'Log in with your Meta account and choose what to allow. No shared passwords.') },
-    { icon: Inbox, title: t('Receba', 'Receive'), desc: t('Mensagens, comentários e leads de anúncios chegam numa fila só.', 'Messages, comments and ad leads land in a single queue.') },
-    { icon: UserCheck, title: t('Atenda', 'Respond'), desc: t('O assistente faz a triagem; sua equipe assume quando precisa.', 'The assistant triages; your team takes over when needed.') },
-    { icon: BarChart3, title: t('Meça', 'Measure'), desc: t('Veja quais anúncios trazem conversas e vendas de verdade.', 'See which ads bring real conversations and sales.') },
+  const useCases = [
+    { icon: GraduationCap, title: t('Infoprodutos e lançamentos', 'Info products and launches'), desc: t('Comente a palavra e receba a aula, o e-book ou o link do checkout.', 'Comment the word and get the class, the e-book or the checkout link.') },
+    { icon: ShoppingBag, title: t('E-commerce', 'E-commerce'), desc: t('Cupom no Direct, catálogo no WhatsApp e recuperação de interessados.', 'Coupon in DMs, catalog on WhatsApp and follow-up with interested buyers.') },
+    { icon: Stethoscope, title: t('Clínicas e serviços', 'Clinics and services'), desc: t('Triagem automática, perguntas frequentes e agendamento com a equipe.', 'Automatic triage, FAQs and scheduling with your team.') },
+    { icon: Home, title: t('Imobiliárias', 'Real estate'), desc: t('Lead do anúncio cai direto no WhatsApp do corretor certo.', 'Ad leads go straight to the right agent on WhatsApp.') },
+    { icon: Building2, title: t('Agências', 'Agencies'), desc: t('Um painel para todos os clientes, com tráfego e atendimento juntos.', 'One panel for all clients, with traffic and service together.') },
   ]
 
-  const rules = [
-    { icon: Clock, title: t('Janela de 24 horas', '24-hour window'), desc: t('Mensagens livres só enquanto a conversa está aberta pelo cliente.', 'Free-form messages only while the customer keeps the conversation open.') },
-    { icon: UserCheck, title: t('Opt-in e opt-out', 'Opt-in and opt-out'), desc: t('Templates só para quem aceitou. Quem envia SAIR deixa de receber.', 'Templates only to people who agreed. Anyone who sends STOP is removed.') },
-    { icon: KeyRound, title: t('Permissões mínimas', 'Minimal permissions'), desc: t('Pedimos só o que cada recurso usa, e você revoga quando quiser.', 'We only ask for what each feature uses, and you can revoke any time.') },
-    { icon: Lock, title: t('Tokens criptografados', 'Encrypted tokens'), desc: t('Credenciais da Meta guardadas criptografadas e isoladas por empresa.', 'Meta credentials stored encrypted and isolated per business.') },
-    { icon: Bot, title: t('IA transparente', 'Transparent AI'), desc: t('O assistente se apresenta como automatizado e chama um humano.', 'The assistant presents itself as automated and calls a human.') },
-    { icon: Trash2, title: t('Exclusão de dados', 'Data deletion'), desc: t('Remover o app na Meta apaga os dados automaticamente.', 'Removing the app on Meta deletes the data automatically.') },
+  const before = [
+    t('Comentários sem resposta e Direct lotado', 'Unanswered comments and a flooded inbox'),
+    t('Lead do anúncio esfria esperando atendimento', 'Ad leads go cold waiting for a reply'),
+    t('Disparos por celular pessoal, com risco de bloqueio', 'Broadcasts from personal phones, with ban risk'),
+    t('Não sabe qual anúncio gerou venda', "No idea which ad drove the sale"),
+    t('Cada atendente num aparelho diferente', 'Each agent on a different device'),
+  ]
+  const after = [
+    t('Resposta e Direct automáticos por palavra-chave', 'Automatic reply and DM by keyword'),
+    t('Assistente responde na hora e passa para a equipe', 'Assistant replies instantly and hands off to the team'),
+    t('Disparos pela API oficial, só para quem aceitou', 'Broadcasts via the official API, only to people who agreed'),
+    t('Leads e conversas marcados com o anúncio de origem', 'Leads and chats tagged with their source ad'),
+    t('Equipe inteira numa caixa de entrada com filas', 'Whole team in one inbox with queues'),
   ]
 
   const faqs = [
     {
-      q: t('Preciso de um número novo de WhatsApp?', 'Do I need a new WhatsApp number?'),
+      q: t('Como funciona a automação por palavra-chave?', 'How does keyword automation work?'),
       a: t(
-        'Não necessariamente. Você conecta um número pela WhatsApp Business Platform no fluxo oficial da Meta. Números em uso no app WhatsApp Business podem ser migrados seguindo as regras da Meta.',
-        "Not necessarily. You connect a number to the WhatsApp Business Platform through Meta's official flow. Numbers used in the WhatsApp Business app can be migrated following Meta's rules.",
+        'Você escolhe o post e a palavra (ex.: QUERO). Quem comentar recebe uma resposta pública e uma mensagem privada no Direct. Se a pessoa responder, o sistema envia a segunda mensagem com o link e passa a conversa para sua equipe.',
+        'You pick the post and the word (e.g. WANT). Anyone who comments gets a public reply and a private Direct message. If they reply, the system sends the second message with the link and hands the chat to your team.',
       ),
     },
     {
-      q: t('Posso mandar mensagem para qualquer contato?', 'Can I message any contact?'),
+      q: t('Posso disparar mensagens para minha lista no WhatsApp?', 'Can I send broadcasts to my WhatsApp list?'),
       a: t(
-        'Você responde livremente em até 24h após a última mensagem do cliente. Fora disso, só templates aprovados pela Meta e apenas para contatos que deram opt-in.',
-        "You can reply freely within 24 hours of the customer's last message. Outside that, only Meta-approved templates and only to contacts who opted in.",
+        'Sim, com templates aprovados pela Meta e apenas para contatos que aceitaram receber (opt-in). Quem responde SAIR é removido automaticamente. Isso protege a qualidade e a reputação do seu número.',
+        'Yes, with Meta-approved templates and only to contacts who agreed to receive them (opt-in). Anyone who replies STOP is removed automatically. This protects the quality and reputation of your number.',
       ),
     },
     {
-      q: t('Quem paga as conversas do WhatsApp e os anúncios?', 'Who pays for WhatsApp conversations and ads?'),
+      q: t('Preciso deixar o celular ligado?', 'Do I need to keep my phone on?'),
       a: t(
-        'A Meta cobra diretamente na sua conta. A assinatura do Prospecta é separada.',
-        'Meta bills your account directly. The Prospecta subscription is separate.',
+        'Não. A conexão é feita pela WhatsApp Cloud API oficial, sem QR code e sem depender de aparelho.',
+        'No. The connection uses the official WhatsApp Cloud API, with no QR code and no device dependency.',
       ),
     },
     {
-      q: t('Funciona para agências?', 'Does it work for agencies?'),
+      q: t('Consigo criar campanhas por aqui?', 'Can I create campaigns here?'),
       a: t(
-        'Sim. Cada cliente tem um ambiente isolado, e você alterna entre eles com um clique, controlando o que cada membro da equipe acessa.',
-        'Yes. Each client has an isolated workspace, and you switch between them in one click while controlling what each team member can access.',
+        'Sim. Você cria campanhas, conjuntos e anúncios (imagem, vídeo, carrossel ou post do Instagram), pausa, duplica e acompanha os resultados e os leads de cada anúncio.',
+        'Yes. You create campaigns, ad sets and ads (image, video, carousel or Instagram post), pause, duplicate and track results and leads for each ad.',
       ),
     },
     {
-      q: t('Como removo o acesso e meus dados?', 'How do I remove access and my data?'),
-      a: t(
-        'Em Conexões Meta, clique em Desconectar. Ou remova o app nas configurações do Facebook/Instagram: recebemos o pedido e excluímos os dados.',
-        'In Meta Connections, click Disconnect. Or remove the app in your Facebook/Instagram settings: we receive the request and delete the data.',
-      ),
+      q: t('Quem paga as mensagens e os anúncios?', 'Who pays for messages and ads?'),
+      a: t('A Meta cobra direto na sua conta. A assinatura do Prospecta é separada.', 'Meta bills your account directly. The Prospecta subscription is separate.'),
     },
   ]
 
@@ -171,370 +218,350 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <button onClick={() => navigate('/')} aria-label={BRANDING.name}>
-            <Logo />
-          </button>
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <a href="#canais" className="hover:text-slate-900">{t('Canais', 'Channels')}</a>
-            <a href="#recursos" className="hover:text-slate-900">{t('Recursos', 'Features')}</a>
-            <a href="#como-funciona" className="hover:text-slate-900">{t('Como funciona', 'How it works')}</a>
-            <a href="#regras" className="hover:text-slate-900">{t('Segurança', 'Trust')}</a>
-            <a href="#faq" className="hover:text-slate-900">FAQ</a>
-            <Link to="/pricing" className="hover:text-slate-900">{t('Preços', 'Pricing')}</Link>
+          <button onClick={() => navigate('/')} aria-label={BRANDING.name}><Logo /></button>
+          <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-600">
+            <a href="#automacao" className="hover:text-violet-700">{t('Automação', 'Automation')}</a>
+            <a href="#disparos" className="hover:text-violet-700">{t('Disparos', 'Broadcasts')}</a>
+            <a href="#trafego" className="hover:text-violet-700">{t('Tráfego', 'Traffic')}</a>
+            <a href="#ia" className="hover:text-violet-700">{t('IA', 'AI')}</a>
+            <a href="#faq" className="hover:text-violet-700">FAQ</a>
+            <Link to="/pricing" className="hover:text-violet-700">{t('Preços', 'Pricing')}</Link>
           </nav>
           <div className="flex items-center gap-2">
             <LanguageToggle compact light className="hidden sm:inline-flex" />
             <button onClick={() => navigate('/login')} className="hidden sm:inline px-3 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900">
               {t('Entrar', 'Sign in')}
             </button>
-            <button
-              onClick={() => navigate('/login')}
-              className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold"
-            >
-              {t('Teste grátis', 'Free trial')}
+            <button onClick={goSignup} className="px-4 py-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold">
+              {t('Começar grátis', 'Start free')}
             </button>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="relative bg-gradient-to-b from-emerald-50/70 to-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-14 pb-20 lg:pt-20 grid lg:grid-cols-2 gap-14 items-center">
+      <section className="relative">
+        <div className="absolute inset-x-0 top-0 h-[520px] bg-gradient-to-b from-violet-50 via-fuchsia-50/40 to-white" aria-hidden />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-14 pb-20 lg:pt-20 grid lg:grid-cols-[1.1fr_1fr] gap-14 items-center">
           <div className="text-left">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              WhatsApp · Instagram · Meta Ads
+            <span className="inline-flex items-center gap-2 rounded-full bg-white border border-violet-200 px-3 py-1 text-xs font-bold text-violet-700 shadow-sm">
+              <Sparkles size={13} /> {t('Automação · Disparos · Tráfego', 'Automation · Broadcasts · Traffic')}
             </span>
-            <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold leading-[1.08] tracking-tight text-slate-900">
-              {t('Todos os leads da Meta numa', 'Every Meta lead in')}{' '}
-              <span className="relative inline-block">
-                <span className="relative z-10">{t('única caixa de entrada', 'one single inbox')}</span>
-                <span className="absolute left-0 right-0 bottom-1 h-3 bg-emerald-200/80 -z-0 rounded" />
-              </span>
+            <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.05] tracking-tight">
+              {t('Transforme comentários e anúncios em', 'Turn comments and ads into')}{' '}
+              <span className={GRADIENT_TEXT}>{t('vendas no automático', 'sales on autopilot')}</span>
             </h1>
             <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-xl">
               {t(
-                'Atenda o WhatsApp e o Direct do Instagram em equipe, automatize respostas com responsabilidade e descubra quais anúncios geram vendas.',
-                'Handle WhatsApp and Instagram Direct as a team, automate replies responsibly and find out which ads drive sales.',
+                'Automatize o Direct por palavra-chave, dispare campanhas no WhatsApp para sua lista e rode tráfego sabendo exatamente qual anúncio vende — tudo num painel só.',
+                'Automate Instagram DMs by keyword, send WhatsApp broadcasts to your list and run paid traffic knowing exactly which ad sells — all in one panel.',
               )}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                onClick={() => navigate('/login')}
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/25"
-              >
-                {t('Começar grátis', 'Start for free')} <ArrowRight size={18} />
+              <button onClick={goSignup} className={`inline-flex items-center gap-2 px-6 py-3.5 rounded-full text-white font-bold shadow-lg shadow-fuchsia-500/30 hover:brightness-110 ${GRADIENT}`}>
+                {t('Criar minha automação', 'Build my automation')} <ArrowRight size={18} />
               </button>
-              <a
-                href="#como-funciona"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-slate-300 bg-white hover:border-slate-400 text-slate-800 font-semibold"
-              >
+              <a href="#automacao" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-slate-300 bg-white hover:border-violet-400 text-slate-800 font-semibold">
                 {t('Ver como funciona', 'See how it works')}
               </a>
             </div>
-            <ul className="mt-8 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-600">
-              {[
-                t('7 dias grátis, sem cartão', '7-day free trial, no card'),
-                t('Conexão oficial pela Meta', 'Official Meta connection'),
-                t('Português e inglês', 'Portuguese and English'),
-                t('Cancele quando quiser', 'Cancel anytime'),
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <Check size={16} className="text-emerald-500 shrink-0" /> {item}
-                </li>
+            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+              {[t('7 dias grátis', '7-day free trial'), t('Sem cartão de crédito', 'No credit card'), t('APIs oficiais da Meta', 'Official Meta APIs')].map((item) => (
+                <span key={item} className="flex items-center gap-1.5"><Check size={16} className="text-violet-600" /> {item}</span>
               ))}
-            </ul>
+            </div>
           </div>
-          <PhoneMockup />
+          <KeywordFlow />
         </div>
       </section>
 
-      {/* Channels */}
-      <section id="canais" className="border-y border-slate-100 bg-slate-50/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid md:grid-cols-3 gap-4">
-          {channels.map((c) => {
-            const Icon = c.icon
+      {/* 3 engines */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 -mt-4 pb-6">
+        <div className="grid md:grid-cols-3 gap-4">
+          {engines.map((e) => {
+            const Icon = e.icon
             return (
-              <div key={c.name} className="flex items-start gap-4 bg-white rounded-2xl border border-slate-100 p-5">
-                <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${c.color}`}>
-                  <Icon size={20} />
+              <a key={e.title} href={e.href} className="group rounded-3xl border border-slate-200 bg-white p-6 text-left hover:border-violet-300 hover:shadow-lg hover:shadow-violet-900/5 transition-all">
+                <span className={`w-11 h-11 rounded-2xl ${GRADIENT} text-white flex items-center justify-center`}><Icon size={20} /></span>
+                <p className="mt-4 text-lg font-extrabold">{e.title}</p>
+                <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{e.desc}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-violet-700 group-hover:gap-2 transition-all">
+                  {t('Saiba mais', 'Learn more')} <ArrowRight size={15} />
                 </span>
-                <div className="text-left">
-                  <p className="font-bold text-slate-900">{c.name}</p>
-                  <p className="text-sm text-slate-500 mt-1 leading-relaxed">{c.desc}</p>
+              </a>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Automation */}
+      <section id="automacao" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+        <div className="max-w-3xl">
+          <SectionTag icon={Zap}>{t('Automação de Direct', 'DM automation')}</SectionTag>
+          <h2 className="mt-4 text-3xl sm:text-[2.6rem] font-extrabold tracking-tight leading-tight">
+            {t('Cada comentário com a palavra-chave vira uma conversa no Direct', 'Every comment with the keyword becomes a Direct conversation')}
+          </h2>
+          <p className="mt-4 text-lg text-slate-600">
+            {t(
+                'Configure em um minuto ao publicar o post. O Prospecta responde, entrega o conteúdo e chama sua equipe na hora certa.',
+                'Set it up in a minute when publishing the post. Prospecta replies, delivers the content and calls your team at the right time.',
+            )}
+          </p>
+        </div>
+
+        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { icon: MessageCircle, n: '1', title: t('A pessoa comenta', 'They comment'), desc: t('Ex.: "QUERO" no post ou no anúncio.', 'E.g. "WANT" on the post or ad.') },
+            { icon: Reply, n: '2', title: t('Resposta pública', 'Public reply'), desc: t('"Te mandei no Direct, Ana!" — com o nome dela.', '"Sent it to your DMs, Ana!" — with her name.') },
+            { icon: Send, n: '3', title: t('Mensagem no Direct', 'Direct message'), desc: t('Uma resposta privada com o gancho da oferta.', 'One private reply with the offer hook.') },
+            { icon: Link2, n: '4', title: t('Link + atendente', 'Link + agent'), desc: t('Ela responde, recebe o link e a equipe assume.', 'She replies, gets the link and the team takes over.') },
+          ].map((s) => {
+            const Icon = s.icon
+            return (
+              <div key={s.n} className="relative rounded-3xl bg-slate-50 border border-slate-100 p-6 text-left">
+                <span className="absolute top-5 right-5 text-4xl font-extrabold text-violet-100">{s.n}</span>
+                <Icon size={22} className="text-violet-600" />
+                <p className="mt-4 font-extrabold text-slate-900">{s.title}</p>
+                <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{s.desc}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-8 grid md:grid-cols-3 gap-4">
+          {[
+            { title: t('Responde em segundos, 24h por dia', 'Replies in seconds, 24/7'), desc: t('Ninguém fica esperando — nem de madrugada, nem no fim de semana.', 'Nobody waits — not at night, not on weekends.') },
+            { title: t('Personalizado com o nome', 'Personalized with the name'), desc: t('Variáveis como {{primeiro_nome}} deixam a mensagem humana.', "Name variables ({{primeiro_nome}}) keep the message human.") },
+            { title: t('Vira lead automaticamente', 'Becomes a lead automatically'), desc: t('Quem comenta entra na lista de leads com a origem marcada.', 'Commenters join your lead list with the source tagged.') },
+          ].map((b) => (
+            <div key={b.title} className="flex gap-3 text-left">
+              <span className="mt-0.5 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center shrink-0"><Check size={14} /></span>
+              <div>
+                <p className="font-bold text-slate-900">{b.title}</p>
+                <p className="text-sm text-slate-600 mt-1">{b.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Broadcasts */}
+      <section id="disparos" className="bg-gradient-to-b from-violet-50/60 to-white border-y border-violet-100/60">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-2 gap-14 items-center">
+          <div className="text-left">
+            <SectionTag icon={Send}>{t('Disparos no WhatsApp', 'WhatsApp broadcasts')}</SectionTag>
+            <h2 className="mt-4 text-3xl sm:text-[2.6rem] font-extrabold tracking-tight leading-tight">
+              {t('Fale com toda a sua lista sem arriscar o número', 'Reach your whole list without risking your number')}
+            </h2>
+            <p className="mt-4 text-lg text-slate-600">
+              {t(
+                'Campanhas, avisos e reativação de clientes com templates aprovados pela Meta, enviados pela API oficial para quem aceitou receber.',
+                'Campaigns, announcements and customer win-back with Meta-approved templates, sent via the official API to people who agreed to receive them.',
+              )}
+            </p>
+            <ul className="mt-7 space-y-3.5">
+              {[
+                { icon: Filter, text: t('Importe sua lista por CSV e escolha quem recebe', 'Import your list via CSV and choose who receives it') },
+                { icon: UserCheck, text: t('Opt-in registrado e opt-out automático (SAIR/STOP)', 'Recorded opt-in and automatic opt-out (STOP)') },
+                { icon: Repeat, text: t('Veja quem não respondeu (3 a 14 dias) e faça o follow-up', "See who didn't reply (3 to 14 days) and follow up") },
+                { icon: MessageCircle, text: t('Respostas caem na caixa de entrada da equipe', "Replies land in the team's inbox") },
+              ].map((item) => {
+                const Icon = item.icon
+                return (
+                  <li key={item.text} className="flex items-center gap-3 text-slate-700">
+                    <span className="w-9 h-9 rounded-xl bg-white border border-violet-100 text-violet-600 flex items-center justify-center shrink-0"><Icon size={17} /></span>
+                    {item.text}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+          <BroadcastMock />
+        </div>
+      </section>
+
+      {/* Traffic */}
+      <section id="trafego" className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-2 gap-14 items-center">
+        <div className="order-2 lg:order-1"><AdsMock /></div>
+        <div className="order-1 lg:order-2 text-left">
+          <SectionTag icon={Target}>{t('Tráfego pago', 'Paid traffic')}</SectionTag>
+          <h2 className="mt-4 text-3xl sm:text-[2.6rem] font-extrabold tracking-tight leading-tight">
+            {t('Rode tráfego e saiba qual anúncio traz cliente', 'Run ads and know which one brings customers')}
+          </h2>
+          <p className="mt-4 text-lg text-slate-600">
+            {t(
+              'Crie e gerencie campanhas do Meta Ads no mesmo lugar onde você atende. Cada lead chega marcado com o anúncio que o trouxe.',
+              'Create and manage Meta Ads campaigns in the same place you serve customers. Every lead arrives tagged with the ad that brought it.',
+            )}
+          </p>
+          <div className="mt-7 grid sm:grid-cols-2 gap-3">
+            {[
+              t('Campanhas, conjuntos e anúncios', 'Campaigns, ad sets and ads'),
+              t('Imagem, vídeo, carrossel ou post', 'Image, video, carousel or post'),
+              t('Click-to-WhatsApp e Lead Ads', 'Click-to-WhatsApp and Lead Ads'),
+              t('Custo por lead e ROAS', 'Cost per lead and ROAS'),
+              t('Resultados por idade, gênero, plataforma', 'Results by age, gender, platform'),
+              t('Pausar, duplicar e ajustar orçamento', 'Pause, duplicate and adjust budget'),
+            ].map((f) => (
+              <span key={f} className="flex items-center gap-2 text-sm text-slate-700">
+                <Check size={16} className="text-orange-500 shrink-0" /> {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI */}
+      <section id="ia" className="bg-[#140b2e] text-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+          <div className="text-left">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 text-fuchsia-200 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+              <Bot size={13} /> {t('Assistente de IA', 'AI assistant')}
+            </span>
+            <h2 className="mt-4 text-3xl sm:text-[2.6rem] font-extrabold tracking-tight leading-tight">
+              {t('Um atendente que conhece seu negócio e nunca dorme', 'An agent who knows your business and never sleeps')}
+            </h2>
+            <p className="mt-4 text-lg text-violet-200/80">
+              {t(
+                'Envie seu catálogo, tabela de preços e FAQ em PDF. O assistente responde no WhatsApp com base neles e chama sua equipe quando o cliente quer falar com uma pessoa.',
+                'Upload your catalog, price list and FAQ as PDFs. The assistant answers on WhatsApp based on them and calls your team when the customer wants a person.',
+              )}
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              { icon: Clock, title: t('Responde na hora', 'Instant replies'), desc: t('Qualifica o lead enquanto ele está interessado.', 'Qualifies the lead while they are interested.') },
+              { icon: UserCheck, title: t('Passa para humano', 'Hands off to humans'), desc: t('Fila de espera para a equipe assumir.', 'Waiting queue for your team to take over.') },
+              { icon: ShieldCheck, title: t('Só fala do seu negócio', 'Stays on topic'), desc: t('E se apresenta como assistente automatizado.', 'And presents itself as an automated assistant.') },
+              { icon: Users, title: t('Funciona com a equipe', 'Works with your team'), desc: t('Liga e desliga o bot por conversa.', 'Turn the bot on or off per conversation.') },
+            ].map((c) => {
+              const Icon = c.icon
+              return (
+                <div key={c.title} className="rounded-3xl bg-white/5 border border-white/10 p-5 text-left">
+                  <Icon size={20} className="text-orange-300" />
+                  <p className="mt-3 font-bold">{c.title}</p>
+                  <p className="mt-1 text-sm text-violet-200/70">{c.desc}</p>
                 </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Use cases */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+        <div className="text-center max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-[2.6rem] font-extrabold tracking-tight leading-tight">
+            {t('Feito para quem vende pelo Instagram e WhatsApp', 'Built for businesses that sell on Instagram and WhatsApp')}
+          </h2>
+        </div>
+        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {useCases.map((u) => {
+            const Icon = u.icon
+            return (
+              <div key={u.title} className="rounded-3xl border border-slate-200 p-5 text-left hover:border-violet-300 transition-colors">
+                <Icon size={22} className="text-fuchsia-500" />
+                <p className="mt-3 font-extrabold text-slate-900 leading-snug">{u.title}</p>
+                <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{u.desc}</p>
               </div>
             )
           })}
         </div>
       </section>
 
-      {/* Features bento */}
-      <section id="recursos" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-        <div className="max-w-2xl">
-          <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider">{t('Recursos', 'Features')}</p>
-          <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-            {t('Tudo o que a equipe comercial precisa, sem trocar de aba', 'Everything your sales team needs, without switching tabs')}
-          </h2>
-        </div>
-
-        <div className="mt-10 grid md:grid-cols-6 gap-4">
-          <div className="md:col-span-4 rounded-3xl bg-slate-900 text-white p-7 sm:p-8 text-left">
-            <Inbox size={26} className="text-emerald-400" />
-            <h3 className="mt-4 text-2xl font-bold">{t('Caixa de entrada unificada', 'Unified inbox')}</h3>
-            <p className="mt-2 text-slate-300 leading-relaxed max-w-lg">
-              {t(
-                'WhatsApp e Instagram Direct lado a lado, com filas (bot, espera, minhas), respostas citadas, reações, mídia e indicador de janela de 24h.',
-                'WhatsApp and Instagram Direct side by side, with queues (bot, waiting, mine), quoted replies, reactions, media and a 24h window indicator.',
-              )}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {[t('Filas por atendente', 'Per-agent queues'), t('Templates aprovados', 'Approved templates'), t('Mensagens interativas', 'Interactive messages')].map((tag) => (
-                <span key={tag} className="text-xs font-semibold rounded-full bg-white/10 px-3 py-1">{tag}</span>
+      {/* Before / after */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="rounded-3xl bg-slate-50 border border-slate-200 p-7 text-left">
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t('Sem o Prospecta', 'Without Prospecta')}</p>
+            <ul className="mt-5 space-y-3">
+              {before.map((b) => (
+                <li key={b} className="flex items-start gap-3 text-slate-600">
+                  <span className="mt-0.5 w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0"><X size={13} /></span>
+                  {b}
+                </li>
               ))}
+            </ul>
+          </div>
+          <div className={`rounded-3xl p-[2px] ${GRADIENT}`}>
+            <div className="h-full rounded-[calc(1.5rem-2px)] bg-white p-7 text-left">
+              <p className={`text-sm font-bold uppercase tracking-wider ${GRADIENT_TEXT}`}>{t('Com o Prospecta', 'With Prospecta')}</p>
+              <ul className="mt-5 space-y-3">
+                {after.map((a) => (
+                  <li key={a} className="flex items-start gap-3 text-slate-800 font-medium">
+                    <span className="mt-0.5 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center shrink-0"><Check size={13} /></span>
+                    {a}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-
-          <div className="md:col-span-2 rounded-3xl bg-emerald-50 border border-emerald-100 p-7 text-left">
-            <Bot size={24} className="text-emerald-600" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">{t('Assistente de IA', 'AI assistant')}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              {t(
-                'Responde com base nos seus PDFs (catálogo, FAQ), só sobre o seu negócio, e transfere para um humano quando pedem.',
-                'Answers from your PDFs (catalog, FAQ), only about your business, and hands off to a human on request.',
-              )}
-            </p>
-          </div>
-
-          <div className="md:col-span-2 rounded-3xl border border-slate-200 p-7 text-left">
-            <Reply size={24} className="text-pink-500" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">{t('Comentário → Direct', 'Comment → Direct')}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              {t(
-                'Quem comenta a palavra-chave recebe uma resposta pública e uma resposta privada no Direct.',
-                'Anyone who comments the keyword gets a public reply and one private reply in Direct.',
-              )}
-            </p>
-          </div>
-
-          <div className="md:col-span-2 rounded-3xl border border-slate-200 p-7 text-left">
-            <CalendarClock size={24} className="text-sky-500" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">{t('Publicação agendada', 'Scheduled posts')}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              {t(
-                'Publique ou agende fotos e Reels no Instagram e acompanhe alcance e engajamento.',
-                'Publish or schedule photos and Reels on Instagram and track reach and engagement.',
-              )}
-            </p>
-          </div>
-
-          <div className="md:col-span-2 rounded-3xl border border-slate-200 p-7 text-left">
-            <Target size={24} className="text-violet-500" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">{t('Atribuição por anúncio', 'Per-ad attribution')}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              {t(
-                'Cada lead chega marcado com o anúncio de origem, de Click-to-WhatsApp a formulários.',
-                'Each lead arrives tagged with its source ad, from Click-to-WhatsApp to lead forms.',
-              )}
-            </p>
-          </div>
-
-          <div className="md:col-span-3 rounded-3xl border border-slate-200 p-7 text-left">
-            <Megaphone size={24} className="text-violet-500" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">{t('Gestão de campanhas', 'Campaign management')}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              {t(
-                'Crie campanhas, conjuntos e anúncios (imagem, vídeo, carrossel ou post), com segmentação e métricas por idade, gênero e plataforma.',
-                'Create campaigns, ad sets and ads (image, video, carousel or post) with targeting and metrics by age, gender and platform.',
-              )}
-            </p>
-          </div>
-
-          <div className="md:col-span-3 rounded-3xl border border-slate-200 p-7 text-left">
-            <Users size={24} className="text-amber-500" />
-            <h3 className="mt-4 text-xl font-bold text-slate-900">{t('Equipe e permissões', 'Team and permissions')}</h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              {t(
-                'Admins e agentes com acesso por módulo. Cada atendente vê só o que precisa.',
-                'Admins and agents with per-module access. Each agent sees only what they need.',
-              )}
-            </p>
-          </div>
         </div>
       </section>
 
-      {/* How it works — timeline */}
-      <section id="como-funciona" className="bg-slate-50 border-y border-slate-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-          <div className="text-center max-w-2xl mx-auto">
-            <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider">{t('Como funciona', 'How it works')}</p>
-            <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-              {t('Do primeiro clique à venda, em quatro passos', 'From first click to sale, in four steps')}
-            </h2>
+      {/* Trust */}
+      <section className="border-y border-slate-100 bg-slate-50/70">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid md:grid-cols-[auto_1fr] gap-8 items-center">
+          <div className="flex items-center gap-3 text-left">
+            <span className={`w-12 h-12 rounded-2xl ${GRADIENT} text-white flex items-center justify-center`}><ShieldCheck size={22} /></span>
+            <p className="text-xl font-extrabold max-w-[14rem] leading-tight">{t('Automação que protege sua conta', 'Automation that protects your account')}</p>
           </div>
-          <ol className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((s, i) => {
-              const Icon = s.icon
-              return (
-                <li key={s.title} className="relative bg-white rounded-2xl border border-slate-200 p-6 text-left">
-                  <span className="absolute -top-3 left-6 text-xs font-extrabold bg-emerald-500 text-white rounded-full px-2.5 py-0.5">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <Icon size={22} className="text-slate-700 mt-2" />
-                  <h3 className="mt-3 text-lg font-bold text-slate-900">{s.title}</h3>
-                  <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{s.desc}</p>
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-      </section>
-
-      {/* Meta rules — dark band */}
-      <section id="regras" className="bg-slate-900 text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-3 gap-10">
-          <div className="text-left">
-            <ShieldCheck size={30} className="text-emerald-400" />
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight">
-              {t('Feito dentro das regras da Meta', "Built within Meta's rules")}
-            </h2>
-            <p className="mt-3 text-slate-300 leading-relaxed">
-              {t(
-                'Usamos apenas as APIs oficiais e aplicamos as políticas de mensagens no próprio sistema, para proteger seu número e sua conta.',
-                'We only use the official APIs and enforce messaging policies inside the product, to protect your number and your account.',
-              )}
-            </p>
-            <Link to="/privacy" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-400 hover:text-emerald-300">
-              {t('Ler a Política de Privacidade', 'Read the Privacy Policy')} <ArrowRight size={15} />
-            </Link>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-slate-600 text-left">
+            <p><b className="text-slate-900">{t('APIs oficiais.', 'Official APIs.')}</b> {t('Sem QR code nem conexões paralelas.', 'No QR codes or unofficial connections.')}</p>
+            <p><b className="text-slate-900">{t('Regras da Meta.', "Meta's rules.")}</b> {t('Janela de 24h e opt-in aplicados no sistema.', '24h window and opt-in enforced in the product.')}</p>
+            <p><b className="text-slate-900">{t('Dados protegidos.', 'Protected data.')}</b> {t('Tokens criptografados e isolados por empresa.', 'Tokens encrypted and isolated per business.')}</p>
+            <p><b className="text-slate-900">{t('Controle total.', 'Full control.')}</b> {t('Desconecte e exclua seus dados quando quiser.', 'Disconnect and delete your data any time.')}</p>
           </div>
-          <div className="lg:col-span-2 grid sm:grid-cols-2 gap-4">
-            {rules.map((r) => {
-              const Icon = r.icon
-              return (
-                <div key={r.title} className="rounded-2xl bg-white/5 border border-white/10 p-5 text-left">
-                  <Icon size={20} className="text-emerald-400" />
-                  <p className="mt-3 font-bold">{r.title}</p>
-                  <p className="mt-1 text-sm text-slate-400 leading-relaxed">{r.desc}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Agencies */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
-        <div className="order-2 lg:order-1 rounded-3xl bg-gradient-to-br from-emerald-50 to-sky-50 border border-slate-100 p-6 sm:p-8">
-          <div className="space-y-3">
-            {['Padaria Central', 'Studio Fit', 'Clínica Sorriso'].map((name, i) => (
-              <div key={name} className="flex items-center gap-3 bg-white rounded-2xl border border-slate-100 px-4 py-3 shadow-sm">
-                <span className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center text-sm font-bold">{name.charAt(0)}</span>
-                <span className="flex-1 text-left">
-                  <span className="block text-sm font-bold text-slate-900">{name}</span>
-                  <span className="block text-xs text-slate-500">
-                    {[t('3 atendentes · WhatsApp + Instagram', '3 agents · WhatsApp + Instagram'), t('1 atendente · Instagram', '1 agent · Instagram'), t('5 atendentes · WhatsApp + Ads', '5 agents · WhatsApp + Ads')][i]}
-                  </span>
-                </span>
-                <ArrowRight size={16} className="text-slate-400" />
-              </div>
-            ))}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-3 text-center">{t('Exemplo ilustrativo', 'Illustrative example')}</p>
-        </div>
-        <div className="order-1 lg:order-2 text-left">
-          <Building2 size={28} className="text-emerald-600" />
-          <h2 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-            {t('Para agências: um painel, vários clientes', 'For agencies: one panel, many clients')}
-          </h2>
-          <p className="mt-4 text-slate-600 leading-relaxed">
-            {t(
-                'Crie um ambiente isolado para cada cliente, defina quais módulos ele usa e quais membros da sua equipe podem acessá-lo.',
-                'Create an isolated workspace for each client, choose which modules it uses and which team members can access it.',
-            )}
-          </p>
-          <ul className="mt-6 space-y-3 text-slate-700">
-            {[
-              t('Troca de cliente em um clique', 'Switch clients in one click'),
-              t('Login próprio para cada cliente', 'Separate login for each client'),
-              t('Módulos liberados por cliente', 'Modules enabled per client'),
-              t('Visão consolidada de leads e conversão', 'Consolidated leads and conversion view'),
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center"><Check size={14} /></span>
-                {item}
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={() => navigate('/pricing')}
-            className="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold"
-          >
-            <Layers size={17} /> {t('Ver planos', 'See plans')}
-          </button>
         </div>
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="bg-slate-50 border-t border-slate-100">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 text-center">
-            {t('Perguntas frequentes', 'Frequently asked questions')}
-          </h2>
-          <div className="mt-10 space-y-3">
-            {faqs.map((f) => (
-              <details key={f.q} className="group bg-white rounded-2xl border border-slate-200 px-5 py-4 text-left">
-                <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-semibold text-slate-900">
-                  {f.q}
-                  <ChevronDown size={18} className="text-slate-400 shrink-0 transition-transform group-open:rotate-180" />
-                </summary>
-                <p className="mt-3 text-sm text-slate-600 leading-relaxed">{f.a}</p>
-              </details>
-            ))}
-          </div>
+      <section id="faq" className="max-w-3xl mx-auto px-4 sm:px-6 py-20">
+        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-center">{t('Perguntas frequentes', 'Frequently asked questions')}</h2>
+        <div className="mt-10 space-y-3">
+          {faqs.map((f) => (
+            <details key={f.q} className="group rounded-2xl border border-slate-200 px-5 py-4 text-left open:border-violet-300 open:bg-violet-50/40">
+              <summary className="flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-slate-900">
+                {f.q}
+                <ChevronDown size={18} className="text-violet-500 shrink-0 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-3 text-sm text-slate-600 leading-relaxed">{f.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-4 sm:px-6 py-16">
-        <div className="max-w-6xl mx-auto rounded-[2rem] bg-emerald-500 px-6 py-14 sm:px-12 text-center text-white">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            {t('Comece a atender melhor ainda hoje', 'Start serving customers better today')}
+      {/* Final CTA */}
+      <section className="px-4 sm:px-6 pb-20">
+        <div className={`max-w-6xl mx-auto rounded-[2rem] px-6 py-14 sm:px-12 text-center text-white ${GRADIENT}`}>
+          <h2 className="text-3xl sm:text-[2.6rem] font-extrabold tracking-tight leading-tight">
+            {t('Seu próximo cliente já está comentando', 'Your next customer is already commenting')}
           </h2>
-          <p className="mt-3 text-emerald-50 max-w-xl mx-auto">
-            {t('Crie sua conta, conecte suas contas da Meta e responda o primeiro cliente em minutos.', 'Create your account, connect your Meta accounts and answer your first customer in minutes.')}
+          <p className="mt-3 text-white/90 max-w-xl mx-auto">
+            {t('Crie sua primeira automação hoje e responda cada lead na hora.', 'Build your first automation today and answer every lead instantly.')}
           </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-8 inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-emerald-700 font-bold hover:bg-emerald-50"
-          >
-            {t('Criar conta grátis', 'Create free account')} <ArrowRight size={18} />
+          <button onClick={goSignup} className="mt-8 inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-violet-700 font-extrabold hover:bg-violet-50">
+            {t('Começar grátis', 'Start for free')} <ArrowRight size={18} />
           </button>
+          <p className="mt-3 text-xs text-white/80">{t('7 dias grátis · sem cartão de crédito', '7-day free trial · no credit card')}</p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400">
+      <footer className="bg-[#140b2e] text-violet-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-10 text-sm text-left">
           <div>
             <Logo dark />
-            <p className="mt-4 leading-relaxed">
-              {t(
-                'Atendimento e vendas pelo WhatsApp, Instagram e Meta Ads.',
-                'Customer service and sales on WhatsApp, Instagram and Meta Ads.',
-              )}
-            </p>
-            <div className="mt-4">
-              <LanguageToggle compact />
-            </div>
+            <p className="mt-4 leading-relaxed">{t('Automação de Direct, disparos no WhatsApp e gestão de tráfego.', 'DM automation, WhatsApp broadcasts and paid traffic management.')}</p>
+            <div className="mt-4"><LanguageToggle compact /></div>
           </div>
           <div>
             <p className="font-bold text-white">{t('Produto', 'Product')}</p>
             <ul className="mt-3 space-y-2">
-              <li><a href="#recursos" className="hover:text-white">{t('Recursos', 'Features')}</a></li>
-              <li><a href="#como-funciona" className="hover:text-white">{t('Como funciona', 'How it works')}</a></li>
+              <li><a href="#automacao" className="hover:text-white">{t('Automação', 'Automation')}</a></li>
+              <li><a href="#disparos" className="hover:text-white">{t('Disparos', 'Broadcasts')}</a></li>
+              <li><a href="#trafego" className="hover:text-white">{t('Tráfego', 'Traffic')}</a></li>
               <li><Link to="/pricing" className="hover:text-white">{t('Preços', 'Pricing')}</Link></li>
-              <li><Link to="/login" className="hover:text-white">{t('Entrar', 'Sign in')}</Link></li>
             </ul>
           </div>
           <div>
@@ -550,6 +577,7 @@ export default function Landing() {
             <ul className="mt-3 space-y-2">
               <li>{BRANDING.companyFullName}</li>
               <li><a href={`mailto:${BRANDING.supportEmail}`} className="hover:text-white break-all">{BRANDING.supportEmail}</a></li>
+              <li><Link to="/login" className="hover:text-white">{t('Entrar', 'Sign in')}</Link></li>
             </ul>
           </div>
         </div>
