@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -7,14 +8,16 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.core.phone import normalize_phone
+from app.core.i18n import t
+from app.services import messaging_policy
 from app.models.user import User
 from app.models.lead import Lead, LeadSource, LeadStatus
-from app.schemas import LeadResponse, LeadUpdate, LeadConsentUpdate
+from app.schemas import LeadResponse, LeadUpdate, LeadConsentUpdate, LeadCreate
 from app.services.lead_scoring import score_lead
 from app.services.lead_merge import merge_leads, auto_merge_by_phone, auto_merge_by_email
 
@@ -115,6 +118,75 @@ async def import_leads_csv(
     logger.info("Import CSV: tenant=%s created=%d skipped=%d invalid=%d",
                 current_user.tenant_id, created, skipped, invalid)
     return {"created": created, "skipped": skipped, "invalid": invalid}
+
+
+@router.post("", response_model=LeadResponse, status_code=201)
+async def create_lead(
+    data: LeadCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Cadastra um lead manualmente. Com telefone, o número vira o identificador do
+    lead — mensagens futuras desse número no WhatsApp caem neste mesmo lead.
+    """
+    phone = normalize_phone(data.phone) if data.phone else None
+    if data.phone and not phone:
+        raise HTTPException(422, t("Telefone inválido. Use DDD + número.", "Invalid phone. Use area code + number."))
+    email = (data.email or "").strip().lower() or None
+    ig_username = (data.instagram_username or "").strip().lstrip("@") or None
+    if not (phone or email or ig_username):
+        raise HTTPException(422, t(
+            "Informe ao menos telefone, e-mail ou @ do Instagram.",
+            "Provide at least a phone, email or Instagram username.",
+        ))
+    try:
+        status = LeadStatus(data.status)
+    except ValueError:
+        raise HTTPException(422, t("Status inválido.", "Invalid status."))
+
+    conditions = []
+    if phone:
+        conditions += [Lead.phone == phone, Lead.instagram_handle == phone]
+    if email:
+        conditions.append(Lead.email == email)
+    existing = (await db.execute(
+        select(Lead).where(Lead.account_id == current_user.tenant_id, or_(*conditions)).limit(1)
+    )).scalar_one_or_none() if conditions else None
+    if existing:
+        raise HTTPException(409, detail={
+            "code": "duplicate",
+            "lead_id": existing.id,
+            "message": t(
+                f"Já existe um lead com esse telefone ou e-mail: {existing.name or existing.instagram_handle}.",
+                f"A lead with this phone or email already exists: {existing.name or existing.instagram_handle}.",
+            ),
+        })
+
+    meta = {"created_by": current_user.username}
+    if ig_username:
+        meta["ig_username"] = ig_username
+    if data.notes:
+        meta["notes"] = data.notes.strip()
+
+    lead = Lead(
+        account_id=current_user.tenant_id,
+        name=data.name.strip(),
+        instagram_handle=phone or email or f"@{ig_username}",
+        phone=phone,
+        email=email,
+        source=LeadSource.MANUAL,
+        status=status,
+        metadata_json=json.dumps(meta, ensure_ascii=False),
+    )
+    if data.whatsapp_opt_in and phone:
+        messaging_policy.mark_opt_in(lead, "manual")
+    db.add(lead)
+    await db.flush()
+    await score_lead(lead)
+    await db.flush()
+    await db.refresh(lead)
+    return lead
 
 
 @router.get("", response_model=List[LeadResponse])

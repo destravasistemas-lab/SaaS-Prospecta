@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Users, Search, Flame, Thermometer, Snowflake,
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
-  TrendingUp, GitMerge,
+  TrendingUp, GitMerge, UserPlus,
 } from 'lucide-react'
 import api from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -109,6 +109,41 @@ export default function Leads() {
   const [mergeSearch, setMergeSearch] = useState('')
   const [merging, setMerging] = useState(false)
   const [mergeError, setMergeError] = useState('')
+
+  // Novo lead (cadastro manual)
+  const emptyNew = { name: '', phone: '', email: '', instagram_username: '', status: 'new', notes: '', whatsapp_opt_in: false }
+  const [showNew, setShowNew] = useState(false)
+  const [newLead, setNewLead] = useState(emptyNew)
+  const [creatingLead, setCreatingLead] = useState(false)
+  const [newError, setNewError] = useState('')
+
+  async function handleCreateLead(e: React.SyntheticEvent) {
+    e.preventDefault()
+    setNewError('')
+    if (!newLead.name.trim()) { setNewError(t('Informe o nome.', 'Enter the name.')); return }
+    if (!newLead.phone.trim() && !newLead.email.trim() && !newLead.instagram_username.trim()) {
+      setNewError(t('Informe ao menos telefone, e-mail ou @ do Instagram.', 'Provide at least a phone, email or Instagram username.'))
+      return
+    }
+    setCreatingLead(true)
+    try {
+      const { data } = await api.post<Lead>('/leads', {
+        ...newLead,
+        phone: newLead.phone.trim() || null,
+        email: newLead.email.trim() || null,
+        instagram_username: newLead.instagram_username.trim() || null,
+        notes: newLead.notes.trim() || null,
+      })
+      setLeads((prev) => [data, ...prev])
+      setShowNew(false)
+      setNewLead(emptyNew)
+    } catch (err: any) {
+      const detail = err.response?.data?.detail
+      setNewError(detail?.message || (typeof detail === 'string' ? detail : t('Erro ao criar lead.', 'Failed to create lead.')))
+    } finally {
+      setCreatingLead(false)
+    }
+  }
 
   useEffect(() => { loadLeads() }, [filterStatus, filterScore])
 
@@ -237,14 +272,23 @@ export default function Leads() {
           </p>
           <HelpLink section="leads" className="mt-1" />
         </div>
-        <button
-          onClick={handleScoreAll}
-          disabled={scoring || leads.length === 0}
-          className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <RefreshCw size={14} className={scoring ? 'animate-spin' : ''} />
-          {scoring ? t('Analisando...', 'Analyzing...') : t('Analisar Leads', 'Score Leads')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleScoreAll}
+            disabled={scoring || leads.length === 0}
+            className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.09] disabled:opacity-50 text-[#e2e2e8] text-sm font-medium rounded-lg transition-colors"
+          >
+            <RefreshCw size={14} className={scoring ? 'animate-spin' : ''} />
+            {scoring ? t('Analisando...', 'Analyzing...') : t('Analisar Leads', 'Score Leads')}
+          </button>
+          <button
+            onClick={() => { setNewLead(emptyNew); setNewError(''); setShowNew(true) }}
+            className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            <UserPlus size={14} />
+            {t('Novo lead', 'New lead')}
+          </button>
+        </div>
       </div>
 
       {/* Score summary cards */}
@@ -566,6 +610,84 @@ export default function Leads() {
               {t(`${filtered.length} de ${leads.length} leads`, `${filtered.length} of ${leads.length} leads`)}
               {noScore > 0 && t(` · ${noScore} sem score (clique em "Analisar Leads")`, ` · ${noScore} without score (click "Score Leads")`)}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Novo lead */}
+      {showNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <UserPlus size={16} className="text-indigo-400" /> {t('Novo lead', 'New lead')}
+              </h3>
+              <button onClick={() => setShowNew(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleCreateLead} className="space-y-3">
+              {newError && <div className="bg-red-900/20 border border-red-500/20 text-red-400 text-xs rounded-lg px-4 py-2.5">{newError}</div>}
+              {[
+                { key: 'name', label: t('Nome *', 'Name *'), placeholder: t('Ex.: Maria Souza', 'E.g. Mary Smith'), type: 'text' },
+                { key: 'phone', label: t('Telefone / WhatsApp', 'Phone / WhatsApp'), placeholder: '(83) 99999-8888', type: 'tel' },
+                { key: 'email', label: t('E-mail', 'Email'), placeholder: t('maria@empresa.com', 'mary@company.com'), type: 'email' },
+                { key: 'instagram_username', label: t('@ do Instagram', 'Instagram username'), placeholder: '@maria', type: 'text' },
+              ].map((f) => (
+                <div key={f.key}>
+                  <label className="block text-xs font-medium text-[#8a8a9e] mb-1">{f.label}</label>
+                  <input
+                    type={f.type}
+                    value={(newLead as any)[f.key]}
+                    onChange={(e) => setNewLead({ ...newLead, [f.key]: e.target.value })}
+                    placeholder={f.placeholder}
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  />
+                </div>
+              ))}
+              <p className="text-[10px] text-[#555] -mt-1">{t('Informe ao menos telefone, e-mail ou @ do Instagram.', 'Provide at least a phone, email or Instagram username.')}</p>
+              <div>
+                <label className="block text-xs font-medium text-[#8a8a9e] mb-1">Status</label>
+                <select
+                  value={newLead.status}
+                  onChange={(e) => setNewLead({ ...newLead, status: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                >
+                  {Object.keys(statusConfig).map((k) => <option key={k} value={k}>{statusLabel(k)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#8a8a9e] mb-1">{t('Observações', 'Notes')}</label>
+                <textarea
+                  value={newLead.notes}
+                  onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
+                  rows={2}
+                  placeholder={t('Ex.: conheceu a loja na feira', 'E.g. met us at the fair')}
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
+                />
+              </div>
+              <label className={`flex items-start gap-2 text-[11px] leading-relaxed cursor-pointer ${newLead.phone.trim() ? 'text-[#8a8a9e]' : 'text-[#444]'}`}>
+                <input
+                  type="checkbox"
+                  checked={newLead.whatsapp_opt_in}
+                  disabled={!newLead.phone.trim()}
+                  onChange={(e) => setNewLead({ ...newLead, whatsapp_opt_in: e.target.checked })}
+                  className="mt-0.5 accent-indigo-500"
+                />
+                <span>
+                  {t(
+                    'Este contato aceitou receber mensagens da empresa no WhatsApp (opt-in). A data e a origem ficam registradas.',
+                    'This contact agreed to receive messages from the business on WhatsApp (opt-in). The date and source are recorded.',
+                  )}
+                </span>
+              </label>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowNew(false)} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors">
+                  {t('Cancelar', 'Cancel')}
+                </button>
+                <button type="submit" disabled={creatingLead} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+                  {creatingLead ? t('Salvando…', 'Saving…') : t('Cadastrar lead', 'Create lead')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

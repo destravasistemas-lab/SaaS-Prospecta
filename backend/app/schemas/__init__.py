@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -35,6 +35,19 @@ class LeadUpdate(BaseModel):
     phone: Optional[str] = None
     status: Optional[str] = None
     ig_user_id: Optional[str] = None
+
+
+class LeadCreate(BaseModel):
+    """Lead cadastrado manualmente. Informe ao menos telefone, e-mail ou @ do Instagram."""
+    name: str = Field(..., min_length=1, max_length=255)
+    phone: Optional[str] = Field(default=None, max_length=50)
+    email: Optional[str] = Field(default=None, max_length=255)
+    instagram_username: Optional[str] = Field(default=None, max_length=100)
+    status: str = "new"
+    notes: Optional[str] = Field(default=None, max_length=2000)
+    whatsapp_opt_in: bool = Field(
+        default=False, description="O contato aceitou receber mensagens da empresa no WhatsApp",
+    )
 
 
 class LeadConsentUpdate(BaseModel):

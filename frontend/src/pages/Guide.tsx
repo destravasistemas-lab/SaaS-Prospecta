@@ -274,6 +274,7 @@ function sections(t: T): Section[] {
         'All contacts captured from WhatsApp, Instagram (comments and Direct) and ad forms, with source, ad, score and status.',
       ),
       steps: [
+        t('Clique em Novo lead para cadastrar um contato manualmente (nome + telefone, e-mail ou @ do Instagram). Com telefone, as mensagens desse número no WhatsApp caem no mesmo lead.', 'Click New lead to add a contact manually (name + phone, email or Instagram username). With a phone, WhatsApp messages from that number land on the same lead.'),
         t('Use a busca e os filtros por status e por score (Quentes, Mornos, Frios).', 'Use search and the status and score filters (Hot, Warm, Cold).'),
         t('Clique em Analisar Leads para calcular o score.', 'Click Score Leads to calculate the score.'),
         t('Clique no status para mudar o estágio (Novo → Contactado → Qualificado → Convertido).', 'Click the status to change the stage (New → Contacted → Qualified → Converted).'),
