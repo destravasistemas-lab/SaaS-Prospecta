@@ -70,7 +70,7 @@ export function useI18n(): I18nValue {
   return ctx
 }
 
-export function LanguageToggle({ className = '', compact = false }: { className?: string; compact?: boolean }) {
+export function LanguageToggle({ className = '', compact = false, light = false }: { className?: string; compact?: boolean; light?: boolean }) {
   const { lang, setLang, t } = useI18n()
   const options: { code: Lang; label: string; flag: string }[] = [
     { code: 'en', label: 'English', flag: '🇺🇸' },
@@ -80,7 +80,9 @@ export function LanguageToggle({ className = '', compact = false }: { className?
     <div
       role="group"
       aria-label={t('Idioma', 'Language')}
-      className={`inline-flex items-center rounded-lg border border-white/10 bg-white/[0.03] p-0.5 text-xs ${className}`}
+      className={`inline-flex items-center rounded-lg border p-0.5 text-xs ${
+        light ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-white/[0.03]'
+      } ${className}`}
     >
       {options.map((o) => (
         <button
@@ -90,7 +92,9 @@ export function LanguageToggle({ className = '', compact = false }: { className?
           aria-pressed={lang === o.code}
           title={o.label}
           className={`flex items-center gap-1 rounded-md px-2 py-1 font-medium transition-colors ${
-            lang === o.code ? 'bg-sky-500/20 text-sky-200' : 'text-[#64748b] hover:text-white'
+            light
+              ? lang === o.code ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+              : lang === o.code ? 'bg-sky-500/20 text-sky-200' : 'text-[#64748b] hover:text-white'
           }`}
         >
           <span aria-hidden>{o.flag}</span>
