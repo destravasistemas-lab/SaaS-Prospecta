@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Pause, Play, Trash2, ChevronRight, Building2, Copy, Download } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -159,7 +159,7 @@ export default function Marketing() {
       setCampName('')
       await loadData(datePreset)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao criar campanha.', 'Failed to create campaign.'))
+      setError(apiError(err, t('Erro ao criar campanha.', 'Failed to create campaign.')))
     } finally {
       setCreating(false)
     }
@@ -198,7 +198,7 @@ export default function Marketing() {
       await api.post(`/marketing/campaigns/${c.id}/copy`)
       await loadData(datePreset)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao duplicar campanha.', 'Failed to duplicate campaign.'))
+      setError(apiError(err, t('Erro ao duplicar campanha.', 'Failed to duplicate campaign.')))
     } finally {
       setBusyCampaignId(null)
     }
@@ -228,7 +228,7 @@ export default function Marketing() {
       a.click()
       URL.revokeObjectURL(url)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao exportar leads.', 'Failed to export leads.'))
+      setError(apiError(err, t('Erro ao exportar leads.', 'Failed to export leads.')))
     } finally {
       setExporting(false)
     }

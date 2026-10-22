@@ -56,6 +56,7 @@ function sections(t: T): Section[] {
       ),
       steps: [
         t('WhatsApp: clique em Conectar e siga o Cadastro Incorporado da Meta (escolha ou crie o Business, a conta do WhatsApp Business e o número).', "WhatsApp: click Connect and follow Meta's Embedded Signup (choose or create the Business, the WhatsApp Business account and the number)."),
+        t('Depois de conectar o WhatsApp, clique em Registrar número e escolha um PIN de 6 dígitos (uma vez só). Sem isso a Meta recusa os envios.', 'After connecting WhatsApp, click Register number and choose a 6-digit PIN (once). Without it Meta rejects sends.'),
         t('Instagram: clique em Conectar e entre com a conta profissional do Instagram.', 'Instagram: click Connect and log in with the Instagram professional account.'),
         t('Meta Ads: clique em Conectar, entre no Facebook e autorize a conta de anúncios e a Página.', 'Meta Ads: click Connect, log in to Facebook and authorize the ad account and Page.'),
         t('Para remover, clique em Desconectar: o acesso é revogado na Meta e o token é apagado.', 'To remove, click Disconnect: access is revoked at Meta and the token is deleted.'),
@@ -366,6 +367,8 @@ function sections(t: T): Section[] {
         t('"Contato pediu opt-out": a pessoa enviou SAIR/STOP. Ela só volta a receber se mandar VOLTAR/START.', '"Contact opted out": the person sent STOP. They only receive messages again if they send START.'),
         t('Template recusado: revise o texto (sem conteúdo proibido, variáveis com contexto) e envie de novo.', 'Template rejected: review the text (no prohibited content, variables with context) and submit again.'),
         t('Mensagens não chegam: confira em Conexões Meta se a conexão está "Conectado"; se expirou, reconecte.', 'Messages not arriving: check in Meta Connections that the connection says "Connected"; if it expired, reconnect.'),
+        t('"O número não está registrado na Cloud API" (erro 133010): em Conexões Meta → WhatsApp, clique em Registrar número.', '"The number is not registered on the Cloud API" (error 133010): in Meta Connections → WhatsApp, click Register number.'),
+        t('"Destinatário não está na lista de números de teste": com o app em desenvolvimento, só números adicionados no painel da Meta recebem mensagens.', '"Recipient is not in the test number list": while the app is in development, only numbers added in the Meta dashboard receive messages.'),
       ],
     },
   ]

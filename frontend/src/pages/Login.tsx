@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
 
@@ -73,7 +73,7 @@ export default function Login() {
       localStorage.setItem('tenant_id', data.tenant_id)
       navigate('/onboarding')
     } catch (err: any) {
-      setSignupError(err.response?.data?.detail || t('Erro ao criar conta.', 'Failed to create account.'))
+      setSignupError(apiError(err, t('Erro ao criar conta.', 'Failed to create account.')))
     } finally {
       setSignupLoading(false)
     }

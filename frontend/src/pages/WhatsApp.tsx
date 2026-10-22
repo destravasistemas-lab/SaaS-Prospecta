@@ -4,7 +4,7 @@ import {
   Bot, Clock, UserCheck, Send, Power, MessageSquare, Check, CheckCheck,
   FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2,
 } from 'lucide-react'
-import api, { WS_BASE } from '../services/api'
+import api, { WS_BASE, apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -329,7 +329,7 @@ export default function WhatsApp() {
       alert(detail.message)
       openTplPicker()
     } else {
-      alert(typeof detail === 'string' ? detail : fallback)
+      alert(apiError(err, fallback))
     }
   }
 

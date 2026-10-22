@@ -273,6 +273,7 @@ async def _send_whatsapp_outbound(
             context_text = target.text or f"[{target.media_type or 'mídia'}]"
 
     if conn and wa_id and (body.text or body.media_url or body.media_id):
+        resp: dict = {}
         try:
             token = decrypt_token(conn.access_token_encrypted)
             if body.media_id and body.media_type:
@@ -294,15 +295,14 @@ async def _send_whatsapp_outbound(
                     token, conn.phone_number_id, wa_id, body.text or "",
                     reply_to=reply_to_wamid,
                 )
-            sent_id = (resp.get("messages") or [{}])[0].get("id")
-            if sent_id:
-                message_id = sent_id
-            else:
-                status = "failed"
-                logger.warning("Envio WhatsApp sem wamid (conv=%s): %s", conv_id, resp)
         except Exception as exc:
-            status = "failed"
             logger.warning("Falha ao enviar WhatsApp (conv=%s): %s", conv_id, exc)
+            raise messaging_policy.meta_send_error(None, exc)
+        sent_id = (resp.get("messages") or [{}])[0].get("id")
+        if not sent_id:
+            logger.warning("Envio WhatsApp recusado pela Meta (conv=%s): %s", conv_id, resp.get("error"))
+            raise messaging_policy.meta_send_error(resp)
+        message_id = sent_id
     elif not conn:
         logger.info(
             "Sem conexão WhatsApp ativa — mensagem apenas armazenada (conv=%s)", conv_id
@@ -340,15 +340,14 @@ async def _send_instagram_outbound(
         try:
             token = decrypt_token(conn.access_token_encrypted)
             resp = await instagram_service.send_dm(token, recipient_id, body.text)
-            sent_id = resp.get("message_id")
-            if sent_id:
-                message_id = sent_id
-            else:
-                status = "failed"
-                logger.warning("Envio Instagram sem message_id (conv=%s): %s", conv_id, resp)
         except Exception as exc:
-            status = "failed"
             logger.warning("Falha ao enviar DM Instagram (conv=%s): %s", conv_id, exc)
+            raise messaging_policy.meta_send_error(None, exc)
+        sent_id = resp.get("message_id")
+        if not sent_id:
+            logger.warning("DM Instagram recusada pela Meta (conv=%s): %s", conv_id, resp.get("error"))
+            raise messaging_policy.meta_send_error(resp)
+        message_id = sent_id
     elif not conn:
         logger.info(
             "Sem conexão Instagram ativa — mensagem apenas armazenada (conv=%s)", conv_id

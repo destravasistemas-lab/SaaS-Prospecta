@@ -51,4 +51,16 @@ api.interceptors.response.use(
   }
 )
 
+/** Texto do erro da API: aceita detail em texto, {message} ou a lista de validação do FastAPI. */
+export function apiError(err: any, fallback: string): string {
+  const detail = err?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (detail && typeof detail.message === 'string') return detail.message
+  if (Array.isArray(detail) && detail.length) {
+    const msgs = detail.map((d: any) => d?.msg).filter(Boolean)
+    if (msgs.length) return msgs.join('; ')
+  }
+  return fallback
+}
+
 export default api

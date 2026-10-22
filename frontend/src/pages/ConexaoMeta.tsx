@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -147,6 +147,31 @@ export default function ConexaoMeta() {
   const { t, locale } = useI18n()
   const PROVIDERS = providers(t)
   const [showPerms, setShowPerms] = useState<Provider | null>(null)
+
+  // Registro do número na Cloud API (POST /whatsapp/register)
+  const [showRegister, setShowRegister] = useState(false)
+  const [pin, setPin] = useState('')
+  const [registering, setRegistering] = useState(false)
+  const [registerMsg, setRegisterMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    if (!/^\d{6}$/.test(pin)) {
+      setRegisterMsg({ ok: false, text: t('O PIN precisa ter 6 dígitos.', 'The PIN must have 6 digits.') })
+      return
+    }
+    setRegistering(true)
+    setRegisterMsg(null)
+    try {
+      await api.post('/whatsapp/register', { pin })
+      setRegisterMsg({ ok: true, text: t('Número registrado! Já pode enviar mensagens.', 'Number registered! You can send messages now.') })
+      setPin('')
+    } catch (err: any) {
+      setRegisterMsg({ ok: false, text: apiError(err, t('Não foi possível registrar o número.', 'Could not register the number.')) })
+    } finally {
+      setRegistering(false)
+    }
+  }
   const accountId = localStorage.getItem('tenant_id') ?? localStorage.getItem('account_id') ?? ''
   const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
@@ -231,7 +256,7 @@ export default function ConexaoMeta() {
       setModal({ state: 'success', provider: 'whatsapp' })
       loadConnections()
     } catch (err: any) {
-      setWaError(err.response?.data?.detail || t('Erro ao finalizar a conexão do WhatsApp.', 'Failed to complete the WhatsApp connection.'))
+      setWaError(apiError(err, t('Erro ao finalizar a conexão do WhatsApp.', 'Failed to complete the WhatsApp connection.')))
       setModal({ state: null, provider: null })
     } finally {
       waCode.current = null
@@ -283,7 +308,7 @@ export default function ConexaoMeta() {
         },
       )
     } catch (err: any) {
-      setWaError(err.response?.data?.detail || t('Embedded Signup não configurado.', 'Embedded Signup is not configured.'))
+      setWaError(apiError(err, t('Embedded Signup não configurado.', 'Embedded Signup is not configured.')))
       setConnecting(null)
       setModal({ state: null, provider: null })
     }
@@ -495,6 +520,15 @@ export default function ConexaoMeta() {
                 </div>
 
                 <div className="flex gap-2 flex-shrink-0">
+                  {isConnected && key === 'whatsapp' && (
+                    <button
+                      onClick={() => { setShowRegister(true); setRegisterMsg(null); setPin('') }}
+                      title={t('Necessário uma vez antes do primeiro envio (erro 133010)', 'Required once before the first send (error 133010)')}
+                      className="px-3 py-1.5 bg-white/[0.05] border border-white/[0.1] text-[#c0c0d0] rounded-lg text-xs font-medium hover:bg-white/[0.09] transition-colors"
+                    >
+                      {t('Registrar número', 'Register number')}
+                    </button>
+                  )}
                   {isConnected ? (
                     <button
                       onClick={() => handleDisconnect(conn)}
@@ -532,6 +566,42 @@ export default function ConexaoMeta() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Modal: registrar número na Cloud API */}
+      {showRegister && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <form onSubmit={handleRegister} className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-[#e2e2e8] font-semibold text-base">{t('Registrar número na Cloud API', 'Register number on the Cloud API')}</h3>
+            <p className="text-[#8a8a9e] text-xs leading-relaxed">
+              {t(
+                'Necessário uma vez para o número enviar mensagens pela API (sem isso a Meta retorna o erro 133010). Escolha um PIN de 6 dígitos: ele vira o PIN da verificação em duas etapas do número. Se o número já tiver um PIN, use o mesmo. Guarde esse PIN.',
+                'Required once so the number can send messages through the API (without it Meta returns error 133010). Choose a 6-digit PIN: it becomes the number\'s two-step verification PIN. If the number already has a PIN, use the same one. Keep this PIN safe.',
+              )}
+            </p>
+            <input
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              inputMode="numeric"
+              autoFocus
+              placeholder="000000"
+              className="w-full px-3 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-center tracking-[0.4em] text-lg rounded-lg focus:border-indigo-500 focus:outline-none"
+            />
+            {registerMsg && (
+              <p className={`text-xs ${registerMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{registerMsg.text}</p>
+            )}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowRegister(false)} className="flex-1 py-2.5 border border-white/[0.08] text-[#8a8a9e] hover:text-white text-sm rounded-lg">
+                {registerMsg?.ok ? t('Fechar', 'Close') : t('Cancelar', 'Cancel')}
+              </button>
+              {!registerMsg?.ok && (
+                <button type="submit" disabled={registering || pin.length !== 6} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+                  {registering ? t('Registrando…', 'Registering…') : t('Registrar', 'Register')}
+                </button>
+              )}
+            </div>
+          </form>
         </div>
       )}
 

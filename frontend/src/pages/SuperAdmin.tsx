@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Shield, Building2, Save } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 
 interface Tenant {
@@ -68,7 +68,7 @@ export default function SuperAdmin() {
     try {
       await api.put(`/admin/tenants/${t.id}/modules`, { blocked_modules: t.blocked_modules })
     } catch (err: any) {
-      alert(err.response?.data?.detail || tr('Erro ao salvar.', 'Failed to save.'))
+      alert(apiError(err, tr('Erro ao salvar.', 'Failed to save.')))
     } finally {
       setSavingId(null)
     }

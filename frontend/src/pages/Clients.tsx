@@ -4,7 +4,7 @@ import {
   CheckCircle, Wifi, WifiOff, X, Eye, EyeOff,
   BarChart3, Blocks, MailCheck, MailWarning,
 } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -149,7 +149,7 @@ export default function Clients() {
       setCreateEmail('')
       await loadData()
     } catch (err: any) {
-      setCreateError(err.response?.data?.detail || t('Erro ao criar cliente.', 'Failed to create client.'))
+      setCreateError(apiError(err, t('Erro ao criar cliente.', 'Failed to create client.')))
     } finally {
       setCreating(false)
     }
@@ -168,7 +168,7 @@ export default function Clients() {
       setModulesOf(null)
       await loadData()
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao salvar os módulos.', 'Failed to save modules.'))
+      setError(apiError(err, t('Erro ao salvar os módulos.', 'Failed to save modules.')))
     } finally {
       setSavingModules(false)
     }

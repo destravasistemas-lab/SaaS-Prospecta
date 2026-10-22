@@ -4,7 +4,7 @@ import {
   ArrowLeft, Plus, Pause, Play, Trash2, ChevronDown, ChevronRight,
   X, Image as ImageIcon, Video, GalleryHorizontal, Search, Copy, Camera,
 } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -373,7 +373,7 @@ export default function MarketingCampaignDetail() {
       await api.post(`/marketing/ad-sets/${as.id}/copy`)
       await loadAdSets()
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao duplicar conjunto.', 'Failed to duplicate ad set.'))
+      setError(apiError(err, t('Erro ao duplicar conjunto.', 'Failed to duplicate ad set.')))
     } finally {
       setBusyId(null)
     }
@@ -385,7 +385,7 @@ export default function MarketingCampaignDetail() {
       await api.post(`/marketing/ads/${ad.id}/copy`)
       await loadAds(adSetId)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao duplicar anúncio.', 'Failed to duplicate ad.'))
+      setError(apiError(err, t('Erro ao duplicar anúncio.', 'Failed to duplicate ad.')))
     } finally {
       setBusyId(null)
     }
@@ -420,7 +420,7 @@ export default function MarketingCampaignDetail() {
       setShowAdSetModal(false)
       await loadAdSets()
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao criar conjunto de anúncios.', 'Failed to create ad set.'))
+      setError(apiError(err, t('Erro ao criar conjunto de anúncios.', 'Failed to create ad set.')))
     } finally {
       setCreatingAdSet(false)
     }
@@ -442,7 +442,7 @@ export default function MarketingCampaignDetail() {
       const { data } = await api.get<IgPost[]>('/marketing/instagram-posts')
       setIgPosts(data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Não foi possível carregar seus posts do Instagram.', 'Could not load your Instagram posts.'))
+      setError(apiError(err, t('Não foi possível carregar seus posts do Instagram.', 'Could not load your Instagram posts.')))
     } finally {
       setLoadingPosts(false)
     }
@@ -506,7 +506,7 @@ export default function MarketingCampaignDetail() {
       setShowAdModal(null)
       await loadAds(adSetId)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao criar anúncio.', 'Failed to create ad.'))
+      setError(apiError(err, t('Erro ao criar anúncio.', 'Failed to create ad.')))
     } finally {
       setCreatingAd(false)
       setAdModalStep('idle')

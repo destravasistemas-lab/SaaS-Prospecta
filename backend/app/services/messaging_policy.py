@@ -146,3 +146,52 @@ def mark_opt_in(lead: Lead, source: str) -> None:
 def mark_opt_out(lead: Lead) -> None:
     lead.whatsapp_opt_in = False
     lead.whatsapp_opted_out_at = datetime.now(timezone.utc)
+
+
+# ---------------------------------------------------------------------------
+# Erros de envio da Meta → resposta clara para o usuário (nunca "sent" falso)
+# ---------------------------------------------------------------------------
+
+_META_ERROR_HINTS: dict[int, tuple[str, str]] = {
+    133010: (
+        "O número não está registrado na Cloud API. Em Conexões Meta → WhatsApp, clique em Registrar número.",
+        "The number is not registered on the Cloud API. In Meta Connections → WhatsApp, click Register number.",
+    ),
+    133005: (
+        "O PIN não confere com o da verificação em duas etapas do número.",
+        "The PIN does not match the number's two-step verification PIN.",
+    ),
+    131030: (
+        "O destinatário não está na lista de números de teste do app (modo desenvolvimento). Adicione-o no painel da Meta.",
+        "The recipient is not in the app's test number list (development mode). Add it in the Meta dashboard.",
+    ),
+    131047: (
+        "Janela de 24h expirada — envie um template aprovado.",
+        "24-hour window expired — send an approved template.",
+    ),
+    132001: (
+        "Template não encontrado ou não aprovado nesse idioma. Sincronize os templates.",
+        "Template not found or not approved in this language. Sync your templates.",
+    ),
+    190: (
+        "Token da Meta expirado ou inválido. Reconecte em Conexões Meta.",
+        "Meta token expired or invalid. Reconnect in Meta Connections.",
+    ),
+}
+
+
+def meta_send_error(resp: dict | None = None, exc: Exception | None = None) -> HTTPException:
+    """HTTPException 502 com a mensagem da Meta (e uma dica quando o código é conhecido)."""
+    err = (resp or {}).get("error") or {}
+    code = err.get("code")
+    meta_message = err.get("error_user_msg") or err.get("message") or (str(exc) if exc else "") or "unknown error"
+    hint = _META_ERROR_HINTS.get(code) if isinstance(code, int) else None
+    message = t(*hint) if hint else t(
+        f"A Meta recusou o envio: {meta_message}", f"Meta rejected the message: {meta_message}",
+    )
+    return HTTPException(502, detail={
+        "code": "meta_error",
+        "meta_code": code,
+        "meta_message": meta_message,
+        "message": message,
+    })

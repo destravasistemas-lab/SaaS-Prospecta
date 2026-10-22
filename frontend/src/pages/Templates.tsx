@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FileText, Plus, RefreshCw, Trash2, X, Link2, AlertCircle, Send, Users } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -129,7 +129,7 @@ export default function Templates() {
         setTimeout(() => { setShowCreate(false); setFormOk(''); load() }, 1600)
       }
     } catch (err: any) {
-      setFormError(err.response?.data?.detail || t('Erro ao criar template.', 'Failed to create template.'))
+      setFormError(apiError(err, t('Erro ao criar template.', 'Failed to create template.')))
     } finally {
       setCreating(false)
     }
@@ -165,9 +165,9 @@ export default function Templates() {
       setBcResult(t(
         `Disparo concluído: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`,
         `Broadcast finished: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`,
-      ))
+      ) + (data.error ? ` ${t('Motivo das falhas', 'Failure reason')}: ${data.error}` : ''))
     } catch (err: any) {
-      setBcResult(err.response?.data?.detail || t('Erro no disparo em massa.', 'Broadcast failed.'))
+      setBcResult(apiError(err, t('Erro no disparo em massa.', 'Broadcast failed.')))
     } finally {
       setBroadcasting(false)
     }

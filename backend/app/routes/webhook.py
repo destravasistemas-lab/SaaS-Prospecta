@@ -270,16 +270,18 @@ async def _build_person_context(
 async def _send_ig_bot_dm(token, tenant_id, conv, recipient_id, text, db) -> None:
     """Envia uma DM do bot no Instagram, persiste a mensagem e transmite via WebSocket."""
     resp = await instagram_service.send_dm(token, recipient_id, text)
+    mid = resp.get("message_id")
     bot_msg = Message(
         tenant_id=tenant_id, conversation_id=conv.id, sender="bot", text=text,
-        direction="outbound", wa_id=recipient_id, status="sent",
-        message_id=resp.get("message_id"), is_within_24h_window=True,
+        direction="outbound", wa_id=recipient_id, status="sent" if mid else "failed",
+        message_id=mid, is_within_24h_window=True,
+        payload=None if mid else {"error": (resp.get("error") or {}).get("message")},
     )
     db.add(bot_msg)
     await db.flush()
     await ws_manager.broadcast(tenant_id, "new_message", {
         "id": bot_msg.id, "conversation_id": conv.id, "sender": "bot", "text": text,
-        "direction": "outbound", "wa_id": recipient_id, "status": "sent",
+        "direction": "outbound", "wa_id": recipient_id, "status": bot_msg.status,
         "created_at": bot_msg.created_at.isoformat(),
     })
 
@@ -608,9 +610,10 @@ async def handle_ig_dm(account: Account, value: dict, db: AsyncSession):
                         text=reply_text,
                         direction="outbound",
                         wa_id=sender_id,
-                        status="sent",
+                        status="sent" if bot_mid else "failed",
                         message_id=bot_mid,
                         is_within_24h_window=True,
+                        payload=None if bot_mid else {"error": (resp.get("error") or {}).get("message")},
                     )
                     db.add(bot_msg)
                     await db.flush()
@@ -946,7 +949,7 @@ async def handle_whatsapp_message(
                         pass
                     resp = await whatsapp_service.send_text(token, conn.phone_number_id, wa_from, matched.auto_reply_message)
                     bot_wamid = (resp.get("messages") or [{}])[0].get("id")
-                    # Salva resposta do bot
+                    # Salva resposta do bot (como "failed" se a Meta recusou)
                     bot_msg = Message(
                         tenant_id=tenant_id,
                         conversation_id=conv.id,
@@ -954,9 +957,10 @@ async def handle_whatsapp_message(
                         text=matched.auto_reply_message,
                         direction="outbound",
                         wa_id=wa_from,
-                        status="sent",
+                        status="sent" if bot_wamid else "failed",
                         message_id=bot_wamid,
                         is_within_24h_window=True,
+                        payload=None if bot_wamid else {"error": (resp.get("error") or {}).get("message")},
                     )
                     db.add(bot_msg)
                     await db.flush()
@@ -1006,10 +1010,12 @@ async def _send_wpp_system_reply(conn, tenant_id: str, conv, wa_to: str, text: s
     except Exception as exc:
         logger.warning("Falha ao enviar resposta do sistema WhatsApp: %s", exc)
         return
+    wamid = (resp.get("messages") or [{}])[0].get("id")
     msg = Message(
         tenant_id=tenant_id, conversation_id=conv.id, sender="bot", text=text,
-        direction="outbound", wa_id=wa_to, status="sent",
-        message_id=(resp.get("messages") or [{}])[0].get("id"), is_within_24h_window=True,
+        direction="outbound", wa_id=wa_to, status="sent" if wamid else "failed",
+        message_id=wamid, is_within_24h_window=True,
+        payload=None if wamid else {"error": (resp.get("error") or {}).get("message")},
     )
     db.add(msg)
     await db.flush()

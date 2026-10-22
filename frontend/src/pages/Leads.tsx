@@ -4,7 +4,7 @@ import {
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
   TrendingUp, GitMerge, UserPlus,
 } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -213,7 +213,7 @@ export default function Leads() {
       setMergeSearch('')
       await loadLeads()
     } catch (err: any) {
-      setMergeError(err.response?.data?.detail || t('Erro ao mesclar leads.', 'Failed to merge leads.'))
+      setMergeError(apiError(err, t('Erro ao mesclar leads.', 'Failed to merge leads.')))
     } finally {
       setMerging(false)
     }

@@ -4,7 +4,7 @@ import {
   Bot, KeyRound, FileText, Trash2, RefreshCw, Upload, Eye,
   CreditCard, AlertTriangle, Save,
 } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -92,7 +92,7 @@ export default function AIConfig() {
       setApiKey('')
       setSuccess(t('Configuração salva!', 'Settings saved!'))
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao salvar.', 'Failed to save.'))
+      setError(apiError(err, t('Erro ao salvar.', 'Failed to save.')))
     } finally { setSaving(false) }
   }
 
@@ -108,7 +108,7 @@ export default function AIConfig() {
       setSuccess(t('PDF enviado — indexando em segundo plano.', 'PDF uploaded — indexing in the background.'))
       setDocs((await api.get<KnowledgeDoc[]>('/ai/knowledge')).data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro no upload do PDF.', 'PDF upload failed.'))
+      setError(apiError(err, t('Erro no upload do PDF.', 'PDF upload failed.')))
     } finally { setUploading(false) }
   }
 
@@ -124,7 +124,7 @@ export default function AIConfig() {
     try {
       await api.post(`/ai/knowledge/${id}/reindex`)
       setDocs((await api.get<KnowledgeDoc[]>('/ai/knowledge')).data)
-    } catch (err: any) { setError(err.response?.data?.detail || t('Erro ao reindexar.', 'Failed to reindex.')) }
+    } catch (err: any) { setError(apiError(err, t('Erro ao reindexar.', 'Failed to reindex.'))) }
   }
 
   async function viewChunks(doc: KnowledgeDoc) {

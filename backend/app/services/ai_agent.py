@@ -245,6 +245,10 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
         logger.warning("IA: falha no envio WhatsApp (tenant %s): %s — fila humana", tenant_id, exc)
         await _fallback_to_human(db, cfg, conn, conv, reason="send_failed")
         return
+    if not out_wamid:
+        logger.warning("IA: Meta recusou a resposta (tenant %s): %s — fila humana", tenant_id, resp.get("error"))
+        await _fallback_to_human(db, cfg, conn, conv, reason="send_failed")
+        return
 
     ai_msg = Message(
         tenant_id=tenant_id,

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BRANDING } from '../config/branding'
 import LegalLayout, { LegalSection } from '../components/LegalLayout'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 
 interface DeletionStatus {
@@ -30,7 +30,7 @@ export default function DataDeletion() {
       const { data } = await api.get<DeletionStatus>('/privacy/data-deletion-status', { params: { id: c.trim() } })
       setStatus(data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Não foi possível consultar o status.', 'Could not look up the status.'))
+      setError(apiError(err, t('Não foi possível consultar o status.', 'Could not look up the status.')))
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n } from '../i18n'
 
@@ -40,7 +40,7 @@ export default function CompletarCadastro() {
       localStorage.setItem('tenant_id', data.tenant_id)
       navigate('/app')
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao completar cadastro', 'Failed to complete sign-up'))
+      setError(apiError(err, t('Erro ao completar cadastro', 'Failed to complete sign-up')))
     } finally {
       setLoading(false)
     }

@@ -132,52 +132,59 @@ async def start_conversation_with_template(
         )
     )
     conn = conn_result.scalar_one_or_none()
-    if conn:
-        token = decrypt_token(conn.access_token_encrypted)
-        components = []
-        if body.template_variables:
-            components.append({
-                "type": "body",
-                "parameters": [{"type": "text", "text": v} for v in body.template_variables],
-            })
+    if not conn:
+        raise HTTPException(404, "Conexão WhatsApp não configurada. Use PUT /whatsapp/credentials.")
 
-        try:
-            result = await whatsapp_service.send_template(
-                token, conn.phone_number_id, wa_id,
-                body.template_name, body.template_language, components or None,
-            )
-            wamid = result.get("messages", [{}])[0].get("id")
+    token = decrypt_token(conn.access_token_encrypted)
+    components = []
+    if body.template_variables:
+        components.append({
+            "type": "body",
+            "parameters": [{"type": "text", "text": v} for v in body.template_variables],
+        })
 
-            msg = Message(
-                tenant_id=current_user.tenant_id,
-                conversation_id=conv.id,
-                sender=current_user.username,
-                text=f"[template:{body.template_name}] {' | '.join(body.template_variables)}",
-                direction="outbound",
-                wa_id=wa_id,
-                status="sent",
-                message_id=wamid,
-                template_name=body.template_name,
-                template_vars={"variables": body.template_variables},
-                is_within_24h_window=False,
-            )
-            db.add(msg)
-            await db.flush()
+    # Se a Meta recusar, a exceção desfaz a transação (lead e conversa não ficam criados)
+    try:
+        result = await whatsapp_service.send_template(
+            token, conn.phone_number_id, wa_id,
+            body.template_name, body.template_language, components or None,
+        )
+    except Exception as exc:
+        logger.warning("Falha ao enviar template na abertura: %s", exc)
+        raise messaging_policy.meta_send_error(None, exc)
+    wamid = (result.get("messages") or [{}])[0].get("id")
+    if not wamid:
+        logger.warning("Template de abertura recusado pela Meta: %s", result.get("error"))
+        raise messaging_policy.meta_send_error(result)
 
-            await ws_manager.broadcast(current_user.tenant_id, "new_message", {
-                "id": msg.id,
-                "conversation_id": conv.id,
-                "sender": current_user.username,
-                "text": msg.text,
-                "direction": "outbound",
-                "wa_id": wa_id,
-                "status": "sent",
-                "message_id": wamid,
-                "template_name": body.template_name,
-                "created_at": msg.created_at.isoformat(),
-            })
-        except Exception as exc:
-            logger.warning("Falha ao enviar template na abertura: %s", exc)
+    msg = Message(
+        tenant_id=current_user.tenant_id,
+        conversation_id=conv.id,
+        sender=current_user.username,
+        text=f"[template:{body.template_name}] {' | '.join(body.template_variables)}",
+        direction="outbound",
+        wa_id=wa_id,
+        status="sent",
+        message_id=wamid,
+        template_name=body.template_name,
+        template_vars={"variables": body.template_variables},
+        is_within_24h_window=False,
+    )
+    db.add(msg)
+    await db.flush()
+
+    await ws_manager.broadcast(current_user.tenant_id, "new_message", {
+        "id": msg.id,
+        "conversation_id": conv.id,
+        "sender": current_user.username,
+        "text": msg.text,
+        "direction": "outbound",
+        "wa_id": wa_id,
+        "status": "sent",
+        "message_id": wamid,
+        "template_name": body.template_name,
+        "created_at": msg.created_at.isoformat(),
+    })
 
     await db.refresh(conv)
     await ws_manager.broadcast(current_user.tenant_id, "conversation_created", {

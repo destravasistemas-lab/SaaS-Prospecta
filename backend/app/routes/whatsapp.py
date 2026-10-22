@@ -413,8 +413,7 @@ async def send_interactive(
 
     wamid = (result.get("messages") or [{}])[0].get("id")
     if not wamid:
-        detail = result.get("error", {}).get("message", "Falha ao enviar mensagem interativa.")
-        raise HTTPException(502, detail)
+        raise messaging_policy.meta_send_error(result)
 
     await _save_outbound(
         tenant_id=current_user.tenant_id,
@@ -460,7 +459,7 @@ async def react_to_message(
         token, conn.phone_number_id, to, msg.message_id, body.emoji
     )
     if resp.get("error"):
-        raise HTTPException(502, resp["error"].get("message", "Falha ao enviar reação."))
+        raise messaging_policy.meta_send_error(resp)
 
     # Persiste a reação do agente no payload da mensagem alvo
     msg.payload = {**(msg.payload or {}), "agent_reaction": body.emoji}
@@ -492,6 +491,40 @@ async def _resolve_recipient(conv_id: str, tenant_id: str, db: AsyncSession) -> 
     )
     row = result.first()
     return row[0] if row else None
+
+
+# ---------------------------------------------------------------------------
+# Registro do número na Cloud API (obrigatório antes do primeiro envio)
+# ---------------------------------------------------------------------------
+
+class RegisterNumberRequest(BaseModel):
+    pin: str = Field(
+        ..., pattern=r"^\d{6}$",
+        description="PIN de 6 dígitos da verificação em duas etapas (se o número já tiver um, use o mesmo)",
+    )
+
+
+@router.post("/register")
+async def register_number(
+    body: RegisterNumberRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Registra o número conectado na WhatsApp Cloud API (POST /{phone_number_id}/register).
+    Sem isso a Meta recusa os envios com o erro 133010 "Account not registered".
+    """
+    if current_user.role != "admin":
+        raise HTTPException(403, "Acesso negado")
+    conn = await _get_conn_or_404(current_user.tenant_id, db)
+    if not conn.phone_number_id:
+        raise HTTPException(422, t("Conexão sem Phone Number ID.", "Connection has no Phone Number ID."))
+    token = decrypt_token(conn.access_token_encrypted)
+    result = await whatsapp_service.register_phone_number(token, conn.phone_number_id, body.pin)
+    if result.get("error") or not result.get("success", True):
+        raise messaging_policy.meta_send_error(result)
+    logger.info("Número %s registrado na Cloud API (tenant %s)", conn.phone_number_id, current_user.tenant_id)
+    return {"success": True, "phone_number_id": conn.phone_number_id}
 
 
 # ---------------------------------------------------------------------------
@@ -586,7 +619,9 @@ async def send_text(
 
     result = await whatsapp_service.send_text(token, conn.phone_number_id, body.to, body.text)
 
-    wamid = result.get("messages", [{}])[0].get("id")
+    wamid = (result.get("messages") or [{}])[0].get("id")
+    if not wamid:
+        raise messaging_policy.meta_send_error(result)
     await _save_outbound(
         tenant_id=current_user.tenant_id,
         conv_id=body.conversation_id,
@@ -625,7 +660,9 @@ async def send_template(
         body.template_name, body.language, components or None,
     )
 
-    wamid = result.get("messages", [{}])[0].get("id")
+    wamid = (result.get("messages") or [{}])[0].get("id")
+    if not wamid:
+        raise messaging_policy.meta_send_error(result)
     await _save_outbound(
         tenant_id=current_user.tenant_id,
         conv_id=body.conversation_id,
@@ -1035,6 +1072,10 @@ async def broadcast_audience(
     return {"count": eligible, "with_phone": with_phone, "without_opt_in": with_phone - eligible}
 
 
+# Erros que valem para toda a lista (número não registrado, token, template, PIN)
+_BROADCAST_FATAL_CODES = {133010, 190, 132001, 133005}
+
+
 @router.post("/broadcast")
 async def broadcast_template(
     body: BroadcastRequest,
@@ -1068,6 +1109,7 @@ async def broadcast_template(
         }]
 
     sent, failed = 0, 0
+    first_error: str | None = None
     for lead in leads:
         to = lead.phone
         try:
@@ -1078,7 +1120,13 @@ async def broadcast_template(
             wamid = (resp.get("messages") or [{}])[0].get("id")
             if not wamid:
                 failed += 1
-                logger.warning("Broadcast sem wamid para %s: %s", to, resp)
+                err = resp.get("error") or {}
+                logger.warning("Broadcast recusado pela Meta para %s: %s", to, err)
+                # Erro da conta/template (não do contato): para tudo em vez de
+                # "tentar" a lista inteira e responder como se tivesse enviado.
+                if err.get("code") in _BROADCAST_FATAL_CODES and sent == 0:
+                    raise messaging_policy.meta_send_error(resp)
+                first_error = first_error or messaging_policy.meta_send_error(resp).detail["message"]
                 continue
             conv = await _get_or_create_conv_for_lead(current_user.tenant_id, lead.id, db)
             await _save_outbound(
@@ -1094,11 +1142,16 @@ async def broadcast_template(
                 db=db,
             )
             sent += 1
+        except HTTPException:
+            raise
         except Exception as exc:
             failed += 1
             logger.warning("Broadcast falhou para %s: %s", to, exc)
 
-    return {"total": len(leads), "sent": sent, "failed": failed}
+    result = {"total": len(leads), "sent": sent, "failed": failed}
+    if first_error:
+        result["error"] = first_error
+    return result
 
 
 # ---------------------------------------------------------------------------

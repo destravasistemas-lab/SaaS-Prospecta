@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n } from '../i18n'
 
@@ -26,7 +26,7 @@ export default function ResetPassword() {
       await api.post('/auth/reset-password', { token, password })
       setDone(true)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao redefinir senha.', 'Failed to reset password.'))
+      setError(apiError(err, t('Erro ao redefinir senha.', 'Failed to reset password.')))
     } finally {
       setLoading(false)
     }

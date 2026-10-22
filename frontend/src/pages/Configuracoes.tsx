@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n, type Lang } from '../i18n'
 import HelpLink from '../components/HelpLink'
@@ -27,7 +27,7 @@ export default function Configuracoes() {
       await api.put(`/accounts/${tenantId}`, { brand_name: brandName.trim() })
       setMessage(t('Salvo!', 'Saved!'))
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao salvar.', 'Failed to save.'))
+      setError(apiError(err, t('Erro ao salvar.', 'Failed to save.')))
     } finally {
       setSaving(false)
     }

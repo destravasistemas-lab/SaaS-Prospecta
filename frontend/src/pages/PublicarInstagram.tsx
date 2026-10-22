@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Send } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -132,7 +132,7 @@ export default function PublicarInstagram() {
       setMediaType(res.data.media_type)
       setUploadedName(file.name)
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao enviar o arquivo.', 'Failed to upload the file.'))
+      setError(apiError(err, t('Erro ao enviar o arquivo.', 'Failed to upload the file.')))
     } finally {
       setUploading(false)
     }
@@ -170,7 +170,7 @@ export default function PublicarInstagram() {
       resetForm()
       loadAutomations()
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao publicar.', 'Failed to publish.'))
+      setError(apiError(err, t('Erro ao publicar.', 'Failed to publish.')))
     } finally { setPublishing(false) }
   }
 
@@ -192,7 +192,7 @@ export default function PublicarInstagram() {
       resetForm(); setScheduledFor('')
       loadSchedules()
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao agendar.', 'Failed to schedule.'))
+      setError(apiError(err, t('Erro ao agendar.', 'Failed to schedule.')))
     } finally { setPublishing(false) }
   }
 
@@ -234,7 +234,7 @@ export default function PublicarInstagram() {
       setSuccess(t('Publicado agora!', 'Published now!'))
       loadSchedules()
     } catch (err: any) {
-      setError(err.response?.data?.detail || t('Erro ao publicar.', 'Failed to publish.'))
+      setError(apiError(err, t('Erro ao publicar.', 'Failed to publish.')))
     }
   }
 

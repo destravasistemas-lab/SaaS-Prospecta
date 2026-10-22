@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 
 export default function VerifyEmail() {
@@ -23,7 +23,7 @@ export default function VerifyEmail() {
       })
       .catch((err) => {
         setStatus('error')
-        setMessage(err.response?.data?.detail || t('Erro ao confirmar e-mail.', 'Failed to confirm email.'))
+        setMessage(apiError(err, t('Erro ao confirmar e-mail.', 'Failed to confirm email.')))
       })
   }, [token])
 

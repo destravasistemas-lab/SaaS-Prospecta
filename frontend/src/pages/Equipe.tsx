@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Users, Plus, Trash2, X, Eye, EyeOff, Shield, User as UserIcon, Building2 } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -115,7 +115,7 @@ export default function Equipe() {
       })
       setAssignMember(null)
     } catch (err: any) {
-      alert(err.response?.data?.detail || t('Erro ao salvar atribuições.', 'Failed to save assignments.'))
+      alert(apiError(err, t('Erro ao salvar atribuições.', 'Failed to save assignments.')))
     } finally {
       setSavingAssign(false)
     }
@@ -163,7 +163,7 @@ export default function Equipe() {
       setShowCreate(false)
       await load()
     } catch (err: any) {
-      setCreateError(err.response?.data?.detail || t('Erro ao criar membro.', 'Failed to create member.'))
+      setCreateError(apiError(err, t('Erro ao criar membro.', 'Failed to create member.')))
     } finally {
       setCreating(false)
     }
@@ -192,7 +192,7 @@ export default function Equipe() {
       setModulesMember(null)
       await load()
     } catch (err: any) {
-      alert(err.response?.data?.detail || t('Erro ao salvar módulos.', 'Failed to save modules.'))
+      alert(apiError(err, t('Erro ao salvar módulos.', 'Failed to save modules.')))
     } finally {
       setSavingModules(false)
     }
@@ -204,7 +204,7 @@ export default function Equipe() {
       await api.delete(`/auth/users/${id}`)
       await load()
     } catch (err: any) {
-      alert(err.response?.data?.detail || t('Erro ao remover.', 'Failed to remove.'))
+      alert(apiError(err, t('Erro ao remover.', 'Failed to remove.')))
     }
   }
 

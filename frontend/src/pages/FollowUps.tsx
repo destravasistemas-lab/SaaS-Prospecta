@@ -4,7 +4,7 @@ import {
   Clock, MessageSquare, CheckCircle2, AlertCircle, Link2, ArrowRight,
   Send, Upload, Users, X, Repeat,
 } from 'lucide-react'
-import api from '../services/api'
+import api, { apiError } from '../services/api'
 import AutoFollowUps from '../components/AutoFollowUps'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
@@ -137,7 +137,7 @@ export default function FollowUps() {
       ))
       await loadLeads()
     } catch (err: any) {
-      setImportMsg(err.response?.data?.detail || t('Erro ao importar CSV.', 'Failed to import CSV.'))
+      setImportMsg(apiError(err, t('Erro ao importar CSV.', 'Failed to import CSV.')))
     } finally {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -172,9 +172,12 @@ export default function FollowUps() {
         variables: tplVars,
         lead_ids: selected.size > 0 ? [...selected] : leads.map((l) => l.id),
       })
-      setDispatchResult(t(`Disparo: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`, `Broadcast: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`))
+      setDispatchResult(
+        t(`Disparo: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`, `Broadcast: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`)
+        + (data.error ? ` ${t('Motivo das falhas', 'Failure reason')}: ${data.error}` : ''),
+      )
     } catch (err: any) {
-      setDispatchResult(err.response?.data?.detail || t('Erro no disparo.', 'Broadcast failed.'))
+      setDispatchResult(apiError(err, t('Erro no disparo.', 'Broadcast failed.')))
     } finally {
       setDispatching(false)
     }
