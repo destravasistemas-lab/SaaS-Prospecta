@@ -4,6 +4,7 @@ import { Pause, Play, Trash2, ChevronRight, Building2, Copy, Download } from 'lu
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import FacebookPagePanel from '../components/FacebookPagePanel'
 
 interface Campaign {
   id: string
@@ -36,6 +37,13 @@ interface AdAccount {
   account_status: number
   currency: string
   business_name: string | null
+  relationship?: 'owned' | 'client' | null
+}
+
+interface Business {
+  id: string
+  name: string
+  ad_accounts: AdAccount[]
 }
 
 interface AdAttribution {
@@ -73,6 +81,7 @@ export default function Marketing() {
   const [error, setError] = useState('')
 
   const [accounts, setAccounts] = useState<AdAccount[]>([])
+  const [businesses, setBusinesses] = useState<Business[]>([])
   const [activeAccountId, setActiveAccountId] = useState<string | null>(null)
   const [switchingAccount, setSwitchingAccount] = useState(false)
   const [attribution, setAttribution] = useState<AttributionSummary | null>(null)
@@ -100,6 +109,10 @@ export default function Marketing() {
       setAccounts(data)
       if (data.length > 0) setActiveAccountId((prev) => prev ?? data[0].id)
     } catch { /* sem conexão de anúncios ainda — silencioso, o erro de campanhas cobre isso */ }
+    try {
+      const { data } = await api.get<Business[]>('/marketing/businesses')
+      setBusinesses(data.filter((b) => b.ad_accounts.length > 0))
+    } catch { /* portfólios são opcionais — sem eles mostramos a lista simples */ }
   }, [])
 
   const loadData = useCallback(async (preset: string) => {
@@ -243,20 +256,37 @@ export default function Marketing() {
           <HelpLink section="campanhas" className="mt-1" />
         </div>
         <div className="flex items-center gap-2">
-          {accounts.length > 1 && (
-            <div className="flex items-center gap-1.5 bg-[#170e2c] border border-white/[0.08] rounded-lg px-2.5 py-1.5">
+          {(accounts.length > 0 || businesses.length > 0) && (
+            <div className="flex items-center gap-1.5 bg-[#170e2c] border border-white/[0.08] rounded-lg px-2.5 py-1.5" title={t('Conta de anúncios', 'Ad account')}>
               <Building2 size={13} className="text-[#5a5a6e]" />
               <select
                 value={activeAccountId ?? ''}
                 onChange={(e) => handleSwitchAccount(e.target.value)}
                 disabled={switchingAccount}
-                className="bg-transparent text-[#e2e2e8] text-xs outline-none disabled:opacity-50"
+                className="bg-transparent text-[#e2e2e8] text-xs outline-none disabled:opacity-50 max-w-[260px]"
               >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[#170e2c]">
-                    {a.name} ({a.currency})
-                  </option>
+                {businesses.map((b) => (
+                  <optgroup key={b.id} label={`${t('Portfólio', 'Business')}: ${b.name}`} className="bg-[#170e2c]">
+                    {b.ad_accounts.map((a) => (
+                      <option key={`${b.id}-${a.id}`} value={a.id} className="bg-[#170e2c]">
+                        {a.name} ({a.currency}){a.relationship === 'client' ? ` · ${t('cliente', 'client')}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
+                {(() => {
+                  const inBusiness = new Set(businesses.flatMap((b) => b.ad_accounts.map((a) => a.id)))
+                  const others = accounts.filter((a) => !inBusiness.has(a.id))
+                  const options = others.map((a) => (
+                    <option key={a.id} value={a.id} className="bg-[#170e2c]">
+                      {a.name} ({a.currency})
+                    </option>
+                  ))
+                  if (others.length === 0) return null
+                  return businesses.length > 0
+                    ? <optgroup label={t('Outras contas', 'Other ad accounts')} className="bg-[#170e2c]">{options}</optgroup>
+                    : options
+                })()}
               </select>
             </div>
           )}
@@ -364,6 +394,8 @@ export default function Marketing() {
           </div>
         </div>
       )}
+
+      <FacebookPagePanel />
 
       {/* Campanhas */}
       <h3 className="text-xl font-bold text-[#e2e2e8] mb-5">{t('Suas Campanhas', 'Your Campaigns')}</h3>

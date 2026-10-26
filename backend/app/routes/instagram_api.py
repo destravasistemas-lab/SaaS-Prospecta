@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 import httpx
@@ -31,6 +31,7 @@ from app.services.instagram_service import (
 )
 from app.services.meta_token_service import decrypt_token
 from app.services import storage_service
+from app.services import instagram_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/instagram", tags=["instagram-api"])
@@ -689,3 +690,105 @@ async def send_instagram_dm(
             await db.flush()
 
     return {"status": "sent", "message_id": resp.json().get("message_id")}
+
+
+# ---------------------------------------------------------------------------
+# Comment moderation (instagram_business_manage_comments)
+# ---------------------------------------------------------------------------
+
+class CommentMessage(BaseModel):
+    message: str = Field(..., min_length=1, max_length=2200)
+
+
+class CommentVisibility(BaseModel):
+    hide: bool
+
+
+def _graph_result(result: dict, default: str) -> dict:
+    if "error" in result:
+        raise HTTPException(status_code=502, detail=result["error"].get("message") or default)
+    return result
+
+
+@router.get("/media/{media_id}/comments")
+async def get_media_comments(
+    media_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Comentários de um post (com respostas), para moderar pelo app."""
+    _, token, _ = await _get_ig_connection(db, current_user)
+    try:
+        comments = await instagram_service.list_comments(token, media_id)
+    except TokenExpiredError:
+        raise HTTPException(status_code=401, detail="Token expirado. Reconecte o Instagram.")
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return [
+        {
+            "id": c.get("id"),
+            "text": c.get("text", ""),
+            "username": c.get("username"),
+            "timestamp": c.get("timestamp"),
+            "hidden": bool(c.get("hidden")),
+            "like_count": c.get("like_count", 0),
+            "replies": [
+                {
+                    "id": r.get("id"),
+                    "text": r.get("text", ""),
+                    "username": r.get("username"),
+                    "timestamp": r.get("timestamp"),
+                    "hidden": bool(r.get("hidden")),
+                }
+                for r in (c.get("replies") or {}).get("data", [])
+            ],
+        }
+        for c in comments
+    ]
+
+
+@router.post("/media/{media_id}/comments", status_code=201)
+async def create_media_comment(
+    media_id: str,
+    body: CommentMessage,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _, token, _ = await _get_ig_connection(db, current_user)
+    result = _graph_result(await instagram_service.create_comment(token, media_id, body.message), "Erro ao comentar.")
+    return {"id": result.get("id")}
+
+
+@router.post("/comments/{comment_id}/replies", status_code=201)
+async def reply_comment(
+    comment_id: str,
+    body: CommentMessage,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _, token, _ = await _get_ig_connection(db, current_user)
+    result = _graph_result(await instagram_service.reply_to_comment(token, comment_id, body.message), "Erro ao responder.")
+    return {"id": result.get("id")}
+
+
+@router.post("/comments/{comment_id}/visibility")
+async def set_comment_visibility(
+    comment_id: str,
+    body: CommentVisibility,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Oculta ou reexibe um comentário no post."""
+    _, token, _ = await _get_ig_connection(db, current_user)
+    _graph_result(await instagram_service.set_comment_hidden(token, comment_id, body.hide), "Erro ao atualizar o comentário.")
+    return {"id": comment_id, "hidden": body.hide}
+
+
+@router.delete("/comments/{comment_id}", status_code=204)
+async def remove_comment(
+    comment_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _, token, _ = await _get_ig_connection(db, current_user)
+    _graph_result(await instagram_service.delete_comment(token, comment_id), "Erro ao excluir o comentário.")

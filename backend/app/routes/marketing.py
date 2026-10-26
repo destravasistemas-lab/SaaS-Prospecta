@@ -33,6 +33,40 @@ class AdAccountOut(BaseModel):
     account_status: int = 0
     currency: str = "BRL"
     business_name: str | None = None
+    relationship: str | None = None
+
+
+class BusinessOut(BaseModel):
+    id: str
+    name: str
+    ad_accounts: list[AdAccountOut] = []
+
+
+class PageOut(BaseModel):
+    id: str
+    name: str
+    category: str | None = None
+    picture_url: str | None = None
+    tasks: list[str] = []
+    selected: bool = False
+
+
+class SelectPageRequest(BaseModel):
+    page_id: str = Field(..., pattern=r"^\d+$")
+
+
+class PageWebhookStatus(BaseModel):
+    page_id: str
+    subscribed: bool
+    fields: list[str] = []
+
+
+class PagePostOut(BaseModel):
+    id: str
+    message: str | None = None
+    picture_url: str | None = None
+    permalink: str | None = None
+    created_time: str | None = None
 
 
 class SwitchAdAccountRequest(BaseModel):
@@ -139,6 +173,8 @@ class AdCreativeCreate(BaseModel):
     carousel_items: list[CarouselItem] | None = Field(default=None, min_length=2, max_length=10)
     # Impulsionar um post existente do Instagram (link_url é obrigatório nesse caso)
     source_instagram_media_id: Optional[str] = None
+    # Impulsionar um post existente da Página do Facebook ("{page_id}_{post_id}")
+    source_page_post_id: Optional[str] = Field(default=None, pattern=r"^\d+_\d+$")
     cta_type: str = Field(default="LEARN_MORE")
 
 
@@ -406,6 +442,154 @@ async def api_switch_ad_account(
     conn.ad_account_id = body.ad_account_id
     await db.flush()
     return {"success": True, "ad_account_id": conn.ad_account_id}
+
+
+# ---------------------------------------------------------------------------
+# Business portfolios & Facebook Pages
+# ---------------------------------------------------------------------------
+
+@router.get("/businesses", response_model=list[BusinessOut])
+async def api_list_businesses(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Portfólios empresariais e suas contas de anúncios (próprias e de clientes)."""
+    _, token = await _get_ads_connection(current_user, db)
+    out: list[BusinessOut] = []
+    for b in await ads_service.list_businesses(token):
+        seen: set[str] = set()
+        accounts: list[AdAccountOut] = []
+        for edge, relationship in (("owned_ad_accounts", "owned"), ("client_ad_accounts", "client")):
+            for a in (b.get(edge) or {}).get("data", []):
+                if not a.get("id") or a["id"] in seen:
+                    continue
+                seen.add(a["id"])
+                accounts.append(AdAccountOut(
+                    id=a["id"],
+                    name=a.get("name", ""),
+                    account_status=a.get("account_status", 0),
+                    currency=a.get("currency", "BRL"),
+                    business_name=b.get("name"),
+                    relationship=relationship,
+                ))
+        out.append(BusinessOut(id=b.get("id", ""), name=b.get("name", ""), ad_accounts=accounts))
+    return out
+
+
+async def _page_token(token: str, page_id: str) -> str:
+    """Token da Página — só para Páginas que o usuário realmente gerencia."""
+    pages = await ads_service.list_pages(token)
+    page = next((p for p in pages if p.get("id") == page_id), None)
+    if not page:
+        raise HTTPException(404, "Página não encontrada entre as Páginas que você gerencia.")
+    return page.get("access_token") or token
+
+
+@router.get("/pages", response_model=list[PageOut])
+async def api_list_pages(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Páginas do Facebook que o usuário gerencia; `selected` marca a usada nos anúncios."""
+    conn, token = await _get_ads_connection(current_user, db)
+    return [
+        PageOut(
+            id=p.get("id", ""),
+            name=p.get("name", ""),
+            category=p.get("category"),
+            picture_url=((p.get("picture") or {}).get("data") or {}).get("url"),
+            tasks=p.get("tasks", []),
+            selected=p.get("id") == conn.page_id,
+        )
+        for p in await ads_service.list_pages(token)
+    ]
+
+
+@router.put("/page")
+async def api_select_page(
+    body: SelectPageRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Define a Página usada nos anúncios e a inscreve no webhook de Lead Ads."""
+    conn, token = await _get_ads_connection(current_user, db)
+    page_token = await _page_token(token, body.page_id)
+    conn.page_id = body.page_id
+    await db.flush()
+    result = await ads_service.subscribe_page(page_token, body.page_id)
+    return {"success": True, "page_id": body.page_id, "leadgen_subscribed": bool(result.get("success"))}
+
+
+@router.get("/pages/{page_id}/webhooks", response_model=PageWebhookStatus)
+async def api_page_webhooks(
+    page_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _, token = await _get_ads_connection(current_user, db)
+    page_token = await _page_token(token, page_id)
+    try:
+        fields = await ads_service.get_page_subscribed_fields(page_token, page_id)
+    except ValueError as exc:
+        raise HTTPException(502, str(exc))
+    return PageWebhookStatus(page_id=page_id, subscribed="leadgen" in fields, fields=fields)
+
+
+@router.post("/pages/{page_id}/webhooks", response_model=PageWebhookStatus)
+async def api_subscribe_page_webhooks(
+    page_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Inscreve o app no webhook `leadgen` da Página (leads de formulários chegam em tempo real)."""
+    _, token = await _get_ads_connection(current_user, db)
+    page_token = await _page_token(token, page_id)
+    result = await ads_service.subscribe_page(page_token, page_id)
+    if not result.get("success"):
+        raise HTTPException(400, _meta_error(result, "Erro ao inscrever a Página nos webhooks"))
+    return PageWebhookStatus(page_id=page_id, subscribed=True, fields=["leadgen"])
+
+
+@router.delete("/pages/{page_id}/webhooks", response_model=PageWebhookStatus)
+async def api_unsubscribe_page_webhooks(
+    page_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    _, token = await _get_ads_connection(current_user, db)
+    page_token = await _page_token(token, page_id)
+    result = await ads_service.unsubscribe_page(page_token, page_id)
+    if not result.get("success"):
+        raise HTTPException(400, _meta_error(result, "Erro ao cancelar a inscrição da Página"))
+    return PageWebhookStatus(page_id=page_id, subscribed=False, fields=[])
+
+
+@router.get("/page-posts", response_model=list[PagePostOut])
+async def api_list_page_posts(
+    page_id: str | None = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Posts publicados pela Página — podem ser impulsionados como anúncio."""
+    conn, token = await _get_ads_connection(current_user, db)
+    pid = page_id or conn.page_id
+    if not pid:
+        raise HTTPException(400, "Selecione uma Página do Facebook primeiro.")
+    page_token = await _page_token(token, pid)
+    try:
+        posts = await ads_service.list_page_posts(page_token, pid)
+    except ValueError as exc:
+        raise HTTPException(502, str(exc))
+    return [
+        PagePostOut(
+            id=p.get("id", ""),
+            message=p.get("message"),
+            picture_url=p.get("full_picture"),
+            permalink=p.get("permalink_url"),
+            created_time=p.get("created_time"),
+        )
+        for p in posts
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -709,6 +893,15 @@ async def api_create_creative(
 ):
     conn, token = await _get_ads_connection(current_user, db)
     ad_account_id = _require_ad_account(conn)
+
+    # Impulsionar um post existente da Página do Facebook
+    if body.source_page_post_id:
+        result = await ads_service.create_creative_from_page_post(
+            token, ad_account_id, body.name, body.source_page_post_id,
+        )
+        if "id" not in result:
+            raise HTTPException(status_code=400, detail=_meta_error(result, "Erro ao criar criativo do post"))
+        return {"success": True, "creative_id": result["id"]}
 
     # Impulsionar um post existente do Instagram
     if body.source_instagram_media_id:

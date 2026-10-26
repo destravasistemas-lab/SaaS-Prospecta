@@ -115,6 +115,49 @@ async def reply_to_comment(token: str, comment_id: str, message: str) -> dict:
     )
 
 
+async def list_comments(token: str, media_id: str, limit: int = 50) -> list[dict]:
+    """Comentários de uma mídia da conta, com as respostas de cada um."""
+    data = await _request(
+        "GET",
+        f"{settings.ig_graph_url}/{media_id}/comments",
+        params={
+            "access_token": token,
+            "fields": "id,text,username,timestamp,hidden,like_count,replies{id,text,username,timestamp,hidden}",
+            "limit": limit,
+        },
+    )
+    if "error" in data:
+        raise ValueError(data["error"].get("message") or "Graph error")
+    return data.get("data", [])
+
+
+async def create_comment(token: str, media_id: str, message: str) -> dict:
+    """Publica um comentário novo na mídia, em nome da conta profissional."""
+    return await _request(
+        "POST",
+        f"{settings.ig_graph_url}/{media_id}/comments",
+        params={"access_token": token},
+        json={"message": message},
+    )
+
+
+async def set_comment_hidden(token: str, comment_id: str, hide: bool) -> dict:
+    """Oculta/reexibe um comentário (a API do Instagram não permite editar o texto)."""
+    return await _request(
+        "POST",
+        f"{settings.ig_graph_url}/{comment_id}",
+        params={"access_token": token, "hide": "true" if hide else "false"},
+    )
+
+
+async def delete_comment(token: str, comment_id: str) -> dict:
+    return await _request(
+        "DELETE",
+        f"{settings.ig_graph_url}/{comment_id}",
+        params={"access_token": token},
+    )
+
+
 async def send_private_reply(token: str, comment_id: str, message: str) -> dict:
     """
     Send a private DM in response to a specific comment ("private reply").

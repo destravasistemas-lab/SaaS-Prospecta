@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Pause, Play, Trash2, ChevronDown, ChevronRight,
-  X, Image as ImageIcon, Video, GalleryHorizontal, Search, Copy, Camera,
+  X, Image as ImageIcon, Video, GalleryHorizontal, Search, Copy, Camera, Newspaper,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -80,7 +80,14 @@ interface TargetingOption {
   type?: string | null
 }
 
-type CreativeKind = 'image' | 'video' | 'carousel' | 'post'
+type CreativeKind = 'image' | 'video' | 'carousel' | 'post' | 'page_post'
+
+interface PagePost {
+  id: string
+  message: string | null
+  picture_url: string | null
+  created_time: string | null
+}
 
 interface IgPost {
   id: string
@@ -247,6 +254,9 @@ export default function MarketingCampaignDetail() {
   const [igPosts, setIgPosts] = useState<IgPost[]>([])
   const [loadingPosts, setLoadingPosts] = useState(false)
   const [selectedPostId, setSelectedPostId] = useState('')
+  const [pagePosts, setPagePosts] = useState<PagePost[]>([])
+  const [loadingPagePosts, setLoadingPagePosts] = useState(false)
+  const [selectedPagePostId, setSelectedPagePostId] = useState('')
 
   const loadCampaign = useCallback(async () => {
     try {
@@ -431,6 +441,7 @@ export default function MarketingCampaignDetail() {
     setCreativeImageUrl(''); setCreativeLinkUrl(''); setCreativeVideoFile(null)
     setCarouselItems([{ image_url: '', link_url: '', message: '' }, { image_url: '', link_url: '', message: '' }])
     setSelectedPostId('')
+    setSelectedPagePostId('')
     setAdModalStep('idle')
     setShowAdModal(adSetId)
   }
@@ -448,7 +459,21 @@ export default function MarketingCampaignDetail() {
     }
   }
 
+  async function loadPagePosts() {
+    if (pagePosts.length > 0 || loadingPagePosts) return
+    setLoadingPagePosts(true)
+    try {
+      const { data } = await api.get<PagePost[]>('/marketing/page-posts')
+      setPagePosts(data)
+    } catch (err: any) {
+      setError(apiError(err, t('Não foi possível carregar os posts da Página.', 'Could not load the Page posts.')))
+    } finally {
+      setLoadingPagePosts(false)
+    }
+  }
+
   const adFormValid = adName.trim() && (
+    creativeKind === 'page_post' ? !!selectedPagePostId :
     creativeKind === 'post' ? !!selectedPostId && !!creativeLinkUrl.trim() :
     !creativeMessage.trim() ? false :
     creativeKind === 'image' ? !!creativeImageUrl.trim() :
@@ -478,7 +503,9 @@ export default function MarketingCampaignDetail() {
         name: `${adName.trim()} — ${t('criativo', 'creative')}`,
         message: creativeMessage.trim(),
       }
-      if (creativeKind === 'post') {
+      if (creativeKind === 'page_post') {
+        creativePayload.source_page_post_id = selectedPagePostId
+      } else if (creativeKind === 'post') {
         creativePayload.source_instagram_media_id = selectedPostId
         creativePayload.link_url = creativeLinkUrl.trim()
       } else if (creativeKind === 'image') {
@@ -911,12 +938,12 @@ export default function MarketingCampaignDetail() {
                 />
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                {([['image', t('Imagem', 'Image'), ImageIcon], ['video', t('Vídeo', 'Video'), Video], ['carousel', t('Carrossel', 'Carousel'), GalleryHorizontal], ['post', t('Post IG', 'IG post'), Camera]] as const).map(([val, label, Icon]) => (
+              <div className="grid grid-cols-5 gap-2">
+                {([['image', t('Imagem', 'Image'), ImageIcon], ['video', t('Vídeo', 'Video'), Video], ['carousel', t('Carrossel', 'Carousel'), GalleryHorizontal], ['post', t('Post IG', 'IG post'), Camera], ['page_post', t('Post FB', 'FB post'), Newspaper]] as const).map(([val, label, Icon]) => (
                   <button
                     key={val}
                     type="button"
-                    onClick={() => { setCreativeKind(val); if (val === 'post') loadIgPosts() }}
+                    onClick={() => { setCreativeKind(val); if (val === 'post') loadIgPosts(); if (val === 'page_post') loadPagePosts() }}
                     className={`flex flex-col items-center gap-1 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
                       creativeKind === val
                         ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300'
@@ -929,7 +956,7 @@ export default function MarketingCampaignDetail() {
                 ))}
               </div>
 
-              {creativeKind !== 'post' && (
+              {creativeKind !== 'post' && creativeKind !== 'page_post' && (
                 <div>
                   <label className="block text-[11px] text-[#666] mb-1">{t('Texto do anúncio', 'Ad text')}</label>
                   <textarea
@@ -942,17 +969,48 @@ export default function MarketingCampaignDetail() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-[11px] text-[#666] mb-1">
-                  {t('Link de destino', 'Destination link')} {creativeKind === 'post' ? t('(obrigatório)', '(required)') : t('(opcional)', '(optional)')}
-                </label>
-                <input
-                  value={creativeLinkUrl}
-                  onChange={(e) => setCreativeLinkUrl(e.target.value)}
-                  placeholder={t('https://seusite.com/promo', 'https://yoursite.com/promo')}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
-                />
-              </div>
+              {creativeKind !== 'page_post' && (
+                <div>
+                  <label className="block text-[11px] text-[#666] mb-1">
+                    {t('Link de destino', 'Destination link')} {creativeKind === 'post' ? t('(obrigatório)', '(required)') : t('(opcional)', '(optional)')}
+                  </label>
+                  <input
+                    value={creativeLinkUrl}
+                    onChange={(e) => setCreativeLinkUrl(e.target.value)}
+                    placeholder={t('https://seusite.com/promo', 'https://yoursite.com/promo')}
+                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {creativeKind === 'page_post' && (
+                <div>
+                  <label className="block text-[11px] text-[#666] mb-2">{t('Escolha o post da Página para impulsionar', 'Choose the Page post to boost')}</label>
+                  {loadingPagePosts ? (
+                    <p className="text-[#555] text-sm">{t('Carregando posts da Página…', 'Loading Page posts…')}</p>
+                  ) : pagePosts.length === 0 ? (
+                    <p className="text-[#555] text-sm">{t('Nenhum post encontrado na Página selecionada em Campanhas.', 'No posts found on the Page selected in Campaigns.')}</p>
+                  ) : (
+                    <div className="space-y-2 max-h-56 overflow-y-auto">
+                      {pagePosts.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setSelectedPagePostId(p.id)}
+                          className={`w-full flex items-center gap-3 p-2 rounded-lg border-2 text-left transition-colors ${selectedPagePostId === p.id ? 'border-indigo-500 bg-indigo-600/10' : 'border-transparent bg-white/[0.03] hover:border-white/[0.15]'}`}
+                        >
+                          {p.picture_url ? (
+                            <img src={p.picture_url} alt="" className="w-12 h-12 rounded object-cover shrink-0" />
+                          ) : (
+                            <div className="w-12 h-12 rounded bg-white/[0.05] shrink-0" />
+                          )}
+                          <span className="text-xs text-[#c0c0d0] line-clamp-2">{p.message || t('Sem texto', 'No text')}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {creativeKind === 'post' && (
                 <div>

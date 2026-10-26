@@ -364,6 +364,104 @@ async def create_creative_from_post(
     )
 
 
+async def create_creative_from_page_post(
+    token: str, ad_account_id: str, name: str, object_story_id: str,
+) -> dict:
+    """Cria um criativo a partir de um post existente da Página ("{page_id}_{post_id}")."""
+    return await _request(
+        "POST",
+        f"{settings.meta_graph_url}/{_act(ad_account_id)}/adcreatives",
+        params={"access_token": token},
+        json={"name": name, "object_story_id": object_story_id},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Business portfolios & Facebook Pages
+# ---------------------------------------------------------------------------
+
+_AD_ACCOUNT_FIELDS = "id,name,account_status,currency"
+
+
+async def list_businesses(token: str) -> list[dict]:
+    """Portfólios empresariais do usuário com as contas de anúncios próprias e de clientes (business_management)."""
+    data = await _request(
+        "GET",
+        f"{settings.meta_graph_url}/me/businesses",
+        params={
+            "access_token": token,
+            "fields": (
+                f"id,name,owned_ad_accounts.limit(100){{{_AD_ACCOUNT_FIELDS}}},"
+                f"client_ad_accounts.limit(100){{{_AD_ACCOUNT_FIELDS}}}"
+            ),
+            "limit": "50",
+        },
+    )
+    return data.get("data", [])
+
+
+async def list_pages(token: str) -> list[dict]:
+    """Páginas que o usuário gerencia, com o token de cada Página (pages_show_list)."""
+    data = await _request(
+        "GET",
+        f"{settings.meta_graph_url}/me/accounts",
+        params={
+            "access_token": token,
+            "fields": "id,name,category,picture{url},tasks,access_token",
+            "limit": "100",
+        },
+    )
+    return data.get("data", [])
+
+
+async def list_page_posts(page_token: str, page_id: str, limit: int = 12) -> list[dict]:
+    """Posts publicados pela Página (pages_read_engagement)."""
+    data = await _request(
+        "GET",
+        f"{settings.meta_graph_url}/{page_id}/published_posts",
+        params={
+            "access_token": page_token,
+            "fields": "id,message,full_picture,permalink_url,created_time",
+            "limit": str(limit),
+        },
+    )
+    if "error" in data:
+        raise ValueError(data["error"].get("message") or "Graph error")
+    return data.get("data", [])
+
+
+async def get_page_subscribed_fields(page_token: str, page_id: str) -> list[str]:
+    """Campos de webhook em que ESTE app está inscrito na Página."""
+    data = await _request(
+        "GET",
+        f"{settings.meta_graph_url}/{page_id}/subscribed_apps",
+        params={"access_token": page_token},
+    )
+    if "error" in data:
+        raise ValueError(data["error"].get("message") or "Graph error")
+    for app in data.get("data", []):
+        if str(app.get("id")) == str(settings.meta_app_id):
+            return app.get("subscribed_fields", [])
+    return []
+
+
+async def subscribe_page(page_token: str, page_id: str, fields: str = "leadgen") -> dict:
+    """Inscreve o app nos webhooks da Página (pages_manage_metadata)."""
+    return await _request(
+        "POST",
+        f"{settings.meta_graph_url}/{page_id}/subscribed_apps",
+        params={"access_token": page_token, "subscribed_fields": fields},
+    )
+
+
+async def unsubscribe_page(page_token: str, page_id: str) -> dict:
+    return await _request(
+        "DELETE",
+        f"{settings.meta_graph_url}/{page_id}/subscribed_apps",
+        params={"access_token": page_token},
+    )
+
+
 async def create_ad(
     token: str,
     ad_account_id: str,

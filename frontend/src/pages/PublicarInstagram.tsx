@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Send } from 'lucide-react'
+import { MessageCircle, Send } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import IgCommentsModal from '../components/IgCommentsModal'
 
 type Tab = 'publish_auto' | 'scheduled' | 'media'
 type TriggerType = 'comment' | 'dm' | 'both'
@@ -32,6 +33,16 @@ interface MediaItem {
   timestamp: string | null
   like_count: number
   comments_count: number
+}
+
+interface IgProfile {
+  id: string
+  username?: string
+  name?: string
+  account_type?: string
+  followers_count?: number
+  media_count?: number
+  profile_picture_url?: string
 }
 
 interface AutomationConfig {
@@ -97,6 +108,8 @@ export default function PublicarInstagram() {
   // Lista de automações cadastradas (visualizar / pausar / remover)
   const [automations, setAutomations] = useState<AutomationConfig[]>([])
   const [loadingAutomations, setLoadingAutomations] = useState(false)
+  const [commentsFor, setCommentsFor] = useState<MediaItem | null>(null)
+  const [profile, setProfile] = useState<IgProfile | null>(null)
 
   useEffect(() => {
     if (tab === 'scheduled') loadSchedules()
@@ -107,6 +120,7 @@ export default function PublicarInstagram() {
   useEffect(() => {
     const stored = localStorage.getItem('tenant_id')
     if (stored) loadIgUserId(stored)
+    api.get<IgProfile>('/instagram/profile').then(({ data }) => setProfile(data)).catch(() => {})
   }, [])
 
   async function loadIgUserId(_tid?: string) {
@@ -280,6 +294,30 @@ export default function PublicarInstagram() {
       <h2 className="text-2xl font-bold text-[#e2e2e8] mb-2">Instagram</h2>
       <HelpLink section="instagram-publicar" className="mb-2" />
       <p className="text-[#555] text-sm mb-6">{t('Publique, agende e automatize as respostas do seu Instagram — tudo em uma tela só.', 'Publish, schedule and automate replies on your Instagram — all in one screen.')}</p>
+
+      {profile && (
+        <div className="flex items-center gap-4 mb-6 bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 max-w-2xl">
+          {profile.profile_picture_url ? (
+            <img src={profile.profile_picture_url} alt="" className="w-12 h-12 rounded-full object-cover" />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-white/[0.06]" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-[#e2e2e8] font-semibold text-sm truncate">@{profile.username}{profile.name ? <span className="text-[#8a8a9e] font-normal"> · {profile.name}</span> : null}</p>
+            <p className="text-[#555] text-xs">{t('ID da conta', 'Account ID')}: {profile.id}{profile.account_type ? ` · ${profile.account_type}` : ''}</p>
+          </div>
+          <div className="flex gap-5 text-center shrink-0">
+            <div>
+              <p className="text-[#e2e2e8] font-bold text-sm">{(profile.followers_count ?? 0).toLocaleString(locale)}</p>
+              <p className="text-[#555] text-[10px]">{t('Seguidores', 'Followers')}</p>
+            </div>
+            <div>
+              <p className="text-[#e2e2e8] font-bold text-sm">{(profile.media_count ?? 0).toLocaleString(locale)}</p>
+              <p className="text-[#555] text-[10px]">{t('Posts', 'Posts')}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1 mb-6 bg-[#170e2c] rounded-lg p-1 border border-white/[0.06] w-fit">
         {(['publish_auto', 'scheduled', 'media'] as Tab[]).map(tb => (
@@ -609,6 +647,12 @@ export default function PublicarInstagram() {
                         <span>💬 {m.comments_count}</span>
                       </div>
                       {m.timestamp && <p className="text-[#444] text-xs mt-1">{new Date(m.timestamp).toLocaleDateString(locale)}</p>}
+                      <button
+                        onClick={() => setCommentsFor(m)}
+                        className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-white/[0.05] hover:bg-indigo-600/30 text-[#c0c0d0] hover:text-white text-xs font-medium transition-colors"
+                      >
+                        <MessageCircle size={12} /> {t('Gerenciar comentários', 'Manage comments')}
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -616,6 +660,14 @@ export default function PublicarInstagram() {
             </div>
           )}
         </div>
+      )}
+
+      {commentsFor && (
+        <IgCommentsModal
+          mediaId={commentsFor.id}
+          caption={commentsFor.caption}
+          onClose={() => { setCommentsFor(null); loadMedia() }}
+        />
       )}
     </div>
   )

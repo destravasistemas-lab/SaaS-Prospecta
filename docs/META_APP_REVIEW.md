@@ -23,59 +23,26 @@ Webhook fields: WhatsApp → `messages`; Instagram → `messages`, `comments`; P
 |---|---|
 | `whatsapp_business_management` | Conexões Meta → WhatsApp (Embedded Signup), Templates (criar/sincronizar) |
 | `whatsapp_business_messaging` | WhatsApp (inbox), envio de template com opt-in, Follow-ups |
-| `instagram_business_basic` | Conexões Meta → Instagram (mostra @ conectado) |
+| `instagram_business_basic` | Publicar & Automação → cabeçalho do perfil (@username, ID, seguidores) |
 | `instagram_business_manage_messages` | Instagram Direct (inbox), resposta privada a comentário |
-| `instagram_business_manage_comments` | Publicar & Automação → automação de comentário |
+| `instagram_business_manage_comments` | Mídias & Métricas → Gerenciar comentários (comentar, responder, ocultar, excluir) + automação de comentário |
 | `instagram_business_content_publish` | Publicar & Automação → publicar/agendar |
 | `instagram_business_manage_insights` | Publicar & Automação → Mídias & Métricas |
-| `ads_management`, `ads_read` | Campanhas (criar/pausar/duplicar/excluir, métricas) |
-| `business_management` | Listar contas de anúncios do Business |
-| `pages_show_list`, `pages_read_engagement` | Página dos anúncios / impulsionar post |
-| `pages_manage_metadata` | Inscrever a Página no webhook `leadgen` ao conectar Meta Ads |
-| `pages_manage_ads` | Ler os dados do lead do formulário |
+| `ads_management`, `ads_read` | Campanhas (criar/pausar/duplicar/excluir, métricas e breakdowns) |
+| `business_management` | Campanhas → seletor de conta agrupado por portfólio (`/me/businesses`) |
+| `pages_show_list` | Campanhas → Página do Facebook (lista e troca de Página) |
+| `pages_read_engagement` | Campanhas → posts recentes da Página; anúncio "Post FB" |
+| `pages_manage_metadata` | Campanhas → Página do Facebook → webhook de Lead Ads (inscrever/cancelar) |
+| `pages_manage_ads` | Criar anúncios com a Página como identidade (inclusive impulsionar post da Página) |
 | `leads_retrieval` | Leads de formulários de Lead Ads chegam em Leads |
 
 Removidos nesta versão: `/auth/meta/login` legado (pedia `instagram_basic` e `instagram_content_publish` via Facebook Login, sem uso) e `pages_show_list` do fluxo de WhatsApp.
 
-## 3. Roteiro do vídeo (gravar com o app em **English** — seletor 🇺🇸 no rodapé da sidebar ou na tela de login)
+## 3. Roteiro dos vídeos e textos do formulário
 
-Grave um vídeo por permissão (ou um vídeo com capítulos). Mostre sempre: login → tela → ação → resultado no app/cliente.
+Estão em [SCREENCASTS.md](SCREENCASTS.md): validação de cada permissão contra o requisito da Meta, roteiro clique a clique, legendas em inglês e o texto de "How will this permission be used?" de cada uma.
 
-1. **Login e consentimento** — Landing → Sign up (mostre o aceite de Terms/Privacy) → Sign in.
-2. **Meta Connections** — abra "Permissions requested and why" de cada card.
-3. **WhatsApp Embedded Signup** — Connect WhatsApp → fluxo da Meta → "WhatsApp Business connected!".
-4. **whatsapp_business_messaging** — de outro celular, mande "Hi" para o número → mensagem aparece no inbox → responda (janela 24h ativa) → mostre a resposta chegando no celular.
-5. **Opt-in e template** — Leads → clique em "No opt-in" de um contato → confirme → WhatsApp → Send template (marque a confirmação de opt-in) → template chega.
-6. **Opt-out** — no celular envie `STOP` → resposta automática de confirmação → em Leads o contato fica "Opt-out" → Templates → Broadcast mostra que ele é excluído.
-6b. **Follow-up automático** — Follow-ups → Automatic → New rule (template aprovado, 3 dias, 9h–20h) → mostre que só contatos com opt-in entram e que é enviado uma única vez.
-7. **whatsapp_business_management** — Templates → New Template → Submit for approval → Sync.
-8. **Instagram Login** — Connect Instagram → autorizar → conectado.
-9. **content_publish** — Publish & Automation → upload de imagem → Publish Now → mostre o post no Instagram.
-10. **manage_comments + manage_messages** — ative a automação de comentário com palavra-chave → de outra conta comente a palavra → resposta pública + Private Reply no Direct → responda no Direct → aparece em Direct Messages → responda pelo app.
-11. **manage_insights** — aba Media & Insights.
-12. **Ads** — Connect Meta Ads → Campaigns → New Campaign (mostre "Special ad category") → criada pausada → abra → New ad set → New ad → pause/duplicate/delete.
-13. **leads_retrieval** — envie um lead pelo Lead Ads Testing Tool → aparece em Leads com selo "Ad".
-14. **Desconectar / exclusão** — Meta Connections → Disconnect; página `/data-deletion`.
-
-## 4. Textos para o formulário (cole em inglês)
-
-**whatsapp_business_messaging** — Our platform lets businesses answer their customers on WhatsApp from a shared team inbox. We receive messages through webhooks and send free-form replies only inside the 24-hour customer service window. Outside the window, agents can only send Meta-approved templates to contacts with a recorded opt-in. Opt-out keywords (STOP/SAIR) are honored automatically.
-
-**whatsapp_business_management** — Used after Embedded Signup to subscribe our app to the business's WABA webhooks, register the phone number and let the business create, sync and delete its own message templates.
-
-**instagram_business_manage_messages** — Businesses read and reply to Instagram Direct messages in our inbox, only within 24 hours of the user's last message. For keyword comments we send exactly one Private Reply per comment.
-
-**instagram_business_manage_comments** — Businesses configure keyword automations; when a user comments the keyword on a selected post, we reply publicly to that comment and send a Private Reply.
-
-**instagram_business_content_publish** — Businesses publish or schedule (up to 15 days) image and video posts to their own professional account.
-
-**instagram_business_manage_insights** — We show the business its own account and media insights (reach, impressions, engagement).
-
-**ads_management / ads_read** — Businesses create, pause, duplicate and delete campaigns, ad sets and ads in their own ad accounts (always created paused, with Special Ad Category declaration) and see performance metrics.
-
-**leads_retrieval** — Leads submitted on the business's Lead Ads forms are delivered by webhook and added to the business's lead list.
-
-## 5. O que foi corrigido para conformidade
+## 4. O que foi corrigido para conformidade
 
 - Endpoints de OAuth/conexões exigiam `account_id` sem autenticação (qualquer pessoa podia desconectar a conta de outro cliente) → agora usam o usuário autenticado.
 - Callback de exclusão de dados só gerava código (TODO) → agora exclui tokens, IDs e leads/conversas do usuário e expõe status real em `/data-deletion`.
@@ -88,3 +55,4 @@ Grave um vídeo por permissão (ou um vídeo com capítulos). Mostre sempre: log
 - Campanhas com Categoria Especial de Anúncio.
 - Landing sem alegações de parceria/"plataforma oficial" e com aviso de marcas da Meta.
 - Botão "Continuar com Google" sem função removido; tela de Configurações agora funcional.
+- Telas para o App Review: Página do Facebook (lista, troca, webhook de Lead Ads, posts), contas agrupadas por portfólio, impulsionar post da Página, moderação de comentários do Instagram e cabeçalho do perfil.

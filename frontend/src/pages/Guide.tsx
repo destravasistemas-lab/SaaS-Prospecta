@@ -219,12 +219,16 @@ function sections(t: T): Section[] {
         t('Escreva a legenda e as hashtags.', 'Write the caption and hashtags.'),
         t('Clique em Publicar Agora, ou escolha data e hora e clique em Agendar.', 'Click Publish Now, or choose date and time and click Schedule.'),
         t('Acompanhe em Agendados e veja resultados em Mídias & Métricas.', 'Track it in Scheduled and see results in Media & Insights.'),
+        t('Em Mídias & Métricas, "Gerenciar comentários" abre os comentários do post: comente, responda, oculte/reexiba ou exclua.', 'In Media & Insights, "Manage comments" opens the post comments: comment, reply, hide/unhide or delete.'),
       ],
       rules: [
         t('Formatos: JPEG/PNG/WebP até 8 MB; MP4/MOV até 50 MB.', 'Formats: JPEG/PNG/WebP up to 8 MB; MP4/MOV up to 50 MB.'),
         t('Agendamento até 15 dias à frente.', 'Scheduling up to 15 days ahead.'),
       ],
-      links: [{ label: t('Publicação de conteúdo (Meta)', 'Content publishing (Meta)'), url: 'https://developers.facebook.com/docs/instagram-platform/content-publishing' }],
+      links: [
+        { label: t('Publicação de conteúdo (Meta)', 'Content publishing (Meta)'), url: 'https://developers.facebook.com/docs/instagram-platform/content-publishing' },
+        { label: t('Moderação de comentários (Meta)', 'Comment moderation (Meta)'), url: 'https://developers.facebook.com/docs/instagram-platform/comment-moderation' },
+      ],
     },
     {
       id: 'automacao-comentario',
@@ -294,9 +298,11 @@ function sections(t: T): Section[] {
         'Create and manage campaigns, ad sets and ads in your ad account and see results and leads per ad.',
       ),
       steps: [
+        t('No topo, escolha a conta de anúncios — agrupadas pelo portfólio empresarial (próprias e de clientes).', 'At the top, pick the ad account — grouped by business portfolio (owned and client accounts).'),
+        t('Em "Página do Facebook", escolha a Página dos anúncios. O webhook de Lead Ads precisa estar "Inscrito" para os leads de formulário chegarem.', 'In "Facebook Page", pick the Page used for ads. The Lead Ads webhook must be "Subscribed" for form leads to arrive.'),
         t('Nova Campanha: nome, objetivo e categoria especial (se aplicável). Ela é criada pausada.', 'New Campaign: name, objective and special category (if applicable). It is created paused.'),
         t('Abra a campanha → Novo conjunto: orçamento diário, otimização e segmentação (idade, gênero, países, interesses).', 'Open the campaign → New ad set: daily budget, optimization and targeting (age, gender, countries, interests).'),
-        t('No conjunto → Novo anúncio: imagem, vídeo, carrossel ou um post do Instagram, com texto e link.', 'In the ad set → New ad: image, video, carousel or an Instagram post, with text and link.'),
+        t('No conjunto → Novo anúncio: imagem, vídeo, carrossel, um post do Instagram ou um post da Página do Facebook.', 'In the ad set → New ad: image, video, carousel, an Instagram post or a Facebook Page post.'),
         t('Ative, pause, duplique ou exclua pelos botões de cada item.', 'Activate, pause, duplicate or delete using each item’s buttons.'),
         t('Veja métricas, desempenho por segmento e "Leads por anúncio"; exporte os leads em CSV.', 'See metrics, performance by segment and "Leads by ad"; export leads as CSV.'),
       ],
