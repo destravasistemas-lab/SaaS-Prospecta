@@ -58,6 +58,11 @@ class WppCredentialsOut(BaseModel):
     updated_at: datetime
 
 
+class WppCredentialsStatus(BaseModel):
+    connected: bool
+    credentials: WppCredentialsOut | None = None
+
+
 class EmbeddedSignupCompleteRequest(BaseModel):
     code: str = Field(..., description="Código retornado pelo FB.login (response_type=code)")
     waba_id: str = Field(..., description="WABA ID recebido via postMessage do fluxo")
@@ -583,13 +588,16 @@ async def set_credentials(
     )
 
 
-@router.get("/credentials", response_model=WppCredentialsOut)
+@router.get("/credentials", response_model=WppCredentialsStatus)
 async def get_credentials(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    conn = await _get_conn_or_404(current_user.tenant_id, db)
-    return WppCredentialsOut(
+    """Credenciais do tenant. Sem WhatsApp conectado: 200 com `connected: false`."""
+    conn = await _find_conn(current_user.tenant_id, db)
+    if not conn:
+        return WppCredentialsStatus(connected=False)
+    return WppCredentialsStatus(connected=True, credentials=WppCredentialsOut(
         id=conn.id,
         tenant_id=conn.account_id,
         phone_number_id=conn.phone_number_id,
@@ -597,7 +605,7 @@ async def get_credentials(
         waba_id=conn.waba_id,
         status=conn.status,
         updated_at=conn.updated_at,
-    )
+    ))
 
 
 # ---------------------------------------------------------------------------
@@ -783,14 +791,15 @@ async def monthly_costs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Custo estimado do mês por categoria (contagem × preço) + total."""
-    conn = await _get_conn_or_404(current_user.tenant_id, db)
+    """Custo estimado do mês por categoria (contagem × preço) + total.
+    Sem WhatsApp conectado: 200 com `connected: false` e tudo zerado."""
+    conn = await _find_conn(current_user.tenant_id, db)
     counts = {
         "marketing": conn.conv_count_marketing or 0,
         "utility": conn.conv_count_utility or 0,
         "service": conn.conv_count_service or 0,
         "authentication": conn.conv_count_auth or 0,
-    }
+    } if conn else dict.fromkeys(WPP_PRICING, 0)
     breakdown: dict[str, dict] = {}
     total = 0.0
     for cat, count in counts.items():
@@ -800,6 +809,7 @@ async def monthly_costs(
         breakdown[cat] = {"count": count, "unit_cost": unit, "subtotal": subtotal}
 
     return {
+        "connected": conn is not None,
         "currency": "BRL",
         "pricing": WPP_PRICING,
         "breakdown": breakdown,
@@ -1178,14 +1188,18 @@ async def _lead_for_recipient(
     return result.scalar_one_or_none()
 
 
-async def _get_conn_or_404(tenant_id: str, db: AsyncSession) -> MetaConnection:
+async def _find_conn(tenant_id: str, db: AsyncSession) -> MetaConnection | None:
     result = await db.execute(
         select(MetaConnection).where(
             MetaConnection.account_id == tenant_id,
             MetaConnection.provider == PROVIDER_WHATSAPP,
         )
     )
-    conn = result.scalar_one_or_none()
+    return result.scalar_one_or_none()
+
+
+async def _get_conn_or_404(tenant_id: str, db: AsyncSession) -> MetaConnection:
+    conn = await _find_conn(tenant_id, db)
     if not conn:
         raise HTTPException(404, "Conexão WhatsApp não configurada. Use PUT /whatsapp/credentials.")
     return conn

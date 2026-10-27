@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -77,18 +78,29 @@ class UsageOut(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def _get_or_create_config(db: AsyncSession, account_id: str) -> AIConfig:
-    cfg = (await db.execute(
+async def _find_config(db: AsyncSession, account_id: str) -> AIConfig | None:
+    return (await db.execute(
         select(AIConfig).where(AIConfig.account_id == account_id)
     )).scalars().first()
-    if not cfg:
-        cfg = AIConfig(
-            account_id=account_id,
-            system_prompt=DEFAULT_SYSTEM_PROMPT,
-            token_limit_monthly=settings.ai_default_token_limit,
-        )
-        db.add(cfg)
-        await db.flush()
+
+
+async def _get_or_create_config(db: AsyncSession, account_id: str) -> AIConfig:
+    cfg = await _find_config(db, account_id)
+    if cfg:
+        return cfg
+    # A tela de IA chama /ai/config e /ai/usage em paralelo: no primeiro acesso
+    # as duas tentam criar a linha (account_id é único). Quem perde a corrida
+    # volta ao savepoint e lê a linha criada pela outra requisição.
+    try:
+        async with db.begin_nested():
+            cfg = AIConfig(
+                account_id=account_id,
+                system_prompt=DEFAULT_SYSTEM_PROMPT,
+                token_limit_monthly=settings.ai_default_token_limit,
+            )
+            db.add(cfg)
+    except IntegrityError:
+        cfg = await _find_config(db, account_id)
     return cfg
 
 

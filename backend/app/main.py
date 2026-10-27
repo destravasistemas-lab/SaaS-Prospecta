@@ -4,6 +4,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -12,7 +13,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.core.i18n import parse_lang, set_lang, reset_lang, translate_detail
+from app.core.i18n import parse_lang, set_lang, reset_lang, translate_detail, t
 from app.routes import auth, webhook, dashboard, leads, accounts, automations, privacy, instagram, instagram_api
 from app.routes import auth_jwt, conversations, messages, ws, whatsapp, payments, tenants, clients
 from app.routes import auth_email
@@ -34,6 +35,7 @@ import app.models.privacy           # noqa: F401
 import app.models.followup          # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 _MIGRATIONS = [
@@ -186,6 +188,21 @@ def _custom_openapi():
 
 
 app.openapi = _custom_openapi
+
+
+# Registrado antes do CORSMiddleware, então roda DENTRO dele: o 500 gerado aqui
+# sai com Access-Control-Allow-Origin. Sem isso a exceção chega ao
+# ServerErrorMiddleware (fora do CORS) e o navegador mostra o 500 como erro de CORS.
+@app.middleware("http")
+async def unhandled_error_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception:
+        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": t("Erro interno do servidor.", "Internal server error.")},
+        )
 
 
 @app.middleware("http")

@@ -116,7 +116,7 @@ export default function Dashboard() {
       .then((res) => setData(res.data))
       .catch(() => {})
     api.get('/whatsapp/costs')
-      .then((res) => setWaCosts(res.data))
+      .then((res) => setWaCosts(res.data.connected ? res.data : null))
       .catch(() => setWaCosts(null))
   }, [])
 

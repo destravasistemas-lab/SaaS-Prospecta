@@ -106,11 +106,16 @@ export default function Sidebar() {
       if (Array.isArray(data?.blocked_modules)) setBlockedModules(data.blocked_modules)
       if (Array.isArray(data?.modules)) setModules(data.modules)
       setIsSuperAdmin(!!data?.is_super_admin)
-    }).catch(() => {})
 
-    // Número do WhatsApp conectado (via Meta) — mostrado sob o item WhatsApp
-    api.get('/whatsapp/credentials').then(({ data }) => {
-      if (data?.phone_number) setWaNumber(data.phone_number)
+      // Número do WhatsApp conectado (via Meta) — mostrado sob o item WhatsApp.
+      // Só depois do /auth/me: com o módulo bloqueado a rota responde 403.
+      const hasWhatsApp = Array.isArray(data?.modules)
+        ? data.modules.includes('whatsapp')
+        : !(data?.blocked_modules ?? []).includes('whatsapp')
+      if (!hasWhatsApp) return
+      api.get('/whatsapp/credentials').then(({ data: wa }) => {
+        if (wa?.credentials?.phone_number) setWaNumber(wa.credentials.phone_number)
+      }).catch(() => {})
     }).catch(() => {})
   }, [])
 
