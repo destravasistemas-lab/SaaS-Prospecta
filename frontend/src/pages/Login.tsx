@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
+import LegalEntity from '../components/LegalEntity'
 
 export default function Login() {
   const { t } = useI18n()
@@ -80,7 +81,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0618] flex flex-col items-center justify-center px-5 py-10 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#0c0618] flex flex-col items-center justify-center px-5 pt-10 pb-32 relative overflow-hidden font-sans">
 
       {/* glows */}
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[320px] bg-violet-500/15 blur-[120px] pointer-events-none" />
@@ -298,6 +299,7 @@ export default function Login() {
           {' · '}
           <Link to="/" className="text-white/30 hover:text-white no-underline transition-colors">{t('← Página inicial', '← Home')}</Link>
         </p>
+        <LegalEntity className="text-[10px] text-white/30 mt-1.5 px-5" />
       </div>
     </div>
   )

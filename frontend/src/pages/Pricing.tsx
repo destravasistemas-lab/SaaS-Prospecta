@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useI18n, LanguageToggle } from '../i18n';
+import LegalEntity from '../components/LegalEntity';
 
 interface Plan {
   id: string;
@@ -238,6 +239,7 @@ export default function Pricing() {
             </div>
           </div>
         </div>
+        <LegalEntity className="mt-12 text-center text-xs text-[#64748b]" />
       </div>
     </div>
   );

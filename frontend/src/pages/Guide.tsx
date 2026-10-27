@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
+import LegalEntity from '../components/LegalEntity'
 
 type T = (pt: string, en: string) => string
 
@@ -526,6 +527,9 @@ export function PublicGuide() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <GuideContent />
       </main>
+      <footer className="border-t border-white/[0.06]">
+        <LegalEntity className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-[#64748b]" />
+      </footer>
     </div>
   )
 }

@@ -9,9 +9,34 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <title>Prospecta — WhatsApp, Instagram & Meta Ads</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Destrava Sistemas",
+        "legalName": "69.430.217 DAVI MEIRA VILLAR MONTENEGRO FERNANDES",
+        "taxID": "69.430.217/0001-38",
+        "url": "https://prospecta.sistemasdestrava.com.br",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Rua Maria José Caetano da Silva, 222, Altiplano Cabo Branco",
+          "addressLocality": "João Pessoa",
+          "addressRegion": "PB",
+          "addressCountry": "BR"
+        }
+      }
+    </script>
   </head>
   <body class="antialiased">
-    <div id="root"></div>
+    <!-- Conteúdo estático para rastreadores sem JavaScript (verificação de empresa da Meta).
+         O React substitui este conteúdo ao montar; o rodapé renderizado traz os mesmos dados. -->
+    <div id="root">
+      <footer style="padding: 24px 16px; text-align: center; font: 12px/1.6 sans-serif; color: #94a3b8">
+        Prospecta · Destrava Sistemas<br />
+        69.430.217 DAVI MEIRA VILLAR MONTENEGRO FERNANDES — CNPJ 69.430.217/0001-38<br />
+        Rua Maria José Caetano da Silva, 222, Altiplano Cabo Branco, João Pessoa/PB
+      </footer>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

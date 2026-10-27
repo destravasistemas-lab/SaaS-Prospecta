@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
+import LegalEntity from '../components/LegalEntity'
 
 const FONT = { fontFamily: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" }
 const GRADIENT = 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400'
@@ -592,6 +593,7 @@ export default function Landing() {
         <div className="border-t border-white/10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs space-y-1.5 text-left">
             <p>© {new Date().getFullYear()} {BRANDING.name} · {BRANDING.companyFullName}. {t('Todos os direitos reservados.', 'All rights reserved.')}</p>
+            <LegalEntity />
             <p>
               {t(
                 'Meta, Facebook, Instagram e WhatsApp são marcas da Meta Platforms, Inc. Este produto não é afiliado nem endossado pela Meta.',

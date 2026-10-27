@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { BRANDING } from '../config/branding'
 import { LanguageToggle, useI18n } from '../i18n'
+import LegalEntity from './LegalEntity'
 
 export default function LegalLayout({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
   const { t } = useI18n()
@@ -36,6 +37,7 @@ export default function LegalLayout({ title, updated, children }: { title: strin
           <Link to="/terms" className="hover:text-white">{t('Termos de Serviço', 'Terms of Service')}</Link>
           <Link to="/data-deletion" className="hover:text-white">{t('Exclusão de Dados', 'Data Deletion')}</Link>
           <a href={`mailto:${BRANDING.supportEmail}`} className="hover:text-white">{BRANDING.supportEmail}</a>
+          <LegalEntity className="basis-full" />
         </div>
       </footer>
     </div>

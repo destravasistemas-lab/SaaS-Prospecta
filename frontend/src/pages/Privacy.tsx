@@ -12,8 +12,8 @@ export default function Privacy() {
       <LegalSection title={t('1. Quem somos', '1. Who we are')}>
         <p>
           {t(
-            `${BRANDING.name} é uma plataforma SaaS operada por ${BRANDING.companyFullName} que permite a empresas gerenciar o atendimento no WhatsApp Business e no Instagram Direct, publicar conteúdo no Instagram e administrar campanhas no Meta Ads. Esta política explica quais dados tratamos, por que e como você pode controlá-los.`,
-            `${BRANDING.name} is a SaaS platform operated by ${BRANDING.companyFullName} that lets businesses manage customer service on WhatsApp Business and Instagram Direct, publish content to Instagram and manage Meta Ads campaigns. This policy explains what data we process, why, and how you can control it.`,
+            `${BRANDING.name} é uma plataforma SaaS operada por ${BRANDING.companyFullName} (${BRANDING.legalName}, CNPJ ${BRANDING.cnpj}, ${BRANDING.address}) que permite a empresas gerenciar o atendimento no WhatsApp Business e no Instagram Direct, publicar conteúdo no Instagram e administrar campanhas no Meta Ads. Esta política explica quais dados tratamos, por que e como você pode controlá-los.`,
+            `${BRANDING.name} is a SaaS platform operated by ${BRANDING.companyFullName} (${BRANDING.legalName}, CNPJ ${BRANDING.cnpj}, ${BRANDING.address}) that lets businesses manage customer service on WhatsApp Business and Instagram Direct, publish content to Instagram and manage Meta Ads campaigns. This policy explains what data we process, why, and how you can control it.`,
           )}
         </p>
       </LegalSection>

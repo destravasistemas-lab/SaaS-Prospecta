@@ -28,4 +28,10 @@ export const BRANDING = {
 
   // Contato e suporte
   supportEmail: 'contato@destravasistemas.com.br',
+
+  // Dados legais — a verificação de empresa da Meta procura a razão social no site.
+  // Mantenha igual ao index.html (versão estática para rastreadores sem JS).
+  legalName: '69.430.217 DAVI MEIRA VILLAR MONTENEGRO FERNANDES',
+  cnpj: '69.430.217/0001-38',
+  address: 'Rua Maria José Caetano da Silva, 222, Altiplano Cabo Branco, João Pessoa/PB',
 }
