@@ -16,7 +16,7 @@ export const BRANDING = {
   // Identidade institucional e autoria (Destrava)
   company: 'Destrava',
   companyFullName: 'Destrava Sistemas',
-  companyUrl: 'https://destravasistemas.com.br',
+  companyUrl: 'https://sistemasdestrava.com.br',
 
   // Selos e créditos de autoria
   poweredBy: 'Powered by Destrava',
@@ -27,7 +27,7 @@ export const BRANDING = {
   companyAttribution: 'Uma plataforma desenvolvida e mantida por Destrava Sistemas.',
 
   // Contato e suporte
-  supportEmail: 'contato@destravasistemas.com.br',
+  supportEmail: 'destrava@sistemasdestrava.com.br',
 
   // Dados legais — a verificação de empresa da Meta procura a razão social no site.
   // Mantenha igual ao index.html (versão estática para rastreadores sem JS).
