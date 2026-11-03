@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler
@@ -36,6 +37,23 @@ import app.models.followup          # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class _RedactSecretsFilter(logging.Filter):
+    """O httpx loga a URL completa em INFO, e a Graph API recebe token e secret na query string."""
+
+    _SECRETS = re.compile(r"\b(access_token|client_secret|fb_exchange_token|input_token|code)=[^&\s\"]+")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.args:
+            record.args = tuple(
+                arg if isinstance(arg, (int, float)) else self._SECRETS.sub(r"\1=***", str(arg))
+                for arg in record.args
+            )
+        return True
+
+
+logging.getLogger("httpx").addFilter(_RedactSecretsFilter())
 
 
 _MIGRATIONS = [

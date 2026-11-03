@@ -354,8 +354,11 @@ async def handle_ig_comment(account: Account, value: dict, db: AsyncSession, sel
                 )
                 if reply_text:
                     try:
-                        await instagram_service.reply_to_comment(token, comment_id, reply_text)
-                        logger.info("Auto-reply enviado no comentário %s", comment_id)
+                        result = await instagram_service.reply_to_comment(token, comment_id, reply_text)
+                        if result.get("error"):
+                            logger.warning("Meta recusou o auto-reply do comentário %s: %s", comment_id, result["error"])
+                        else:
+                            logger.info("Auto-reply enviado no comentário %s", comment_id)
                     except Exception as exc:
                         logger.warning("Falha no auto-reply de comentário: %s", exc)
 
@@ -363,8 +366,11 @@ async def handle_ig_comment(account: Account, value: dict, db: AsyncSession, sel
                 if matched.dm_message:
                     dm_text = render_vars(matched.dm_message, ctx)
                     try:
-                        await instagram_service.send_private_reply(token, comment_id, dm_text)
-                        logger.info("DM privada enviada para comentário %s", comment_id)
+                        result = await instagram_service.send_private_reply(token, comment_id, dm_text)
+                        if result.get("error"):
+                            logger.warning("Meta recusou a DM privada do comentário %s: %s", comment_id, result["error"])
+                        else:
+                            logger.info("DM privada enviada para comentário %s", comment_id)
                     except Exception as exc:
                         logger.warning("Falha ao enviar DM privada do comentário %s: %s", comment_id, exc)
 
@@ -1130,18 +1136,23 @@ async def _resolve_tenant_by_page_id(page_id: str, db: AsyncSession) -> Account 
 
     # O entry.id do webhook do Instagram pode ser o user_id (conta profissional)
     # ou o id app-scoped, dependendo do produto — casamos com qualquer um.
+    # Só conexões ativas: a mesma conta pode ter uma linha revogada em outro
+    # tenant. Com mais de um tenant ativo, vale a conexão mais recente.
     conn_result = await db.execute(
         select(MetaConnection).where(
             or_(
                 MetaConnection.page_id == page_id,
                 MetaConnection.ig_business_account_id == page_id,
                 MetaConnection.meta_user_id == page_id,
-            )
-        )
+            ),
+            MetaConnection.status == STATUS_ACTIVE,
+        ).order_by(MetaConnection.updated_at.desc())
     )
-    connection = conn_result.scalars().first()
-    if connection:
-        acc_result = await db.execute(select(Account).where(Account.id == connection.account_id))
+    connections = conn_result.scalars().all()
+    if len({c.account_id for c in connections}) > 1:
+        logger.warning("entry.id %s ativo em mais de um tenant; usando a conexão mais recente", page_id)
+    if connections:
+        acc_result = await db.execute(select(Account).where(Account.id == connections[0].account_id))
         return acc_result.scalars().first()
 
     return None
