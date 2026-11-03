@@ -5,6 +5,7 @@ import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 import FacebookPagePanel from '../components/FacebookPagePanel'
+import AdsSyncPanel, { type SyncedOverview } from '../components/AdsSyncPanel'
 
 interface Campaign {
   id: string
@@ -85,6 +86,7 @@ export default function Marketing() {
   const [activeAccountId, setActiveAccountId] = useState<string | null>(null)
   const [switchingAccount, setSwitchingAccount] = useState(false)
   const [attribution, setAttribution] = useState<AttributionSummary | null>(null)
+  const [overview, setOverview] = useState<SyncedOverview | null>(null)
 
   const [datePreset, setDatePreset] = useState('last_30d')
   const [busyCampaignId, setBusyCampaignId] = useState<string | null>(null)
@@ -118,6 +120,9 @@ export default function Marketing() {
   const loadData = useCallback(async (preset: string) => {
     setLoading(true)
     setError('')
+    api.get<SyncedOverview>('/marketing/synced-overview')
+      .then(({ data }) => setOverview(data))
+      .catch(() => setOverview(null))
     try {
       const [campRes, insRes] = await Promise.all([
         api.get('/marketing/campaigns'),
@@ -395,6 +400,8 @@ export default function Marketing() {
         </div>
       )}
 
+      {overview && <AdsSyncPanel overview={overview} />}
+
       <FacebookPagePanel />
 
       {/* Campanhas */}
@@ -437,6 +444,12 @@ export default function Marketing() {
                       <p className="text-[#888] text-sm flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                         R$ {(parseInt(c.daily_budget) / 100).toFixed(2)}{t('/dia', '/day')}
+                      </p>
+                    )}
+                    {overview?.campaign_counts[c.id] && (
+                      <p className="text-[#888] text-sm flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+                        {overview.campaign_counts[c.id].ad_sets} {t('conjuntos', 'ad sets')} · {overview.campaign_counts[c.id].ads} {t('anúncios', 'ads')}
                       </p>
                     )}
                   </div>

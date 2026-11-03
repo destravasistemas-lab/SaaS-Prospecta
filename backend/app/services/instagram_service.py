@@ -17,13 +17,13 @@ _RETRY_STATUSES = {429, 500, 502, 503}
 _MAX_RETRIES = 3
 
 
-async def _request(method: str, url: str, **kwargs) -> dict:
+async def _request(method: str, url: str, *, retry_statuses: set[int] = _RETRY_STATUSES, **kwargs) -> dict:
     """HTTP request with exponential back-off on rate-limit / server errors."""
     for attempt in range(_MAX_RETRIES):
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.request(method, url, **kwargs)
 
-        if resp.status_code not in _RETRY_STATUSES:
+        if resp.status_code not in retry_statuses:
             data = resp.json()
             _check_token_error(data)
             return data
@@ -88,15 +88,19 @@ async def mark_seen(token: str, recipient_id: str) -> dict:
     )
 
 
-async def get_user_profile(token: str, igsid: str) -> dict:
+async def get_user_profile(token: str, igsid: str, retry_on_500: bool = True) -> dict:
     """
     Busca nome, @username e foto de um usuário a partir do ID dele no Direct
     (IGSID). O webhook de DM só manda o ID — este é o passo para exibir o nome
     real em vez do número. Requer a permissão instagram_business_manage_messages.
+
+    A Meta exige consentimento (a pessoa já ter mandado mensagem): para quem só
+    comentou a busca falha, então nesse caso use retry_on_500=False.
     """
     return await _request(
         "GET",
         f"{settings.ig_graph_url}/{igsid}",
+        retry_statuses=_RETRY_STATUSES if retry_on_500 else _RETRY_STATUSES - {500},
         params={"access_token": token, "fields": "name,username,profile_pic"},
     )
 

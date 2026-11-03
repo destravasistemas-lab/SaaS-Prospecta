@@ -29,7 +29,8 @@ from app.models.automation import Customer
 from app.models.conversation import Conversation
 from app.models.lead import Lead
 from app.models.message import Message
-from app.models.meta_connection import MetaConnection, STATUS_REVOKED
+from app.models.meta_connection import MetaConnection, PROVIDER_ADS, STATUS_REVOKED
+from app.services.ads_sync import delete_snapshots
 from app.models.privacy import DataDeletionRequest
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,7 @@ async def deauthorize_callback(
             connection.status = STATUS_REVOKED
             # The token is no longer valid — don't keep it around
             connection.access_token_encrypted = ""
+        await delete_snapshots(db, [c.account_id for c in connections if c.provider == PROVIDER_ADS])
         revoked_count = len(connections)
         await db.flush()
 
@@ -196,10 +198,19 @@ async def data_deletion_status(
 async def purge_meta_user_data(db: AsyncSession, meta_user_id: str) -> dict:
     """
     Deletes everything tied to a Meta user ID:
-      - connections (tokens, page/IG/WABA identifiers) authorized by that user;
+      - connections (tokens, page/IG/WABA identifiers) authorized by that user,
+        and the synced copy of their ad data;
       - leads keyed by that ID (when the person is a customer of a tenant) and
         their conversations/messages.
     """
+    ads_tenants = (await db.execute(
+        select(MetaConnection.account_id).where(
+            MetaConnection.meta_user_id == meta_user_id,
+            MetaConnection.provider == PROVIDER_ADS,
+        )
+    )).scalars().all()
+    await delete_snapshots(db, list(ads_tenants))
+
     conn_result = await db.execute(
         delete(MetaConnection).where(MetaConnection.meta_user_id == meta_user_id)
     )

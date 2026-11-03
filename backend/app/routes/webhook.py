@@ -257,7 +257,7 @@ async def _build_person_context(
     uname = username or ""
     if token and user_id and not full_name:
         try:
-            prof = await instagram_service.get_user_profile(token, user_id)
+            prof = await instagram_service.get_user_profile(token, user_id, retry_on_500=False)
             full_name = prof.get("name") or ""
             uname = uname or prof.get("username") or ""
         except Exception as exc:

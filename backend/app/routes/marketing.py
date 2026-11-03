@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
@@ -18,6 +19,8 @@ from app.models.lead import Lead
 from app.models.meta_connection import MetaConnection, PROVIDER_ADS, STATUS_ACTIVE
 from app.services.meta_token_service import safe_decrypt_token
 from app.services import ads_service
+from app.services.ads_sync import BREAKDOWNS
+from app.models.ads_sync import AdsSyncSnapshot
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/marketing", tags=["marketing"])
@@ -1076,6 +1079,19 @@ async def api_campaign_insights_by_level(
     return [_entity_row(item, id_field, name_field) for item in data]
 
 
+def _breakdown_row(item: dict, key: str) -> BreakdownRowOut:
+    results, _ = _pick_result(item.get("actions"))
+    return BreakdownRowOut(
+        key=str(item.get(key, "—")),
+        spend=float(item.get("spend", 0) or 0),
+        impressions=int(item.get("impressions", 0) or 0),
+        reach=int(item.get("reach", 0) or 0),
+        clicks=int(item.get("clicks", 0) or 0),
+        ctr=float(item.get("ctr", 0) or 0),
+        results=results,
+    )
+
+
 # Dimensões de breakdown suportadas → campo retornado pela Graph que carrega o valor
 _BREAKDOWN_KEYS: dict[str, str] = {
     "age": "age",
@@ -1105,19 +1121,47 @@ async def api_campaign_insights_breakdown(
         token, campaign_id, date_preset=date_preset, since=since, until=until,
         fields="spend,impressions,reach,clicks,ctr,actions", breakdowns=dimension,
     )
-    rows: list[BreakdownRowOut] = []
-    for item in data:
-        results, _ = _pick_result(item.get("actions"))
-        rows.append(BreakdownRowOut(
-            key=str(item.get(key, "—")),
-            spend=float(item.get("spend", 0) or 0),
-            impressions=int(item.get("impressions", 0) or 0),
-            reach=int(item.get("reach", 0) or 0),
-            clicks=int(item.get("clicks", 0) or 0),
-            ctr=float(item.get("ctr", 0) or 0),
-            results=results,
-        ))
-    return rows
+    return [_breakdown_row(item, key) for item in data]
+
+
+class SyncedOverviewOut(BaseModel):
+    synced_at: datetime | None = None
+    campaign_counts: dict[str, dict[str, int]] = {}
+    breakdowns: dict[str, list[BreakdownRowOut]] = {}
+
+
+@router.get("/synced-overview", response_model=SyncedOverviewOut)
+async def api_synced_overview(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Última leitura do sync periódico, para a tela de Campanhas. Não chama a Meta; sem dados, volta vazio."""
+    conn = (await db.execute(
+        select(MetaConnection).where(
+            MetaConnection.account_id == current_user.tenant_id,
+            MetaConnection.provider == PROVIDER_ADS,
+            MetaConnection.status == STATUS_ACTIVE,
+        )
+    )).scalar_one_or_none()
+    snapshot = await db.get(AdsSyncSnapshot, current_user.tenant_id)
+    if not conn or not snapshot or snapshot.ad_account_id != conn.ad_account_id:
+        return SyncedOverviewOut()
+
+    data = snapshot.data or {}
+    counts = {c["id"]: {"ad_sets": 0, "ads": 0} for c in data.get("campaigns", [])}
+    for section in ("ad_sets", "ads"):
+        for row in data.get(section, []):
+            if row.get("campaign_id") in counts:
+                counts[row["campaign_id"]][section] += 1
+
+    return SyncedOverviewOut(
+        synced_at=snapshot.synced_at,
+        campaign_counts=counts,
+        breakdowns={
+            dimension: [_breakdown_row(item, dimension) for item in data.get(f"insights_{dimension}", [])]
+            for dimension in BREAKDOWNS
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

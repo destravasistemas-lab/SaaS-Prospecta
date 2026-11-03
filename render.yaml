@@ -79,6 +79,9 @@ services:
         value: contato@destravasistemas.com.br
       - key: SUPER_ADMIN_EMAILS
         sync: false
+      # true liga o sync da Marketing API a cada 10 min
+      - key: ADS_SYNC_ENABLED
+        sync: false
       # Opcionais (deixe vazio se não usar)
       - key: SUPABASE_URL
         sync: false

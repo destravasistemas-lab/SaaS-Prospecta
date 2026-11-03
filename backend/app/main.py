@@ -34,6 +34,7 @@ import app.models.client_assignment # noqa: F401
 import app.models.ai                # noqa: F401
 import app.models.privacy           # noqa: F401
 import app.models.followup          # noqa: F401
+import app.models.ads_sync          # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -116,14 +117,16 @@ async def lifespan(app: FastAPI):
             await conn.execute(text(sql))
 
     scheduler_task = asyncio.create_task(_start_scheduler())
+    ads_sync_task = asyncio.create_task(_start_ads_sync()) if settings.ads_sync_enabled else None
 
     yield
 
-    scheduler_task.cancel()
-    try:
-        await scheduler_task
-    except asyncio.CancelledError:
-        pass
+    for task in filter(None, (scheduler_task, ads_sync_task)):
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     # Graceful shutdown: cancela os timers de debounce pendentes da IA
     from app.services.ai_debounce import shutdown as ai_shutdown
     await ai_shutdown()
@@ -133,6 +136,11 @@ async def lifespan(app: FastAPI):
 async def _start_scheduler():
     from app.services.scheduler import scheduler_loop
     await scheduler_loop()
+
+
+async def _start_ads_sync():
+    from app.services.ads_sync import ads_sync_loop
+    await ads_sync_loop()
 
 
 API_DESCRIPTION = """

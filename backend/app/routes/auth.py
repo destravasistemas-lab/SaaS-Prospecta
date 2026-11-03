@@ -18,6 +18,7 @@ from app.models.meta_connection import (
     STATUS_ACTIVE, STATUS_REVOKED,
 )
 from app.schemas.auth import MetaAuthUrlResponse, MetaCallbackResponse
+from app.services.ads_sync import delete_snapshots
 from app.schemas import OnboardingStatusResponse, SelectPlanRequest
 from app.services.meta_token_service import (
     encrypt_token, decrypt_token, safe_decrypt_token, safe_encrypt_token,
@@ -327,6 +328,8 @@ async def delete_connection(
     except Exception as exc:
         logger.warning("Could not revoke Meta token: %s", exc)
 
+    if connection.provider == PROVIDER_ADS:
+        await delete_snapshots(db, [connection.account_id])
     await db.delete(connection)
     return {"success": True, "detail": "Conexão removida."}
 
