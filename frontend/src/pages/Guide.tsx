@@ -305,6 +305,7 @@ function sections(t: T): Section[] {
         t('Abra a campanha → Novo conjunto: orçamento diário, otimização e segmentação (idade, gênero, países, interesses).', 'Open the campaign → New ad set: daily budget, optimization and targeting (age, gender, countries, interests).'),
         t('No conjunto → Novo anúncio: imagem, vídeo, carrossel, um post do Instagram ou um post da Página do Facebook.', 'In the ad set → New ad: image, video, carousel, an Instagram post or a Facebook Page post.'),
         t('Ative, pause, duplique ou exclua pelos botões de cada item.', 'Activate, pause, duplicate or delete using each item’s buttons.'),
+        t('No conjunto, o ícone de lápis muda o orçamento diário.', 'On an ad set, the pencil icon changes the daily budget.'),
         t('Veja métricas, desempenho por segmento e "Leads por anúncio"; exporte os leads em CSV.', 'See metrics, performance by segment and "Leads by ad"; export leads as CSV.'),
       ],
       rules: [

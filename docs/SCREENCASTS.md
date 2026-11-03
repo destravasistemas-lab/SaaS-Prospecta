@@ -11,7 +11,7 @@ App: **Destrava** (App ID `2168560223724340`). Os requisitos de cada vídeo vêm
 | 3 | `pages_manage_metadata` | Login + o usuário inscrevendo a Página em webhooks | Campaigns → Facebook Page → **Lead Ads webhook: Subscribe** | ✅ ajustado: antes era automático e invisível |
 | 4 | `pages_read_engagement` | Login + conteúdo de um post da Página exibido no app | Campaigns → **Recent Page posts** | ✅ ajustado: antes o app só lia posts do Instagram |
 | 5 | `pages_manage_ads` | Login + criar um anúncio para a Página, com sucesso | Campanha → ad set → **New ad** (inclusive "FB post") | ✅ |
-| 6 | `ads_management` | Login + dados de desempenho (impressões, conversões, gasto, cliques, alcance) | Campaigns (painel de métricas) + criar/pausar/duplicar | ✅ |
+| 6 | `ads_management` | Login + dados de desempenho (impressões, conversões, gasto, cliques, alcance) | Campaigns (painel de métricas) + criar/pausar/duplicar/mudar orçamento | ✅ |
 | 7 | `ads_read` | Sem requisito específico ("ver App Review docs") → mostrar relatórios | Campaigns + detalhe da campanha (por nível e breakdown) | ✅ |
 | 8 | `leads_retrieval` | Sem requisito específico → mostrar o lead do formulário chegando | Leads (selo **Ad**) + "Leads by ad" em Campaigns | ✅ |
 | 9 | `instagram_business_basic` | Login do Instagram + username e ID da conta no app | Publish & Automation → **cabeçalho do perfil** | ✅ ajustado: antes só aparecia o ID |
@@ -126,8 +126,9 @@ Legenda: *"The business owner logs in with Facebook Login for Business and grant
 2. **Campaigns** → painel de métricas: **Spend, Results, Cost / result, ROAS, Reach, Impressions, Clicks, CTR, CPC, CPM**. Troque 7 / 30 / 90 days.
 3. **New Campaign** → nome, objetivo, **Special ad category** → **Create Campaign** (criada pausada).
 4. Na lista: **Activate/Pause** e **Duplicate** numa campanha.
+5. Abra a campanha → no ad set, ícone de lápis **Edit budget** → novo valor → **Save**. Mostre o mesmo valor no Gerenciador de Anúncios e deixe tudo pausado.
 
-**Legendas:** *"Ads performance data from the Insights API: impressions, results, spend, clicks, reach."* → *"The business creates and manages its own campaigns."*
+**Legendas:** *"Ads performance data from the Insights API: impressions, results, spend, clicks, reach."* → *"The business creates and manages its own campaigns."* → *"Daily budget updated from the app."*
 
 **How will this permission be used?**
 > Businesses manage their own Meta ad campaigns in our app: they create campaigns (declaring Special Ad Categories when applicable), ad sets (budget, schedule, targeting) and ads, and pause, activate, duplicate or delete them. Everything is created paused. The Campaigns dashboard shows performance data from the Insights API (spend, impressions, reach, frequency, clicks, CTR, CPC, CPM, results, cost per result and ROAS) for 7, 30 or 90 days.

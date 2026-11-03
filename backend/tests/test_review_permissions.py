@@ -5,15 +5,18 @@ Features each App Review permission is demonstrated with: business portfolios
 post (pages_manage_ads) and Instagram comment moderation
 (instagram_business_manage_comments).
 """
+import logging
 import uuid
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 
 from app.core.security import create_access_token
 from app.models.user import User
 from app.models.meta_connection import MetaConnection
 
+from app.services import ads_service
 from tests.test_marketing_flow import _ads_setup
 from tests.test_instagram_flow import _ig_tenant
 
@@ -90,6 +93,31 @@ async def test_select_page_rejects_page_user_does_not_manage(client, db_session)
     sub.assert_not_awaited()
     await db_session.refresh(conn)
     assert conn.page_id == "PAGE_ADS_1"
+
+
+@pytest.mark.parametrize("response", [
+    {"success": True},
+    {"error": {"code": 200, "message": "Requires pages_manage_metadata"}},
+])
+@pytest.mark.asyncio
+async def test_subscribe_page_logs_meta_response(caplog, response):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json=response)
+
+    real_client = httpx.AsyncClient
+    with patch("app.services.ads_service.httpx.AsyncClient",
+               lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw)), \
+         caplog.at_level(logging.INFO):
+        await ads_service.subscribe_page("PAGE_TOKEN_SECRET", "111")
+
+    assert requests[0].method == "POST"
+    assert requests[0].url.path.endswith("/111/subscribed_apps")
+    assert requests[0].url.params["subscribed_fields"] == "leadgen"
+    assert f"Inscrição da Página 111 nos webhooks (leadgen): {response}" in caplog.text
+    assert "PAGE_TOKEN_SECRET" not in caplog.text
 
 
 @pytest.mark.asyncio

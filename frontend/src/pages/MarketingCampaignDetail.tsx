@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Pause, Play, Trash2, ChevronDown, ChevronRight,
-  X, Image as ImageIcon, Video, GalleryHorizontal, Search, Copy, Camera, Newspaper,
+  X, Image as ImageIcon, Video, GalleryHorizontal, Search, Copy, Camera, Newspaper, Pencil,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -223,6 +223,12 @@ export default function MarketingCampaignDetail() {
   const [adsBySet, setAdsBySet] = useState<Record<string, Ad[]>>({})
   const [busyId, setBusyId] = useState<string | null>(null)
 
+  // Modal: editar orçamento diário do conjunto
+  const [budgetAdSet, setBudgetAdSet] = useState<AdSet | null>(null)
+  const [budgetValue, setBudgetValue] = useState('')
+  const [budgetError, setBudgetError] = useState('')
+  const [savingBudget, setSavingBudget] = useState(false)
+
   // Modal: novo conjunto de anúncios
   const [showAdSetModal, setShowAdSetModal] = useState(false)
   const [asName, setAsName] = useState('')
@@ -336,6 +342,30 @@ export default function MarketingCampaignDetail() {
       setError(t('Erro ao atualizar conjunto.', 'Failed to update ad set.'))
     } finally {
       setBusyId(null)
+    }
+  }
+
+  function openBudgetModal(as: AdSet) {
+    setBudgetAdSet(as)
+    setBudgetValue((parseInt(as.daily_budget ?? '0') / 100).toFixed(2))
+    setBudgetError('')
+  }
+
+  async function saveBudget(e: React.FormEvent) {
+    e.preventDefault()
+    if (!budgetAdSet) return
+    setSavingBudget(true)
+    setBudgetError('')
+    try {
+      await api.patch(`/marketing/ad-sets/${budgetAdSet.id}`, {
+        daily_budget_cents: Math.round(parseFloat(budgetValue || '0') * 100),
+      })
+      setBudgetAdSet(null)
+      await loadAdSets()
+    } catch (err: any) {
+      setBudgetError(apiError(err, t('Erro ao salvar o orçamento.', 'Failed to save the budget.')))
+    } finally {
+      setSavingBudget(false)
     }
   }
 
@@ -672,6 +702,16 @@ export default function MarketingCampaignDetail() {
                   }`}>
                     {as.status === 'ACTIVE' ? t('Ativo', 'Active') : t('Pausado', 'Paused')}
                   </span>
+                  {as.daily_budget && (
+                    <button
+                      onClick={() => openBudgetModal(as)}
+                      disabled={busy}
+                      title={t('Editar orçamento', 'Edit budget')}
+                      className="w-9 h-9 shrink-0 rounded-xl bg-white/[0.04] hover:bg-indigo-500/20 text-[#8a8a9e] hover:text-indigo-400 flex items-center justify-center transition-colors disabled:opacity-40"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   <button
                     onClick={() => toggleAdSetStatus(as)}
                     disabled={busy}
@@ -782,6 +822,38 @@ export default function MarketingCampaignDetail() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Modal: editar orçamento do conjunto */}
+      {budgetAdSet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto">
+          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-sm my-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-semibold text-white">{t('Editar orçamento', 'Edit budget')}</h3>
+              <button onClick={() => setBudgetAdSet(null)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+            </div>
+            <form onSubmit={saveBudget} className="space-y-4">
+              <p className="text-[#8a8a9e] text-xs truncate">{budgetAdSet.name}</p>
+              <div>
+                <label className="block text-[11px] text-[#666] mb-1">{t('Orçamento diário (R$)', 'Daily budget (account currency)')}</label>
+                <input
+                  type="number" step="0.01" min="1" required autoFocus value={budgetValue}
+                  onChange={(e) => setBudgetValue(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+              {budgetError && <p className="text-xs text-red-400">{budgetError}</p>}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setBudgetAdSet(null)} className="flex-1 py-2.5 border border-white/[0.08] text-[#8a8a9e] hover:text-white text-sm rounded-lg transition-colors">
+                  {t('Cancelar', 'Cancel')}
+                </button>
+                <button type="submit" disabled={savingBudget} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+                  {savingBudget ? t('Salvando…', 'Saving…') : t('Salvar', 'Save')}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

@@ -119,6 +119,25 @@ async def test_pause_campaign(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_update_ad_set_budget(client, db_session):
+    _, _, headers = await _ads_setup(db_session)
+
+    with patch(
+        "app.services.ads_service.update_ad_set", new_callable=AsyncMock, return_value={"success": True},
+    ) as mock_update:
+        resp = await client.patch(
+            "/api/v1/marketing/ad-sets/SET_1", json={"daily_budget_cents": 5000}, headers=headers,
+        )
+        too_low = await client.patch(
+            "/api/v1/marketing/ad-sets/SET_1", json={"daily_budget_cents": 50}, headers=headers,
+        )
+
+    assert resp.status_code == 200
+    mock_update.assert_called_once_with(mock_update.call_args[0][0], "SET_1", daily_budget="5000")
+    assert too_low.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_delete_campaign(client, db_session):
     _, _, headers = await _ads_setup(db_session)
 

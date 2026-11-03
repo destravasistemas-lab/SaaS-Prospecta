@@ -447,11 +447,13 @@ async def get_page_subscribed_fields(page_token: str, page_id: str) -> list[str]
 
 async def subscribe_page(page_token: str, page_id: str, fields: str = "leadgen") -> dict:
     """Inscreve o app nos webhooks da Página (pages_manage_metadata)."""
-    return await _request(
+    result = await _request(
         "POST",
         f"{settings.meta_graph_url}/{page_id}/subscribed_apps",
         params={"access_token": page_token, "subscribed_fields": fields},
     )
+    logger.info("Inscrição da Página %s nos webhooks (%s): %s", page_id, fields, result)
+    return result
 
 
 async def unsubscribe_page(page_token: str, page_id: str) -> dict:
