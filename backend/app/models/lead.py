@@ -20,7 +20,8 @@ class LeadStatus(str, enum.Enum):
 class LeadSource(str, enum.Enum):
     INSTAGRAM_COMMENT = "instagram_comment"
     INSTAGRAM_DM = "instagram_dm"
-    INSTAGRAM_FORM = "instagram_form"
+    INSTAGRAM_FORM = "instagram_form"  # só em leads antigos; o webhook leadgen grava LEAD_ADS
+    LEAD_ADS = "lead_ads"
     MANUAL = "manual"
 
 

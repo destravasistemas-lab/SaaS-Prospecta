@@ -106,6 +106,9 @@ _MIGRATIONS = [
     "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opt_in_at TIMESTAMPTZ",
     "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opt_in_source VARCHAR(50)",
     "ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_opted_out_at TIMESTAMPTZ",
+
+    # Origem dos leads do webhook leadgen (enum nativo: create_all não altera tipo existente)
+    "ALTER TYPE lead_source ADD VALUE IF NOT EXISTS 'LEAD_ADS'",
 ]
 
 

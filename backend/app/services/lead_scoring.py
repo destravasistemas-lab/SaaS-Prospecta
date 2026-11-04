@@ -20,6 +20,7 @@ def compute_lead_score(lead: Lead) -> dict:
         notes.append("identificado")
 
     source_map = {
+        LeadSource.LEAD_ADS: (20, "formulário Lead Ads"),
         LeadSource.INSTAGRAM_FORM: (20, "formulário Instagram"),
         LeadSource.INSTAGRAM_DM: (15, "DM Instagram"),
         LeadSource.MANUAL: (10, "adicionado manualmente"),

@@ -25,6 +25,8 @@ from app.models.meta_connection import (
 from app.services.meta_token_service import encrypt_token
 from app.services.lead_identity import resolve_or_create_lead
 from app.services.lead_merge import auto_merge_by_email
+from app.services.lead_scoring import compute_lead_score
+from app.main import _MIGRATIONS
 
 APP_SECRET = "test_app_secret"
 
@@ -248,3 +250,46 @@ async def test_leadgen_funde_com_lead_existente_por_telefone(client, db_session)
     assert lead.email == "carlos@x.com"            # formulário completou o email
     assert lead.name == "Carlos Souza"             # e o nome real
     assert lead.origin_ad_id == "AD_FORM_7"        # atribuição do anúncio
+
+
+@pytest.mark.asyncio
+async def test_leadgen_de_pagina_grava_origem_lead_ads(client, db_session):
+    account = Account(brand_name="Leadgen Origem", meta_page_id="PAGE_ORIGEM")
+    db_session.add(account)
+    await db_session.flush()
+    db_session.add(MetaConnection(
+        id=str(uuid.uuid4()), account_id=account.id, provider=PROVIDER_ADS,
+        ad_account_id="act_1", page_id="PAGE_ORIGEM",
+        access_token_encrypted=encrypt_token("ads_token"), status=STATUS_ACTIVE,
+    ))
+    await db_session.flush()
+
+    payload = {"object": "page", "entry": [{"id": "PAGE_ORIGEM", "changes": [{
+        "field": "leadgen",
+        "value": {"leadgen_id": "LG2", "page_id": "PAGE_ORIGEM", "form_id": "F2"},
+    }]}]}
+
+    with patch("app.services.ads_service.get_leadgen", new_callable=AsyncMock,
+               return_value={"id": "LG2", "field_data": [
+                   {"name": "full_name", "values": ["Ana Lima"]},
+                   {"name": "email", "values": ["ana@x.com"]},
+               ]}):
+        resp = await _post(client, payload)
+    assert resp.status_code == 200
+
+    lead = (await db_session.execute(
+        select(Lead).where(Lead.account_id == account.id)
+    )).scalar_one()
+    assert lead.source == LeadSource.LEAD_ADS
+    assert lead.source.value == "lead_ads"          # chave do rótulo em Leads.tsx
+    assert "formulário Lead Ads" in str(compute_lead_score(lead))
+
+
+def test_origens_novas_entram_no_enum_do_postgres():
+    # create_all não altera um tipo que já existe, e os testes rodam em SQLite:
+    # sem o ALTER TYPE, gravar a origem nova só falharia em produção.
+    baseline = {"INSTAGRAM_COMMENT", "INSTAGRAM_DM", "INSTAGRAM_FORM", "MANUAL"}
+    for source in LeadSource:
+        assert source.name in baseline or (
+            f"ALTER TYPE lead_source ADD VALUE IF NOT EXISTS '{source.name}'" in _MIGRATIONS
+        )

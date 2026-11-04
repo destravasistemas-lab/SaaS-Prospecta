@@ -190,7 +190,7 @@ async def handle_leadgen(account: Account, value: dict, db: AsyncSession):
     lead = await resolve_or_create_lead(
         db, account.id,
         phone=phone, email=email, name=name,
-        source=LeadSource.INSTAGRAM_FORM,
+        source=LeadSource.LEAD_ADS,
         origin_ad_id=value.get("ad_id") or data.get("ad_id"),
         metadata={"leadgen_id": leadgen_id, "form_id": value.get("form_id"),
                   "form_fields": fields},

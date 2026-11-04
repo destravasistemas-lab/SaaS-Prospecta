@@ -301,6 +301,7 @@ def _require_ad_account(conn: MetaConnection) -> str:
 def _meta_error(result: dict, default: str) -> str:
     """Extrai a mensagem mais amigável do erro da Graph (prioriza error_user_msg)."""
     err = (result or {}).get("error", {}) or {}
+    logger.warning("%s: code=%s error_subcode=%s", default, err.get("code"), err.get("error_subcode"))
     return err.get("error_user_msg") or err.get("error_user_title") or err.get("message") or default
 
 

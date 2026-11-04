@@ -167,7 +167,12 @@ async def create_ad_set(
         "daily_budget": str(daily_budget),
         "billing_event": billing_event,
         "optimization_goal": optimization_goal,
-        "targeting": targeting or {"geo_locations": {"countries": ["BR"]}},
+        # 0 = respeitar a idade, o gênero, os países e os interesses definidos na tela.
+        # Sem o campo, a Meta recusa quando o público não é o padrão.
+        "targeting": {
+            "targeting_automation": {"advantage_audience": 0},
+            **(targeting or {"geo_locations": {"countries": ["BR"]}}),
+        },
         "status": "PAUSED",
     }
     if bid_amount:

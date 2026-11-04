@@ -2,6 +2,7 @@
 Tests for the Meta Ads manager: account switching, campaign/ad set/ad CRUD,
 and that budgets/targeting are translated correctly into Marketing API calls.
 """
+import logging
 import uuid
 
 import pytest
@@ -11,6 +12,7 @@ from app.core.security import create_access_token
 from app.models.account import Account
 from app.models.user import User
 from app.models.meta_connection import MetaConnection, PROVIDER_ADS, STATUS_ACTIVE
+from app.services import ads_service
 from app.services.meta_token_service import encrypt_token
 
 
@@ -103,6 +105,23 @@ async def test_create_campaign_uses_active_ad_account(client, db_session):
     assert mock_create.call_args.kwargs["is_adset_budget_sharing_enabled"] is False
 
 
+@pytest.mark.parametrize("body", [
+    {"name": "Nova", "objective": "OUTCOME_LEADS", "status": "PAUSED", "special_ad_categories": ["NONE"]},
+    {"name": "Sem status"},
+])
+@pytest.mark.asyncio
+async def test_new_campaign_reaches_meta_paused(client, db_session, body):
+    _, _, headers = await _ads_setup(db_session)
+
+    with patch(
+        "app.services.ads_service._request", new_callable=AsyncMock, return_value={"id": "CAMP_1"},
+    ) as mock_request:
+        resp = await client.post("/api/v1/marketing/campaigns", json=body, headers=headers)
+
+    assert resp.status_code == 200
+    assert mock_request.call_args.kwargs["json"]["status"] == "PAUSED"
+
+
 @pytest.mark.asyncio
 async def test_pause_campaign(client, db_session):
     _, _, headers = await _ads_setup(db_session)
@@ -192,6 +211,65 @@ async def test_create_ad_set_builds_targeting_payload(client, db_session):
     assert targeting["genders"] == [2]
     assert targeting["geo_locations"]["countries"] == ["BR", "PT"]
     assert targeting["flexible_spec"][0]["interests"] == [{"id": "6003107902433"}]
+
+
+@pytest.mark.asyncio
+async def test_create_ad_set_sends_advantage_audience_to_meta(client, db_session):
+    _, _, headers = await _ads_setup(db_session)
+
+    with patch(
+        "app.services.ads_service._request", new_callable=AsyncMock, return_value={"id": "ADSET_1"},
+    ) as mock_request:
+        resp = await client.post(
+            "/api/v1/marketing/ad-sets",
+            json={
+                "campaign_id": "CAMP_1",
+                "name": "Conjunto Teste",
+                "targeting": {"age_min": 25, "age_max": 45, "genders": [2], "interest_ids": ["6003107902433"]},
+            },
+            headers=headers,
+        )
+
+    assert resp.status_code == 200
+    payload = mock_request.call_args.kwargs["json"]
+    assert payload["status"] == "PAUSED"
+    targeting = payload["targeting"]
+    assert targeting["targeting_automation"] == {"advantage_audience": 0}
+    assert (targeting["age_min"], targeting["age_max"], targeting["genders"]) == (25, 45, [2])
+    assert targeting["flexible_spec"][0]["interests"] == [{"id": "6003107902433"}]
+
+
+@pytest.mark.asyncio
+async def test_create_ad_set_default_targeting_has_advantage_audience():
+    with patch(
+        "app.services.ads_service._request", new_callable=AsyncMock, return_value={"id": "ADSET_1"},
+    ) as mock_request:
+        await ads_service.create_ad_set("token", "act_111", "CAMP_1", "Conjunto", 1000)
+
+    assert mock_request.call_args.kwargs["json"]["targeting"] == {
+        "targeting_automation": {"advantage_audience": 0},
+        "geo_locations": {"countries": ["BR"]},
+    }
+
+
+@pytest.mark.asyncio
+async def test_create_ad_set_refusal_shows_message_and_logs_codes(client, db_session, caplog):
+    _, _, headers = await _ads_setup(db_session)
+    refusal = {"error": {
+        "code": 100, "error_subcode": 1234567, "message": "Invalid parameter",
+        "error_user_msg": "Mensagem da Meta para o cliente",
+    }}
+
+    with patch("app.services.ads_service._request", new_callable=AsyncMock, return_value=refusal), \
+         caplog.at_level(logging.WARNING, logger="app.routes.marketing"):
+        resp = await client.post(
+            "/api/v1/marketing/ad-sets", json={"campaign_id": "CAMP_1", "name": "Conjunto"}, headers=headers,
+        )
+
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Mensagem da Meta para o cliente"
+    assert "code=100 error_subcode=1234567" in caplog.text
+    assert "fake_ads_token" not in caplog.text
 
 
 @pytest.mark.asyncio

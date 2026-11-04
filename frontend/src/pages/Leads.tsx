@@ -43,6 +43,7 @@ const SOURCE_LABELS: Record<string, [string, string]> = {
   instagram_comment: ['Comentário', 'Comment'],
   instagram_dm: ['Mensagem', 'Message'],
   instagram_form: ['Formulário', 'Lead form'],
+  lead_ads: ['Formulário Lead Ads', 'Lead Ads form'],
   manual: ['Manual', 'Manual'],
 }
 const sourceLabel = (s: string) => (SOURCE_LABELS[s] ? tr(SOURCE_LABELS[s][0], SOURCE_LABELS[s][1]) : s)
