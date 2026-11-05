@@ -365,7 +365,7 @@ export default function AIConfig() {
 
       {/* Modal: chunks do documento */}
       {chunksOf && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8" onClick={() => setChunksOf(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4 py-8" onClick={() => setChunksOf(null)}>
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold text-white mb-1">{chunksOf.doc.filename}</h3>
             <p className="text-[#555] text-xs mb-4">{chunksOf.chunks.length} {t('trechos indexados', 'indexed chunks')}</p>

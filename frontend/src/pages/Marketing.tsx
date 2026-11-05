@@ -260,9 +260,9 @@ export default function Marketing() {
           <p className="text-[#555] text-sm mt-1">{t('Gerencie suas campanhas de anúncios.', 'Manage your ad campaigns.')}</p>
           <HelpLink section="campanhas" className="mt-1" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-w-full">
           {(accounts.length > 0 || businesses.length > 0) && (
-            <div className="flex items-center gap-1.5 bg-[#170e2c] border border-white/[0.08] rounded-lg px-2.5 py-1.5" title={t('Conta de anúncios', 'Ad account')}>
+            <div className="flex items-center gap-1.5 max-w-full bg-[#170e2c] border border-white/[0.08] rounded-lg px-2.5 py-1.5" title={t('Conta de anúncios', 'Ad account')}>
               <Building2 size={13} className="text-[#5a5a6e]" />
               <select
                 value={activeAccountId ?? ''}
@@ -386,7 +386,7 @@ export default function Marketing() {
                   <p className="text-[13px] text-[#c0c0d0] truncate">{a.ad_name || `${t('Anúncio', 'Ad')} ${a.ad_id}`}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-32 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                  <div className="w-32 max-sm:w-14 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                     <div
                       className="h-full bg-violet-500 rounded-full"
                       style={{ width: `${Math.max(8, (a.leads / attribution.by_ad[0].leads) * 100)}%` }}
@@ -423,9 +423,9 @@ export default function Marketing() {
           {campaigns.map((c) => {
             const busy = busyCampaignId === c.id
             return (
-              <div key={c.id} className="bg-[#170e2c]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] p-5 flex items-center gap-4 hover:bg-white/[0.02] hover:border-white/[0.1] transition-all group">
-                <Link to={`/app/marketing/${c.id}`} className="flex-1 min-w-0 no-underline">
-                  <div className="flex items-center gap-3">
+              <div key={c.id} className="bg-[#170e2c]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] p-4 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 hover:bg-white/[0.02] hover:border-white/[0.1] transition-all group">
+                <Link to={`/app/marketing/${c.id}`} className="flex-1 min-w-0 max-sm:basis-full no-underline">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <h4 className="text-white font-semibold text-base group-hover:text-indigo-400 transition-colors">
                       {c.name}
                     </h4>
@@ -435,7 +435,7 @@ export default function Marketing() {
                       {c.status === 'ACTIVE' ? t('Ativa', 'Active') : c.status === 'PAUSED' ? t('Pausada', 'Paused') : c.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                     <p className="text-[#888] text-sm flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
                       {objectiveLabels[c.objective] || c.objective}
@@ -491,7 +491,7 @@ export default function Marketing() {
 
       {/* Modal criar campanha */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-8 w-full max-w-md">
             <h3 className="text-lg font-bold text-white mb-6">{t('Nova Campanha', 'New Campaign')}</h3>
             <form onSubmit={handleCreate} className="space-y-4">

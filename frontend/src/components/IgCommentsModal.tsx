@@ -118,7 +118,7 @@ export default function IgCommentsModal({ mediaId, caption, onClose }: { mediaId
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4 py-8">
       <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-lg max-h-full flex flex-col">
         <div className="flex items-start justify-between gap-3 p-5 border-b border-white/[0.06]">
           <div className="min-w-0">

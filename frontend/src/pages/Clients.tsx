@@ -212,7 +212,7 @@ export default function Clients() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
           <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
             <Building2 size={20} className="text-indigo-400" />
@@ -435,7 +435,7 @@ export default function Clients() {
 
       {/* Create modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -544,7 +544,7 @@ export default function Clients() {
 
       {/* Modal: módulos do cliente (bloquear/liberar) */}
       {modulesOf && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">

@@ -212,7 +212,7 @@ export default function Equipe() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
           <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
             <Users size={20} className="text-indigo-400" />
@@ -300,7 +300,7 @@ export default function Equipe() {
       )}
 
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo Membro', 'New Member')}</h3>
@@ -405,7 +405,7 @@ export default function Equipe() {
 
       {/* Modal: atribuir empresas ao membro */}
       {assignMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white">{t('Empresas de', 'Companies for')} {assignMember.full_name || assignMember.username}</h3>
@@ -464,7 +464,7 @@ export default function Equipe() {
 
       {/* Modal: módulos que o membro pode acessar */}
       {modulesMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white">{t('Módulos de', 'Modules for')} {modulesMember.full_name || modulesMember.username}</h3>

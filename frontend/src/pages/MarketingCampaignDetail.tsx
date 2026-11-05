@@ -624,7 +624,7 @@ export default function MarketingCampaignDetail() {
       <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 mb-6 max-w-4xl">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <p className="text-sm font-semibold text-[#e2e2e8]">{t('Desempenho por segmento', 'Performance by segment')}</p>
-          <div className="flex gap-1 bg-[#0f0820] border border-white/[0.08] rounded-lg p-1">
+          <div className="flex gap-1 max-w-full overflow-x-auto bg-[#0f0820] border border-white/[0.08] rounded-lg p-1">
             {BREAKDOWN_DIMS.map((d) => (
               <button
                 key={d.value}
@@ -685,13 +685,13 @@ export default function MarketingCampaignDetail() {
             const ads = adsBySet[as.id] || []
             return (
               <div key={as.id} className="bg-[#170e2c]/80 backdrop-blur-sm rounded-2xl border border-white/[0.06] overflow-hidden hover:border-indigo-500/30 transition-all shadow-xl">
-                <div className="p-5 flex items-center gap-4">
+                <div className="p-4 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
                   <button onClick={() => toggleExpand(as.id)} className="text-[#5a5a6e] hover:text-white shrink-0">
                     {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   </button>
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleExpand(as.id)}>
+                  <div className="flex-1 min-w-0 cursor-pointer max-sm:basis-[calc(100%-2rem)]" onClick={() => toggleExpand(as.id)}>
                     <h4 className="text-white font-bold text-base truncate hover:text-indigo-400 transition-colors">{as.name}</h4>
-                    <p className="text-[#888] text-xs mt-1 flex items-center gap-2">
+                    <p className="text-[#888] text-xs mt-1 flex flex-wrap items-center gap-x-2">
                       <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{centsToBRL(as.daily_budget)}{t('/dia', '/day')}</span>
                       {as.bid_amount && <span>· {t('lance', 'bid')} {centsToBRL(as.bid_amount)}</span>}
                       {as.optimization_goal && <span>· {as.optimization_goal}</span>}

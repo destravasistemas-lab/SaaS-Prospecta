@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Bot, Clock, UserCheck, Send, Power, MessageSquare, Check, CheckCheck,
-  FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2,
+  FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2, ArrowLeft,
 } from 'lucide-react'
 import api, { WS_BASE, apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -73,6 +73,9 @@ export function statusText(s: string): string {
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
+
+// Sem mouse: as ações da mensagem abrem com um toque, e Enter quebra linha.
+export const IS_TOUCH = typeof window !== 'undefined' && window.matchMedia?.('(hover: none)').matches
 
 // Janela de atendimento do WhatsApp (24h após a última mensagem do cliente)
 const WINDOW_MS = 24 * 60 * 60 * 1000
@@ -173,6 +176,7 @@ export default function WhatsApp() {
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   // Reações: id da mensagem com o picker aberto
   const [reactingId, setReactingId] = useState<number | null>(null)
+  const [tappedId, setTappedId] = useState<number | null>(null)
   // Anexo pendente
   const [attaching, setAttaching] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -530,9 +534,9 @@ export default function WhatsApp() {
   const composerDisabled = !windowInfo.open
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-4rem)]">
-      {/* ---------- Coluna esquerda: filas + lista ---------- */}
-      <div className="w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden">
+    <div className="flex gap-4 h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] lg:h-[calc(100vh-4rem)]">
+      {/* ---------- Coluna esquerda: filas + lista (no celular, some com a conversa aberta) ---------- */}
+      <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
         <div className="px-4 pt-4 pb-3 border-b border-white/[0.06] flex items-center justify-between">
           <h1 className="text-sm font-semibold text-[#e2e2e8] flex items-center gap-2">
             <MessageSquare size={16} className="text-emerald-400" />
@@ -612,7 +616,7 @@ export default function WhatsApp() {
       </div>
 
       {/* ---------- Coluna direita: thread ---------- */}
-      <div className="flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden">
+      <div className={`flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? '' : 'max-lg:hidden'}`}>
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
@@ -627,8 +631,15 @@ export default function WhatsApp() {
         ) : (
           <>
             {/* Header da conversa */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">
-              <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 border-b border-white/[0.06]">
+              <button
+                onClick={() => setSelectedId(null)}
+                aria-label={t('Voltar para a lista', 'Back to the list')}
+                className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-[#8a8a9e] hover:text-white"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="max-sm:hidden w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
                 {getConvName().charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -645,10 +656,11 @@ export default function WhatsApp() {
               {selected.atendente_id !== myId && (
                 <button
                   onClick={assumir}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
+                  title={t('Assumir', 'Take over')}
+                  className="shrink-0 flex items-center gap-1.5 max-sm:h-9 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
                 >
                   <UserCheck size={13} />
-                  {t('Assumir', 'Take over')}
+                  <span className="max-sm:hidden">{t('Assumir', 'Take over')}</span>
                 </button>
               )}
 
@@ -656,7 +668,7 @@ export default function WhatsApp() {
               <button
                 onClick={toggleBot}
                 title={selected.bot_active ? t('Bot ligado — clique para desligar', 'Bot on — click to turn off') : t('Bot desligado — clique para ligar', 'Bot off — click to turn on')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
+                className={`shrink-0 flex items-center gap-1.5 max-sm:h-9 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
                   selected.bot_active
                     ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
                     : 'bg-white/[0.04] border-white/[0.08] text-[#5a5a6e]'
@@ -685,7 +697,7 @@ export default function WhatsApp() {
                       <div className={`group relative max-w-[70%] ${reactions.length ? 'mb-3' : ''}`}>
                         {/* Ações no hover: responder + reagir */}
                         {!isCall && <div
-                          className={`absolute top-1 ${out ? '-left-16' : '-right-16'} hidden group-hover:flex items-center gap-1 z-10`}
+                          className={`absolute top-1 ${out ? '-left-16' : '-right-16'} ${tappedId === m.id ? 'flex' : 'hidden group-hover:flex'} items-center gap-1 z-10`}
                         >
                           <button
                             onClick={() => { setReplyTo(m); setReactingId(null) }}
@@ -723,6 +735,7 @@ export default function WhatsApp() {
                         )}
 
                         <div
+                          onClick={() => { if (IS_TOUCH && !isCall) setTappedId(tappedId === m.id ? null : m.id) }}
                           className={`rounded-2xl px-3.5 py-2 ${
                             out
                               ? 'bg-indigo-600 text-white rounded-br-sm'
@@ -799,12 +812,12 @@ export default function WhatsApp() {
             )}
 
             {/* Caixa de resposta */}
-            <div className="p-3 border-t border-white/[0.06]">
-              <div className="flex items-end gap-2">
+            <div className="p-2 sm:p-3 border-t border-white/[0.06]">
+              <div className="flex items-end gap-1.5 sm:gap-2">
                 <button
                   onClick={openTplPicker}
                   title={t('Enviar template (fora da janela de 24h)', 'Send template (outside the 24h window)')}
-                  className="w-10 h-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white flex items-center justify-center transition-colors"
+                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white flex items-center justify-center transition-colors"
                 >
                   <FileText size={16} />
                 </button>
@@ -812,7 +825,7 @@ export default function WhatsApp() {
                   onClick={openInteractive}
                   disabled={composerDisabled}
                   title={t('Mensagem interativa (botões ou lista)', 'Interactive message (buttons or list)')}
-                  className="w-10 h-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
+                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
                 >
                   <LayoutList size={16} />
                 </button>
@@ -820,7 +833,7 @@ export default function WhatsApp() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={composerDisabled || attaching}
                   title={t('Anexar arquivo (imagem, vídeo, áudio ou documento)', 'Attach file (image, video, audio or document)')}
-                  className="w-10 h-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
+                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
                 >
                   <Paperclip size={16} className={attaching ? 'animate-pulse' : ''} />
                 </button>
@@ -835,16 +848,18 @@ export default function WhatsApp() {
                   value={text}
                   onChange={(e) => { setText(e.target.value); notifyTyping() }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() }
+                    if (e.key === 'Enter' && !e.shiftKey && !IS_TOUCH) { e.preventDefault(); sendReply() }
                   }}
                   rows={1}
                   disabled={composerDisabled}
                   placeholder={
                     composerDisabled
                       ? t('Janela de 24h fechada — use um template.', '24h window closed — use a template.')
-                      : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')
+                      : IS_TOUCH
+                        ? t('Escreva uma mensagem…', 'Type a message…')
+                        : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')
                   }
-                  className="flex-1 resize-none max-h-32 px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-indigo-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
+                  className="flex-1 min-w-0 resize-none max-h-32 px-3 sm:px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-indigo-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
                 />
                 <button
                   onClick={sendReply}
@@ -861,7 +876,7 @@ export default function WhatsApp() {
 
       {/* Modal: enviar template */}
       {showTpl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Enviar template', 'Send template')}</h3>
@@ -937,7 +952,7 @@ export default function WhatsApp() {
 
       {/* Modal: mensagem interativa (botões / lista) */}
       {showInt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Mensagem interativa', 'Interactive message')}</h3>

@@ -23,7 +23,7 @@ function navItemClass(isActive: boolean): string {
   }`
 }
 
-export default function Sidebar() {
+export default function Sidebar({ menuOpen, onClose }: { menuOpen: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useI18n()
@@ -131,7 +131,13 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-[#0c0618] min-h-screen flex flex-col border-r border-[#a78bfa]/10">
+    <aside
+      // Abaixo de lg vira gaveta: tocar num link fecha, mesmo que a rota não mude.
+      onClick={(e) => { if ((e.target as HTMLElement).closest('a')) onClose() }}
+      className={`w-64 bg-[#0c0618] lg:min-h-screen flex flex-col border-r border-[#a78bfa]/10 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-72 max-lg:max-w-[85vw] max-lg:overflow-y-auto max-lg:transition-transform ${
+        menuOpen ? '' : 'max-lg:-translate-x-full max-lg:invisible'
+      }`}
+    >
       {/* Logo */}
       <div className="px-5 pt-6 pb-4">
         <button
@@ -156,7 +162,7 @@ export default function Sidebar() {
       <AccountSwitcher />
 
       {/* Main nav */}
-      <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 lg:overflow-y-auto">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2 mt-1">
           {t('Principal', 'Main')}
         </p>

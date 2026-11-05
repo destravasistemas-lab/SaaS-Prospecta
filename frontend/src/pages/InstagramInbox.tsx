@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Bot, Clock, UserCheck, Send, Power, Camera as InstagramIcon, Check, CheckCheck, Download } from 'lucide-react'
+import { Bot, Clock, UserCheck, Send, Power, Camera as InstagramIcon, Check, CheckCheck, Download, ArrowLeft } from 'lucide-react'
 import api, { WS_BASE } from '../services/api'
 import { useI18n, tr } from '../i18n'
-import { statusText } from './WhatsApp'
+import { IS_TOUCH, statusText } from './WhatsApp'
 import HelpLink from '../components/HelpLink'
 
 interface Conversation {
@@ -236,9 +236,9 @@ export default function InstagramInbox() {
   }
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-4rem)]">
-      {/* ---------- Coluna esquerda: filas + lista ---------- */}
-      <div className="w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden">
+    <div className="flex gap-4 h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] lg:h-[calc(100vh-4rem)]">
+      {/* ---------- Coluna esquerda: filas + lista (no celular, some com a conversa aberta) ---------- */}
+      <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
         <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
           <h1 className="text-sm font-semibold text-[#e2e2e8] flex items-center gap-2">
             <InstagramIcon size={16} className="text-pink-400" />
@@ -310,7 +310,7 @@ export default function InstagramInbox() {
       </div>
 
       {/* ---------- Coluna direita: thread ---------- */}
-      <div className="flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden">
+      <div className={`flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? '' : 'max-lg:hidden'}`}>
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-4">
@@ -325,8 +325,15 @@ export default function InstagramInbox() {
         ) : (
           <>
             {/* Header da conversa */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]">
-              <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 border-b border-white/[0.06]">
+              <button
+                onClick={() => setSelectedId(null)}
+                aria-label={t('Voltar para a lista', 'Back to the list')}
+                className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-[#8a8a9e] hover:text-white"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div className="max-sm:hidden w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
                 {(selected.customer_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -339,10 +346,11 @@ export default function InstagramInbox() {
               {selected.atendente_id !== myId && (
                 <button
                   onClick={assumir}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold transition-colors"
+                  title={t('Assumir', 'Take over')}
+                  className="shrink-0 flex items-center gap-1.5 max-sm:h-9 px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold transition-colors"
                 >
                   <UserCheck size={13} />
-                  {t('Assumir', 'Take over')}
+                  <span className="max-sm:hidden">{t('Assumir', 'Take over')}</span>
                 </button>
               )}
 
@@ -429,12 +437,12 @@ export default function InstagramInbox() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() }
+                    if (e.key === 'Enter' && !e.shiftKey && !IS_TOUCH) { e.preventDefault(); sendReply() }
                   }}
                   rows={1}
                   disabled={windowClosed}
                   placeholder={windowClosed ? t('Janela de 24h fechada', '24h window closed') : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')}
-                  className="flex-1 resize-none max-h-32 px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
+                  className="flex-1 min-w-0 resize-none max-h-32 px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
                 />
                 <button
                   onClick={sendReply}

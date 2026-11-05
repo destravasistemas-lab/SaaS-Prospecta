@@ -70,7 +70,6 @@ interface ProviderInfo {
   label: string
   icon: string
   description: string
-  permissions: { scope: string; why: string }[]
 }
 
 function providers(t: T): ProviderInfo[] {
@@ -83,13 +82,6 @@ function providers(t: T): ProviderInfo[] {
         'Direct, comentários, publicação de posts e métricas da sua conta profissional.',
         'Direct messages, comments, post publishing and insights for your professional account.',
       ),
-      permissions: [
-        { scope: 'instagram_business_basic', why: t('identificar sua conta (@, foto)', 'identify your account (username, photo)') },
-        { scope: 'instagram_business_manage_messages', why: t('receber e responder mensagens do Direct', 'receive and reply to Direct messages') },
-        { scope: 'instagram_business_manage_comments', why: t('ler comentários e enviar respostas', 'read comments and send replies') },
-        { scope: 'instagram_business_content_publish', why: t('publicar e agendar posts', 'publish and schedule posts') },
-        { scope: 'instagram_business_manage_insights', why: t('exibir métricas dos posts e da conta', 'show post and account insights') },
-      ],
     },
     {
       key: 'whatsapp',
@@ -99,10 +91,6 @@ function providers(t: T): ProviderInfo[] {
         'Conecte seu número pelo Cadastro Incorporado da Meta para atender clientes e enviar templates aprovados.',
         "Connect your number through Meta's Embedded Signup to serve customers and send approved templates.",
       ),
-      permissions: [
-        { scope: 'whatsapp_business_messaging', why: t('enviar e receber mensagens', 'send and receive messages') },
-        { scope: 'whatsapp_business_management', why: t('gerenciar templates e o número', 'manage templates and the phone number') },
-      ],
     },
     {
       key: 'ads',
@@ -112,16 +100,6 @@ function providers(t: T): ProviderInfo[] {
         'Crie e acompanhe campanhas, conjuntos e anúncios, e receba leads dos formulários.',
         'Create and track campaigns, ad sets and ads, and receive leads from forms.',
       ),
-      permissions: [
-        { scope: 'ads_management', why: t('criar e editar campanhas', 'create and edit campaigns') },
-        { scope: 'ads_read', why: t('ler métricas das campanhas', 'read campaign metrics') },
-        { scope: 'business_management', why: t('acessar contas de anúncios do Business', 'access Business ad accounts') },
-        { scope: 'pages_show_list', why: t('escolher a Página dos anúncios', 'choose the Page for ads') },
-        { scope: 'pages_read_engagement', why: t('usar posts da Página como anúncio', 'use Page posts as ads') },
-        { scope: 'pages_manage_metadata', why: t('inscrever a Página para receber leads por webhook', 'subscribe the Page to receive leads via webhook') },
-        { scope: 'pages_manage_ads', why: t('ler os leads dos formulários da Página', "read leads from the Page's forms") },
-        { scope: 'leads_retrieval', why: t('receber leads dos formulários de Lead Ads', 'receive leads from Lead Ads forms') },
-      ],
     },
   ]
 }
@@ -147,7 +125,6 @@ type ModalState = 'waiting' | 'success' | null
 export default function ConexaoMeta() {
   const { t, locale } = useI18n()
   const PROVIDERS = providers(t)
-  const [showPerms, setShowPerms] = useState<Provider | null>(null)
 
   // Registro do número na Cloud API (POST /whatsapp/register)
   const [showRegister, setShowRegister] = useState(false)
@@ -468,8 +445,8 @@ export default function ConexaoMeta() {
       <HelpLink section="conexoes" className="mb-3" />
       <p className="text-[#555] text-sm mb-6 max-w-2xl">
         {t(
-          'Conecte suas contas do Instagram, WhatsApp e Meta Ads. Pedimos apenas as permissões necessárias para cada recurso, e você pode desconectar a qualquer momento.',
-          'Connect your Instagram, WhatsApp and Meta Ads accounts. We only request the permissions each feature needs, and you can disconnect at any time.',
+          'Conecte suas contas do Instagram, WhatsApp e Meta Ads. Você pode desconectar a qualquer momento.',
+          'Connect your Instagram, WhatsApp and Meta Ads accounts. You can disconnect at any time.',
         )}
       </p>
 
@@ -488,20 +465,20 @@ export default function ConexaoMeta() {
         <div className="text-[#555] text-sm">{t('Carregando conexões...', 'Loading connections...')}</div>
       ) : (
         <div className="grid gap-4 max-w-2xl">
-          {PROVIDERS.map(({ key, label, icon, description, permissions }) => {
+          {PROVIDERS.map(({ key, label, icon, description }) => {
             const conn = getConnection(key)
             const isConnected = conn?.status === 'active'
             const needsAction = conn && conn.status !== 'active'
 
             return (
               <div key={key} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-2xl flex-shrink-0">
                   {icon}
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 max-sm:basis-[calc(100%-4rem)]">
+                  <div className="flex flex-wrap items-center gap-x-2">
                     <h3 className="text-[#e2e2e8] font-semibold text-sm">{label}</h3>
                     {conn && (
                       <span className={`text-xs font-medium ${STATUS_COLOR[conn.status]}`}>
@@ -520,7 +497,7 @@ export default function ConexaoMeta() {
                   )}
                 </div>
 
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0 max-sm:w-full max-sm:justify-end">
                   {isConnected && key === 'whatsapp' && (
                     <button
                       onClick={() => { setShowRegister(true); setRegisterMsg(null); setPin('') }}
@@ -549,21 +526,6 @@ export default function ConexaoMeta() {
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => setShowPerms(showPerms === key ? null : key)}
-                className="mt-3 text-[11px] text-violet-400/80 hover:text-violet-300"
-              >
-                {showPerms === key ? '▾' : '▸'} {t('Permissões solicitadas e por quê', 'Permissions requested and why')}
-              </button>
-              {showPerms === key && (
-                <ul className="mt-2 space-y-1 text-[11px] text-[#64748b]">
-                  {permissions.map((p) => (
-                    <li key={p.scope}>
-                      <code className="text-[#94a3b8]">{p.scope}</code> — {p.why}
-                    </li>
-                  ))}
-                </ul>
-              )}
               {key === 'whatsapp' && isConnected && <CallingSettingsPanel />}
               </div>
             )
@@ -573,7 +535,7 @@ export default function ConexaoMeta() {
 
       {/* Modal: registrar número na Cloud API */}
       {showRegister && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/60 backdrop-blur-sm px-4">
           <form onSubmit={handleRegister} className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-sm p-6 space-y-4">
             <h3 className="text-[#e2e2e8] font-semibold text-base">{t('Registrar número na Cloud API', 'Register number on the Cloud API')}</h3>
             <p className="text-[#8a8a9e] text-xs leading-relaxed">
@@ -620,7 +582,7 @@ export default function ConexaoMeta() {
         const label = PROVIDERS.find(p => p.key === modal.provider)?.label ?? modal.provider
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-sm mx-4 overflow-hidden shadow-2xl">
               <div className={`h-1.5 bg-gradient-to-r ${gradientBar}`} />
 

@@ -266,7 +266,7 @@ export default function Leads() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
           <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
             <Users size={20} className="text-indigo-400" />
@@ -298,7 +298,7 @@ export default function Leads() {
 
       {/* Score summary cards */}
       {leads.length > 0 && (
-        <div className="grid grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           <button
             onClick={() => setFilterScore(filterScore === 'hot' ? '' : 'hot')}
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
@@ -367,8 +367,8 @@ export default function Leads() {
       )}
 
       {/* Search + filters */}
-      <div className="flex gap-3 mb-4">
-        <div className="flex-1 relative">
+      <div className="flex flex-wrap sm:flex-nowrap gap-3 mb-4">
+        <div className="flex-1 max-sm:basis-full relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#444]" />
           <input
             type="text"
@@ -449,9 +449,10 @@ export default function Leads() {
           </p>
         </div>
       ) : (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
+        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-x-auto">
+          {/* Abaixo de lg cada lead vira um cartão, sem rolagem lateral */}
+          <table className="w-full text-sm max-lg:block">
+            <thead className="max-lg:hidden">
               <tr className="border-b border-white/[0.05]">
                 <th className="text-left px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Lead</th>
                 <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Origem', 'Source')}</th>
@@ -462,11 +463,11 @@ export default function Leads() {
                 <th className="text-right px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Ações', 'Actions')}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="max-lg:block">
               {filtered.map((lead) => (
-                <tr key={lead.id} className="border-b border-white/[0.03] hover:bg-white/[0.015] transition-colors group">
+                <tr key={lead.id} className="border-b border-white/[0.03] hover:bg-white/[0.015] transition-colors group max-lg:flex max-lg:flex-wrap max-lg:items-center max-lg:gap-x-3 max-lg:gap-y-2 max-lg:p-4">
                   {/* Lead info */}
-                  <td className="px-5 py-3.5">
+                  <td className="max-lg:w-full max-lg:p-0 px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-xs font-semibold text-indigo-400 shrink-0">
                         {(lead.name || lead.instagram_handle).charAt(0).toUpperCase()}
@@ -482,7 +483,7 @@ export default function Leads() {
                   </td>
 
                   {/* Source */}
-                  <td className="px-4 py-3.5">
+                  <td className="max-lg:p-0 px-4 py-3.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs text-[#555]">
                         {sourceLabel(lead.source)}
@@ -499,7 +500,7 @@ export default function Leads() {
                   </td>
 
                   {/* Score */}
-                  <td className="px-4 py-3.5">
+                  <td className="max-lg:p-0 px-4 py-3.5">
                     <div>
                       <ScoreBadge label={lead.score_label} score={lead.score} />
                       {lead.score_notes && (
@@ -511,7 +512,7 @@ export default function Leads() {
                   </td>
 
                   {/* Status with dropdown */}
-                  <td className="px-4 py-3.5 relative">
+                  <td className="max-lg:p-0 px-4 py-3.5 relative">
                     <button
                       onClick={() => setEditingStatus(editingStatus === lead.id ? null : lead.id)}
                       className="flex items-center gap-1 group/status"
@@ -538,7 +539,7 @@ export default function Leads() {
                   </td>
 
                   {/* WhatsApp consent */}
-                  <td className="px-4 py-3.5">
+                  <td className="max-lg:p-0 px-4 py-3.5">
                     {lead.phone ? (
                       <button
                         onClick={() => toggleConsent(lead)}
@@ -563,15 +564,15 @@ export default function Leads() {
                   </td>
 
                   {/* Date */}
-                  <td className="px-4 py-3.5">
+                  <td className="max-lg:p-0 px-4 py-3.5">
                     <span className="text-[#444] text-xs">
                       {new Date(lead.captured_at).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}
                     </span>
                   </td>
 
                   {/* Actions */}
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="max-lg:w-full max-lg:p-0 px-5 py-3.5">
+                    <div className="flex items-center justify-end gap-1.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity max-lg:justify-start max-lg:[&>button]:p-2.5">
                       <button
                         onClick={() => {
                           setDmLead(lead)
@@ -638,7 +639,7 @@ export default function Leads() {
 
       {/* Novo lead */}
       {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
@@ -716,7 +717,7 @@ export default function Leads() {
 
       {/* DM Modal */}
       {dmLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
@@ -786,7 +787,7 @@ export default function Leads() {
 
       {/* Merge modal */}
       {mergeSurvivor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-lg">
             <div className="flex items-center justify-between mb-4">
               <div>

@@ -184,7 +184,7 @@ export default function Templates() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
           <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
             <FileText size={20} className="text-emerald-400" />
@@ -286,10 +286,10 @@ export default function Templates() {
             const body = tpl.components?.find((c) => c.type === 'BODY')?.text
             return (
               <div key={tpl.name} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 hover:border-white/[0.1] transition-colors">
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap sm:flex-nowrap items-start gap-3">
+                  <div className="flex-1 min-w-0 max-sm:basis-full">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="text-sm font-semibold text-[#e2e2e8]">{tpl.name}</h3>
+                      <h3 className="text-sm font-semibold text-[#e2e2e8] break-all">{tpl.name}</h3>
                       {cat && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${cat.badge}`}>{catLabel(cat)} · {brl(cat.cost)}</span>}
                       {tpl.status && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE[tpl.status] ?? 'text-[#555] bg-white/[0.03] border-white/[0.05]'}`}>{tpl.status}</span>}
                       <span className="text-[10px] text-[#444]">{tpl.language}</span>
@@ -323,7 +323,7 @@ export default function Templates() {
 
       {/* Modal criar */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo Template', 'New Template')}</h3>
@@ -430,7 +430,7 @@ export default function Templates() {
 
       {/* Modal disparo em massa */}
       {bcTpl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Disparo em massa', 'Broadcast')}</h3>
