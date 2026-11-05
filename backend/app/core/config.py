@@ -99,6 +99,17 @@ class Settings(BaseSettings):
     # Sync periódico da Marketing API (app/services/ads_sync.py)
     ads_sync_enabled: bool = False
 
+    # Chamadas de voz (WhatsApp Calling API)
+    whatsapp_calling_enabled: bool = False
+    # Janela para atender: a Meta encerra em cerca de 30 a 60 s sem resposta
+    whatsapp_call_ring_seconds: int = 60
+    # Conversa com atendente online: espera antes de tocar para os demais
+    whatsapp_call_escalation_seconds: int = 15
+    # JSON com os iceServers do navegador (STUN/TURN). Vazio: só conexão direta.
+    webrtc_ice_servers: str = ""
+    # Entrega os eventos do WebSocket entre instâncias da API pelo Redis
+    ws_redis_fanout: bool = False
+
     # Super admins do sistema (emails separados por vírgula). Podem gerenciar
     # os módulos bloqueados de QUALQUER conta (agências e empresas).
     super_admin_emails: str = ""

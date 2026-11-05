@@ -82,6 +82,15 @@ services:
       # true liga o sync da Marketing API a cada 10 min
       - key: ADS_SYNC_ENABLED
         sync: false
+      # true liga as chamadas de voz do WhatsApp (assine também o campo "calls" do webhook)
+      - key: WHATSAPP_CALLING_ENABLED
+        sync: false
+      # Opcional: iceServers do navegador em JSON (STUN/TURN)
+      - key: WEBRTC_ICE_SERVERS
+        sync: false
+      # true com mais de uma instância: entrega os eventos do WebSocket pelo Redis
+      - key: WS_REDIS_FANOUT
+        sync: false
       # Opcionais (deixe vazio se não usar)
       - key: SUPABASE_URL
         sync: false

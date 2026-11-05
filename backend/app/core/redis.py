@@ -66,6 +66,12 @@ class RedisStore:
 _store = None
 
 
+async def get_redis_client():
+    """Cliente Redis real, ou None no fallback em memória."""
+    await get_store()
+    return _client if isinstance(_store, RedisStore) else None
+
+
 async def get_store():
     """Store compartilhado (Redis se configurado; senão memória)."""
     global _client, _store

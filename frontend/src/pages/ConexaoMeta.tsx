@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import CallingSettingsPanel from '../components/CallingSettingsPanel'
 
 type Provider = 'instagram' | 'whatsapp' | 'ads'
 
@@ -563,6 +564,7 @@ export default function ConexaoMeta() {
                   ))}
                 </ul>
               )}
+              {key === 'whatsapp' && isConnected && <CallingSettingsPanel />}
               </div>
             )
           })}

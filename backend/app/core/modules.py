@@ -56,13 +56,25 @@ async def effective_modules_for(db: AsyncSession, user: User) -> list[str]:
          essa lista (o admin da conta escolhe por usuário). Admin vê tudo que
          a conta tem liberado.
     """
-    blocked = set(await get_blocked_modules(db, user.tenant_id))
+    return _modules_for(user, set(await get_blocked_modules(db, user.tenant_id)))
+
+
+def _modules_for(user: User, blocked: set[str]) -> list[str]:
     account_modules = [m for m in AVAILABLE_MODULES if m not in blocked]
 
     if user.role != "admin" and user.allowed_modules is not None:
         allowed = set(user.allowed_modules)
         return [m for m in account_modules if m in allowed]
     return account_modules
+
+
+async def users_with_module(db: AsyncSession, tenant_id: str, module: str) -> list[str]:
+    """IDs dos usuários ativos do tenant que acessam o módulo."""
+    blocked = set(await get_blocked_modules(db, tenant_id))
+    users = (await db.execute(
+        select(User).where(User.tenant_id == tenant_id, User.is_active.is_(True))
+    )).scalars().all()
+    return [u.id for u in users if module in _modules_for(u, blocked)]
 
 
 def require_module(module: str):

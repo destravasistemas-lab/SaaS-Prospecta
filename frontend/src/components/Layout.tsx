@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
+import { CallProvider } from './CallProvider'
 
 export default function Layout() {
   const location = useLocation()
@@ -11,11 +12,13 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0c0618] text-[#f8fafc]">
-      <Sidebar />
-      <main className="flex-1 overflow-auto p-6 md:p-8">
-        <Outlet />
-      </main>
-    </div>
+    <CallProvider>
+      <div className="flex min-h-screen bg-[#0c0618] text-[#f8fafc]">
+        <Sidebar />
+        <main className="flex-1 overflow-auto p-6 md:p-8">
+          <Outlet />
+        </main>
+      </div>
+    </CallProvider>
   )
 }

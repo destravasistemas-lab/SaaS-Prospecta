@@ -7,6 +7,8 @@ import {
 import api, { WS_BASE, apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import { CallBanner } from '../components/CallProvider'
+import { CallLogLine } from '../components/CallLog'
 
 interface Conversation {
   id: string
@@ -256,14 +258,13 @@ export default function WhatsApp() {
   useEffect(() => { loadConvs() }, [loadConvs])
 
   // Deep-link: /app/whatsapp?conv=<id> abre a conversa direto (ex: vindo do Follow-ups)
-  const deepLinkApplied = useRef(false)
+  const deepLinkApplied = useRef<string | null>(null)
   useEffect(() => {
-    if (deepLinkApplied.current) return
     const convParam = searchParams.get('conv')
-    if (!convParam || convs.length === 0) return
+    if (!convParam || convParam === deepLinkApplied.current || convs.length === 0) return
     const target = convs.find((c) => c.id === convParam)
     if (target) {
-      deepLinkApplied.current = true
+      deepLinkApplied.current = convParam
       setQueue(queueOf(target))
       setSelectedId(target.id)
     }
@@ -313,6 +314,10 @@ export default function WhatsApp() {
               m.id === data.message_db_id ? { ...m, payload: { ...m.payload, [key]: data.emoji } } : m,
             ))
           }
+        } else if (event === 'call_updated') {
+          setMessages((prev) => prev.map((m) =>
+            m.id === data.message_db_id ? { ...m, payload: { ...m.payload, call: data.call } } : m,
+          ))
         } else if (event === 'conversation_updated' || event === 'conversation_created') {
           loadConvs()
         }
@@ -662,6 +667,8 @@ export default function WhatsApp() {
               </button>
             </div>
 
+            <CallBanner conversationId={selected.id} />
+
             {/* Thread */}
             <div ref={threadRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
               {loadingMsgs ? (
@@ -672,11 +679,12 @@ export default function WhatsApp() {
                 messages.map((m) => {
                   const out = m.direction === 'outbound'
                   const reactions = [m.payload?.customer_reaction, m.payload?.agent_reaction].filter(Boolean) as string[]
+                  const isCall = m.media_type === 'call'
                   return (
                     <div key={m.id} className={`flex ${out ? 'justify-end' : 'justify-start'}`}>
                       <div className={`group relative max-w-[70%] ${reactions.length ? 'mb-3' : ''}`}>
                         {/* Ações no hover: responder + reagir */}
-                        <div
+                        {!isCall && <div
                           className={`absolute top-1 ${out ? '-left-16' : '-right-16'} hidden group-hover:flex items-center gap-1 z-10`}
                         >
                           <button
@@ -693,7 +701,7 @@ export default function WhatsApp() {
                           >
                             <SmilePlus size={13} />
                           </button>
-                        </div>
+                        </div>}
 
                         {/* Picker de reação */}
                         {reactingId === m.id && (
@@ -730,7 +738,8 @@ export default function WhatsApp() {
                             </div>
                           )}
 
-                          {m.media_type && <div className="mb-1"><MediaContent m={m} /></div>}
+                          {isCall && <CallLogLine call={m.payload?.call} createdAt={m.created_at} />}
+                          {m.media_type && !isCall && <div className="mb-1"><MediaContent m={m} /></div>}
                           {m.text && (
                             <p className="text-[13px] whitespace-pre-wrap break-words">{m.text}</p>
                           )}

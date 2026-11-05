@@ -316,14 +316,62 @@ async def register_phone_number(token: str, phone_number_id: str, pin: str) -> d
     )
 
 
-async def get_phone_number_info(token: str, phone_number_id: str) -> dict:
-    """Busca o número de exibição e o nome verificado do Phone Number ID."""
+async def get_phone_number_info(
+    token: str, phone_number_id: str, fields: str = "display_phone_number,verified_name",
+) -> dict:
+    """Busca campos do Phone Number ID (por padrão, o número de exibição e o nome verificado)."""
     return await _request(
         "GET",
         f"{settings.meta_graph_url}/{phone_number_id}",
         headers={"Authorization": f"Bearer {token}"},
-        params={"fields": "display_phone_number,verified_name"},
+        params={"fields": fields},
     )
+
+
+# ---------------------------------------------------------------------------
+# Chamadas de voz (Calling API)
+# ---------------------------------------------------------------------------
+
+async def get_calling_settings(token: str, phone_number_id: str) -> dict:
+    return await _request(
+        "GET",
+        f"{settings.meta_graph_url}/{phone_number_id}/settings",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
+async def update_calling_settings(token: str, phone_number_id: str, calling: dict) -> dict:
+    return await _request(
+        "POST",
+        f"{settings.meta_graph_url}/{phone_number_id}/settings",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"calling": calling},
+    )
+
+
+async def call_action(
+    token: str, phone_number_id: str, call_id: str, action: str, sdp: str | None = None,
+) -> dict:
+    """
+    pre_accept, accept, reject ou terminate. Não usa _request: repetir uma ação perderia
+    a janela de atendimento, e o corpo do erro pode citar o SDP, que não entra em log.
+    """
+    payload: dict = {"messaging_product": "whatsapp", "call_id": call_id, "action": action}
+    if sdp:
+        payload["session"] = {"sdp_type": "answer", "sdp": sdp}
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            f"{settings.meta_graph_url}/{phone_number_id}/calls",
+            headers={"Authorization": f"Bearer {token}"},
+            json=payload,
+        )
+    data = resp.json()
+    if resp.status_code >= 400:
+        logger.warning(
+            "Meta recusou a ação de chamada %s: http=%s code=%s",
+            action, resp.status_code, (data.get("error") or {}).get("code"),
+        )
+    return data
 
 
 # ---------------------------------------------------------------------------

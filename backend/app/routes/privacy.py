@@ -29,6 +29,7 @@ from app.models.automation import Customer
 from app.models.conversation import Conversation
 from app.models.lead import Lead
 from app.models.message import Message
+from app.models.whatsapp_call import WhatsAppCall
 from app.models.meta_connection import MetaConnection, PROVIDER_ADS, STATUS_REVOKED
 from app.services.ads_sync import delete_snapshots
 from app.models.privacy import DataDeletionRequest
@@ -225,6 +226,7 @@ async def purge_meta_user_data(db: AsyncSession, meta_user_id: str) -> dict:
     conv_ids: list[str] = []
     msg_count = 0
     if lead_ids:
+        await db.execute(delete(WhatsAppCall).where(WhatsAppCall.lead_id.in_(lead_ids)))
         conv_ids = (await db.execute(
             select(Conversation.id).where(Conversation.customer_id.in_(lead_ids))
         )).scalars().all()

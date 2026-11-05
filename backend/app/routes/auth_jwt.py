@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import (
     hash_password, verify_password,
@@ -68,6 +69,8 @@ class UserOut(BaseModel):
     allowed_modules: list[str] | None = None
     # Super admin do sistema (SUPER_ADMIN_EMAILS)
     is_super_admin: bool = False
+    # Chamadas de voz do WhatsApp ligadas no sistema (WHATSAPP_CALLING_ENABLED)
+    calling_enabled: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +225,7 @@ async def me(
         modules=modules,
         allowed_modules=current_user.allowed_modules,
         is_super_admin=is_super_admin(current_user),
+        calling_enabled=settings.whatsapp_calling_enabled,
     )
 
 

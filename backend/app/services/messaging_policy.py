@@ -177,6 +177,42 @@ _META_ERROR_HINTS: dict[int, tuple[str, str]] = {
         "Token da Meta expirado ou inválido. Reconecte em Conexões Meta.",
         "Meta token expired or invalid. Reconnect in Meta Connections.",
     ),
+    131044: (
+        "A conta do WhatsApp está sem forma de pagamento válida, e a Meta exige uma para as ligações.",
+        "The WhatsApp account has no valid payment method, which Meta requires for calls.",
+    ),
+    131055: (
+        "Este número usa SIP, então as ligações não funcionam pela API.",
+        "This number uses SIP, so calls don't work through the API.",
+    ),
+    138000: (
+        "As ligações não estão ativas neste número. Ative em Conexões Meta → WhatsApp.",
+        "Calling is not enabled on this number. Turn it on in Meta Connections → WhatsApp.",
+    ),
+    138002: (
+        "O número atingiu o limite de chamadas simultâneas. Tente de novo em instantes.",
+        "This number reached its concurrent call limit. Try again shortly.",
+    ),
+    138004: (
+        "A chamada não conectou. Verifique a rede e tente de novo.",
+        "The call failed to connect. Check your network and try again.",
+    ),
+    138007: (
+        "O áudio não conectou a tempo e a chamada foi encerrada.",
+        "The audio didn't connect in time and the call ended.",
+    ),
+    138014: (
+        "A Meta pausou temporariamente as ligações deste número por baixa qualidade.",
+        "Meta temporarily paused calling on this number due to low quality.",
+    ),
+    138015: (
+        "A Meta só ativa ligações em contas com limite de 2.000 destinatários por dia ou mais.",
+        "Meta only enables calling on accounts with a limit of 2,000 recipients per day or more.",
+    ),
+    138018: (
+        "O app ainda não está pronto para ligações: falta assinar o webhook de chamadas.",
+        "The app isn't ready for calling yet: the calls webhook isn't subscribed.",
+    ),
 }
 
 

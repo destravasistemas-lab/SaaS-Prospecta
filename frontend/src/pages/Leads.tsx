@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import {
   Users, Search, Flame, Thermometer, Snowflake,
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
-  TrendingUp, GitMerge, UserPlus,
+  TrendingUp, GitMerge, UserPlus, Phone,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import { useCalls } from '../components/CallProvider'
+import { LeadCallsModal } from '../components/CallLog'
 
 interface Lead {
   id: string
@@ -88,6 +90,8 @@ function StatusPill({ status }: { status: string }) {
 
 export default function Leads() {
   const { t, locale } = useI18n()
+  const { enabled: callingOn } = useCalls()
+  const [callsLead, setCallsLead] = useState<Lead | null>(null)
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [scoring, setScoring] = useState(false)
@@ -581,6 +585,15 @@ export default function Leads() {
                       >
                         <MessageCircle size={13} />
                       </button>
+                      {callingOn && (
+                        <button
+                          onClick={() => setCallsLead(lead)}
+                          title={t('Histórico de chamadas', 'Call history')}
+                          className="p-1.5 rounded-lg bg-white/[0.04] text-[#8a8a9e] hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
+                        >
+                          <Phone size={13} />
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setMergeSurvivor(lead)
@@ -613,6 +626,14 @@ export default function Leads() {
             </p>
           </div>
         </div>
+      )}
+
+      {callsLead && (
+        <LeadCallsModal
+          leadId={callsLead.id}
+          leadName={callsLead.name || callsLead.instagram_handle}
+          onClose={() => setCallsLead(null)}
+        />
       )}
 
       {/* Novo lead */}

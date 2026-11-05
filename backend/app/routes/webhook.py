@@ -86,7 +86,8 @@ async def receive_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid JSON payload.")
 
     logger.info("Webhook received: object=%s entries=%d", payload.get("object"), len(payload.get("entry", [])))
-    logger.debug("Webhook payload: %s", payload)
+    if b'"sdp"' not in body:  # o SDP das chamadas não entra em log
+        logger.debug("Webhook payload: %s", payload)
 
     obj = payload.get("object", "")
 
@@ -99,7 +100,10 @@ async def receive_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             field = change.get("field")
             value = change.get("value", {})
 
-            if obj == "whatsapp_business_account" or field == "messages":
+            if obj == "whatsapp_business_account" and field == "calls":
+                from app.services import whatsapp_calling
+                await whatsapp_calling.handle_calls_webhook(value, db)
+            elif obj == "whatsapp_business_account" or field == "messages":
                 # WhatsApp Cloud API: route by phone_number_id inside metadata
                 phone_number_id = value.get("metadata", {}).get("phone_number_id") or entry_id
                 conn, account = await _get_tenant_by_phone_id_cached(phone_number_id, db)
@@ -722,13 +726,26 @@ async def handle_whatsapp_message(
         await db.flush()
 
     # ---- Incoming messages ----
-    contacts = {c["wa_id"]: c.get("profile", {}).get("name") for c in value.get("contacts", [])}
+    # Contato com nome de usuário pode vir sem wa_id/from: identifica pelo BSUID (user_id).
+    contacts = {
+        c.get("wa_id") or c.get("user_id"): c.get("profile", {}).get("name")
+        for c in value.get("contacts", [])
+    }
 
     for msg_data in value.get("messages", []):
-        wa_from = msg_data.get("from", "")
+        wa_from = msg_data.get("from") or msg_data.get("from_user_id", "")
         wamid = msg_data.get("id", "")
         msg_type = msg_data.get("type", "text")
         timestamp = int(msg_data.get("timestamp", 0))
+
+        if not wa_from:
+            logger.warning("Mensagem %s sem from nem from_user_id: ignorada", wamid)
+            continue
+
+        # A resposta ao pedido de ligação vem como mensagem, mas não é conversa do cliente.
+        if msg_type == "interactive" and msg_data.get("interactive", {}).get("type") == "call_permission_reply":
+            logger.info("Resposta de permissão de chamada recebida (tenant %s)", tenant_id)
+            continue
 
         # ---- Reação do cliente: atualiza a mensagem original, não cria nova ----
         if msg_type == "reaction":
@@ -828,7 +845,7 @@ async def handle_whatsapp_message(
             media_url = f"/whatsapp/media/{media_id}"
 
         # Upsert lead — cria automaticamente com nome + número quando vem do WhatsApp
-        normalized_phone = normalize_phone(wa_from) or wa_from
+        normalized_phone = (normalize_phone(wa_from) or wa_from) if msg_data.get("from") else None
         lead = await _find_lead(tenant_id, wa_from, db)
         if not lead:
             customer_name = contacts.get(wa_from)
@@ -837,13 +854,13 @@ async def handle_whatsapp_message(
                 account_id=tenant_id,
                 instagram_handle=wa_from,
                 phone=normalized_phone,
-                name=customer_name or normalized_phone,
+                name=customer_name or normalized_phone or wa_from,
                 source=LeadSource.INSTAGRAM_DM,
                 status=LeadStatus.NEW,
             )
             db.add(lead)
             await db.flush()
-        elif not lead.phone:
+        elif not lead.phone and normalized_phone:
             # Lead já existia (ex: veio do Instagram) — agora temos o número
             lead.phone = normalized_phone
             await db.flush()

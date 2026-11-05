@@ -15,6 +15,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.core.i18n import parse_lang, set_lang, reset_lang, translate_detail, t
+from app.core.ws_manager import ws_manager
 from app.routes import auth, webhook, dashboard, leads, accounts, automations, privacy, instagram, instagram_api
 from app.routes import auth_jwt, conversations, messages, ws, whatsapp, payments, tenants, clients
 from app.routes import auth_email
@@ -22,6 +23,7 @@ from app.routes import admin as admin_routes
 from app.routes import marketing
 from app.routes import studio
 from app.routes import ai as ai_routes
+from app.routes import whatsapp_calls
 
 # Register all models with Base.metadata so create_all creates every table
 import app.models.meta_connection   # noqa: F401
@@ -35,15 +37,16 @@ import app.models.ai                # noqa: F401
 import app.models.privacy           # noqa: F401
 import app.models.followup          # noqa: F401
 import app.models.ads_sync          # noqa: F401
+import app.models.whatsapp_call     # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class _RedactSecretsFilter(logging.Filter):
-    """O httpx loga a URL completa em INFO, e a Graph API recebe token e secret na query string."""
+    """httpx e uvicorn logam a URL completa em INFO: a Graph API recebe token e secret na query string, e o /ws, o JWT."""
 
-    _SECRETS = re.compile(r"\b(access_token|client_secret|fb_exchange_token|input_token|code)=[^&\s\"]+")
+    _SECRETS = re.compile(r"\b(access_token|client_secret|fb_exchange_token|input_token|code|token)=[^&\s\"]+")
 
     def filter(self, record: logging.LogRecord) -> bool:
         if record.args:
@@ -55,6 +58,7 @@ class _RedactSecretsFilter(logging.Filter):
 
 
 logging.getLogger("httpx").addFilter(_RedactSecretsFilter())
+logging.getLogger("uvicorn.error").addFilter(_RedactSecretsFilter())
 
 
 _MIGRATIONS = [
@@ -121,10 +125,11 @@ async def lifespan(app: FastAPI):
 
     scheduler_task = asyncio.create_task(_start_scheduler())
     ads_sync_task = asyncio.create_task(_start_ads_sync()) if settings.ads_sync_enabled else None
+    ws_fanout_task = asyncio.create_task(ws_manager.fanout_loop()) if settings.ws_redis_fanout else None
 
     yield
 
-    for task in filter(None, (scheduler_task, ads_sync_task)):
+    for task in filter(None, (scheduler_task, ads_sync_task, ws_fanout_task)):
         task.cancel()
         try:
             await task
@@ -289,6 +294,8 @@ app.include_router(auth_jwt.router, prefix="/api/v1")
 app.include_router(admin_routes.router, prefix="/api/v1")
 app.include_router(conversations.router, prefix="/api/v1")
 app.include_router(messages.router, prefix="/api/v1")
+app.include_router(whatsapp_calls.router, prefix="/api/v1",
+                   dependencies=[_Depends(_require_module("whatsapp"))])
 app.include_router(whatsapp.router, prefix="/api/v1",
                    dependencies=[_Depends(_require_module("whatsapp"))])
 app.include_router(tenants.router, prefix="/api/v1")

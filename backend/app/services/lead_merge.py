@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.lead import Lead
 from app.models.conversation import Conversation
+from app.models.whatsapp_call import WhatsAppCall
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,11 @@ async def merge_leads(survivor: Lead, absorbed: Lead, db: AsyncSession) -> Lead:
         update(Conversation)
         .where(Conversation.customer_id == absorbed.id)
         .values(customer_id=survivor.id)
+    )
+    await db.execute(
+        update(WhatsAppCall)
+        .where(WhatsAppCall.lead_id == absorbed.id)
+        .values(lead_id=survivor.id)
     )
 
     # 2. Completa campos vazios do sobrevivente com dados do absorvido.

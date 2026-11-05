@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import async_session
 from app.core.security import get_current_user_ws
 from app.core.ws_manager import ws_manager
@@ -26,6 +27,8 @@ async def websocket_endpoint(
       - conversation_updated  → status/atendente atualizado
       - new_message           → nova mensagem na conversa
       - message_status_updated → status de mensagem (sent/delivered/read/failed)
+      - call_incoming          → chamada tocando (só para quem tem o módulo WhatsApp)
+      - call_updated           → chamada assumida, conectada ou encerrada
     """
     # Aceita o handshake primeiro; validar antes de aceitar pode gerar
     # "got websocket.accept" se o cliente desconectar durante a checagem.
@@ -39,7 +42,9 @@ async def websocket_endpoint(
         return
 
     tenant_id = user.tenant_id
-    await ws_manager.connect(tenant_id, ws)
+    await ws_manager.connect(tenant_id, ws, user.id)
+    if settings.whatsapp_calling_enabled:
+        await ws_manager.touch_presence(user.id)
     logger.info("WS autenticado: user=%s tenant=%s", user.username, tenant_id)
 
     try:
@@ -48,6 +53,8 @@ async def websocket_endpoint(
             data = await ws.receive_text()
             if data == "ping":
                 await ws.send_text("pong")
+                if settings.whatsapp_calling_enabled:
+                    await ws_manager.touch_presence(user.id)
     except WebSocketDisconnect:
         pass
     finally:
