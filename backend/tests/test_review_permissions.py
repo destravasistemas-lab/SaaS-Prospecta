@@ -17,6 +17,7 @@ from app.models.user import User
 from app.models.meta_connection import MetaConnection
 
 from app.services import ads_service
+from tests.conftest import fake_meta
 from tests.test_marketing_flow import _ads_setup
 from tests.test_instagram_flow import _ig_tenant
 
@@ -107,9 +108,7 @@ async def test_subscribe_page_logs_meta_response(caplog, response):
         requests.append(request)
         return httpx.Response(200, json=response)
 
-    real_client = httpx.AsyncClient
-    with patch("app.services.ads_service.httpx.AsyncClient",
-               lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw)), \
+    with fake_meta(handler), \
          caplog.at_level(logging.INFO):
         await ads_service.subscribe_page("PAGE_TOKEN_SECRET", "111")
 

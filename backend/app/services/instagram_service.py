@@ -7,8 +7,8 @@ to obtain it from MetaConnection.access_token_encrypted).
 import asyncio
 import logging
 
-import httpx
 
+from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ _MAX_RETRIES = 3
 async def _request(method: str, url: str, *, retry_statuses: set[int] = _RETRY_STATUSES, **kwargs) -> dict:
     """HTTP request with exponential back-off on rate-limit / server errors."""
     for attempt in range(_MAX_RETRIES):
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with http_client(timeout=15.0) as client:
             resp = await client.request(method, url, **kwargs)
 
         if resp.status_code not in retry_statuses:

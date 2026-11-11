@@ -5,6 +5,7 @@ import {
   Send, Upload, Users, X, Repeat,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
+import { broadcastText, runBroadcast } from '../services/broadcast'
 import AutoFollowUps from '../components/AutoFollowUps'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
@@ -166,16 +167,16 @@ export default function FollowUps() {
     setDispatching(true)
     setDispatchResult('')
     try {
-      const { data } = await api.post('/whatsapp/broadcast', {
-        template_name: pickedTpl.name,
-        language: pickedTpl.language || 'pt_BR',
-        variables: tplVars,
-        lead_ids: selected.size > 0 ? [...selected] : leads.map((l) => l.id),
-      })
-      setDispatchResult(
-        t(`Disparo: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`, `Broadcast: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`)
-        + (data.error ? ` ${t('Motivo das falhas', 'Failure reason')}: ${data.error}` : ''),
+      const job = await runBroadcast(
+        {
+          template_name: pickedTpl.name,
+          language: pickedTpl.language || 'pt_BR',
+          variables: tplVars,
+          lead_ids: selected.size > 0 ? [...selected] : leads.map((l) => l.id),
+        },
+        (progress) => setDispatchResult(broadcastText(progress)),
       )
+      setDispatchResult(broadcastText(job))
     } catch (err: any) {
       setDispatchResult(apiError(err, t('Erro no disparo.', 'Broadcast failed.')))
     } finally {

@@ -17,6 +17,7 @@ import httpx
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.http import client as http_client
 from app.core.config import settings
 from app.core.database import async_session
 from app.models.ads_sync import AdsSyncSnapshot
@@ -213,7 +214,7 @@ async def _sync_account(client: httpx.AsyncClient, target: _Target, stats: _Stat
 async def run_ads_sync_round() -> None:
     stats = _Stats()
     targets = await _load_targets()
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with http_client(timeout=30.0) as client:
         for target in targets:
             try:
                 if not await _sync_account(client, target, stats):
@@ -225,9 +226,14 @@ async def run_ads_sync_round() -> None:
 
 async def ads_sync_loop() -> None:
     logger.info("ads_sync ligado: rodada a cada %d min", _ROUND_SECONDS // 60)
+    from app.core.locks import singleton
+
     while True:
         try:
-            await run_ads_sync_round()
+            # Com várias instâncias, só uma faz a rodada (cada rodada gasta cota da Meta).
+            async with singleton("ads-sync") as mine:
+                if mine:
+                    await run_ads_sync_round()
         except Exception as exc:
             logger.error("ads_sync: rodada falhou: %s", type(exc).__name__)
         await asyncio.sleep(_ROUND_SECONDS)

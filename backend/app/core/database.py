@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
@@ -19,6 +21,23 @@ async_session = async_sessionmaker(
 
 class Base(DeclarativeBase):
     pass
+
+
+def session_factory_for(app):
+    """Sessão para tarefas fora da requisição, respeitando o override de get_db (testes)."""
+    override = app.dependency_overrides.get(get_db)
+    if override is None:
+        return async_session
+
+    @asynccontextmanager
+    async def from_override():
+        gen = override()
+        try:
+            yield await gen.__anext__()
+        finally:
+            await gen.aclose()
+
+    return from_override
 
 
 async def get_db() -> AsyncSession:

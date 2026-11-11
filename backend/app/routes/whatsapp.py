@@ -12,12 +12,12 @@ import secrets
 import logging
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, UploadFile, File, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, update
 
-from app.core.database import get_db
+from app.core.database import get_db, session_factory_for
 from app.core.security import get_current_user
 from app.core.ws_manager import ws_manager
 from app.models.user import User
@@ -27,10 +27,14 @@ from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.lead import Lead
 from app.models.followup import FollowUpRule, FollowUpDispatch
+from app.models.queue import (
+    JOB_ACTIVE, JOB_CANCELED, JOB_DONE, JOB_QUEUED, RCPT_PENDING, RCPT_SKIPPED, BroadcastJob, BroadcastRecipient,
+)
 from app.core.config import settings
 from app.core.i18n import t
 from app.services import whatsapp_service
 from app.services import messaging_policy
+from app.services import broadcast_worker
 from app.services.meta_token_service import encrypt_token, decrypt_token, exchange_code_for_token
 
 logger = logging.getLogger(__name__)
@@ -1083,23 +1087,43 @@ async def broadcast_audience(
 
 
 # Erros que valem para toda a lista (número não registrado, token, template, PIN)
-_BROADCAST_FATAL_CODES = {133010, 190, 132001, 133005}
-
-
-@router.post("/broadcast")
+@router.post("/broadcast", status_code=202)
 async def broadcast_template(
     body: BroadcastRequest,
+    request: Request,
+    background: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Dispara um template para os leads com telefone e opt-in ativo (opt-outs são sempre excluídos)."""
+    """
+    Cria o disparo para os leads com telefone e opt-in ativo (opt-outs são sempre excluídos).
+    O envio roda em fila: a resposta volta na hora e o progresso sai em /broadcast/jobs/{id}.
+    """
     if current_user.role != "admin":
         raise HTTPException(403, "Apenas admins podem disparar em massa.")
     conn = await _get_conn_or_404(current_user.tenant_id, db)
     try:
-        token = decrypt_token(conn.access_token_encrypted)
+        decrypt_token(conn.access_token_encrypted)
     except Exception:
         raise HTTPException(400, "Não foi possível ler as credenciais do WhatsApp. Reconecte o número.")
+
+    # Dois cliques (ou duas abas) não podem mandar o mesmo template duas vezes.
+    running = (await db.execute(
+        select(BroadcastJob).where(
+            BroadcastJob.tenant_id == current_user.tenant_id,
+            BroadcastJob.template_name == body.template_name,
+            BroadcastJob.status.in_(JOB_ACTIVE),
+        ).limit(1)
+    )).scalar_one_or_none()
+    if running:
+        raise HTTPException(409, detail={
+            "code": "broadcast_running",
+            "message": t(
+                "Já existe um disparo deste template em andamento. Acompanhe o progresso ou cancele antes de disparar de novo.",
+                "A broadcast of this template is already running. Track its progress or cancel it before sending again.",
+            ),
+            "job": broadcast_worker.job_view(running),
+        })
 
     q = select(Lead).where(
         Lead.account_id == current_user.tenant_id,
@@ -1111,57 +1135,79 @@ async def broadcast_template(
         q = q.where(Lead.id.in_(body.lead_ids))
     leads = (await db.execute(q)).scalars().all()
 
-    components = None
-    if body.variables:
-        components = [{
-            "type": "body",
-            "parameters": [{"type": "text", "text": v} for v in body.variables],
-        }]
+    job = BroadcastJob(
+        tenant_id=current_user.tenant_id,
+        created_by_name=current_user.username,
+        template_name=body.template_name,
+        language=body.language,
+        variables=body.variables,
+        total=len(leads),
+        status=JOB_QUEUED if leads else JOB_DONE,
+        finished_at=None if leads else datetime.now(timezone.utc),
+    )
+    db.add(job)
+    await db.flush()
+    db.add_all([BroadcastRecipient(job_id=job.id, lead_id=lead.id, phone=lead.phone) for lead in leads])
+    await db.commit()
+    # Começa logo; o loop da fila (ou outra instância) assume se esta cair.
+    if leads:
+        background.add_task(broadcast_worker.process_jobs, session_factory_for(request.app))
+    return broadcast_worker.job_view(job)
 
-    sent, failed = 0, 0
-    first_error: str | None = None
-    for lead in leads:
-        to = lead.phone
-        try:
-            resp = await whatsapp_service.send_template(
-                token, conn.phone_number_id, to,
-                body.template_name, body.language, components,
-            )
-            wamid = (resp.get("messages") or [{}])[0].get("id")
-            if not wamid:
-                failed += 1
-                err = resp.get("error") or {}
-                logger.warning("Broadcast recusado pela Meta para %s: %s", to, err)
-                # Erro da conta/template (não do contato): para tudo em vez de
-                # "tentar" a lista inteira e responder como se tivesse enviado.
-                if err.get("code") in _BROADCAST_FATAL_CODES and sent == 0:
-                    raise messaging_policy.meta_send_error(resp)
-                first_error = first_error or messaging_policy.meta_send_error(resp).detail["message"]
-                continue
-            conv = await _get_or_create_conv_for_lead(current_user.tenant_id, lead.id, db)
-            await _save_outbound(
-                tenant_id=current_user.tenant_id,
-                conv_id=conv.id,
-                sender=current_user.username,
-                wa_to=to,
-                text=f"[template:{body.template_name}] {' | '.join(body.variables)}",
-                wamid=wamid,
-                template_name=body.template_name,
-                template_vars={"variables": body.variables},
-                is_within_24h_window=False,
-                db=db,
-            )
-            sent += 1
-        except HTTPException:
-            raise
-        except Exception as exc:
-            failed += 1
-            logger.warning("Broadcast falhou para %s: %s", to, exc)
 
-    result = {"total": len(leads), "sent": sent, "failed": failed}
-    if first_error:
-        result["error"] = first_error
-    return result
+async def _job_or_404(job_id: str, tenant_id: str, db: AsyncSession) -> BroadcastJob:
+    job = (await db.execute(
+        select(BroadcastJob).where(BroadcastJob.id == job_id, BroadcastJob.tenant_id == tenant_id)
+        .execution_options(populate_existing=True)
+    )).scalar_one_or_none()
+    if not job:
+        raise HTTPException(404, t("Disparo não encontrado.", "Broadcast not found."))
+    return job
+
+
+@router.get("/broadcast/jobs")
+async def list_broadcast_jobs(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    jobs = (await db.execute(
+        select(BroadcastJob).where(BroadcastJob.tenant_id == current_user.tenant_id)
+        .order_by(BroadcastJob.created_at.desc()).limit(20)
+    )).scalars().all()
+    return [broadcast_worker.job_view(j) for j in jobs]
+
+
+@router.get("/broadcast/jobs/{job_id}")
+async def get_broadcast_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return broadcast_worker.job_view(await _job_or_404(job_id, current_user.tenant_id, db))
+
+
+@router.post("/broadcast/jobs/{job_id}/cancel")
+async def cancel_broadcast_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Para o disparo: quem ainda não recebeu não recebe mais. O que já saiu não volta."""
+    if current_user.role != "admin":
+        raise HTTPException(403, "Apenas admins podem cancelar disparos.")
+    job = await _job_or_404(job_id, current_user.tenant_id, db)
+    await db.execute(
+        update(BroadcastRecipient)
+        .where(BroadcastRecipient.job_id == job.id, BroadcastRecipient.status == RCPT_PENDING)
+        .values(status=RCPT_SKIPPED).execution_options(synchronize_session=False)
+    )
+    await db.execute(
+        update(BroadcastJob).where(BroadcastJob.id == job.id, BroadcastJob.status.in_(JOB_ACTIVE))
+        .values(status=JOB_CANCELED, finished_at=datetime.now(timezone.utc))
+        .execution_options(synchronize_session=False)
+    )
+    await db.commit()
+    return broadcast_worker.job_view(await _job_or_404(job_id, current_user.tenant_id, db))
 
 
 # ---------------------------------------------------------------------------

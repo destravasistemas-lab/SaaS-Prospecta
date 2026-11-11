@@ -1,6 +1,6 @@
 import logging
-import httpx
 
+from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ async def send_email(to: str, subject: str, html: str) -> bool:
         return False
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with http_client() as client:
             resp = await client.post(
                 RESEND_API,
                 headers={

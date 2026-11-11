@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import httpx
 
+from app.core.http import client as http_client
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.security import get_current_user
@@ -127,7 +127,7 @@ async def meta_callback(
         raise HTTPException(status_code=400, detail=str(exc))
 
     # --- Exchange code for short-lived token ---
-    async with httpx.AsyncClient() as client:
+    async with http_client() as client:
         token_resp = await client.get(
             f"{settings.meta_graph_url}/oauth/access_token",
             params={
@@ -155,7 +155,7 @@ async def meta_callback(
         expires_at = None
 
     # --- Fetch user info and pages ---
-    async with httpx.AsyncClient() as client:
+    async with http_client() as client:
         me_resp = await client.get(
             f"{settings.meta_graph_url}/me",
             params={"fields": "id,name,accounts{id,name,access_token,instagram_business_account}", "access_token": access_token},
@@ -313,7 +313,7 @@ async def delete_connection(
     # Attempt to revoke token at Meta (best-effort)
     try:
         token = decrypt_token(connection.access_token_encrypted)
-        async with httpx.AsyncClient() as client:
+        async with http_client() as client:
             if connection.provider == PROVIDER_WHATSAPP and connection.waba_id:
                 # Stop receiving this WABA's webhooks
                 await client.delete(
@@ -413,7 +413,7 @@ async def list_ad_accounts(
         raise HTTPException(status_code=404, detail="Conta não encontrada")
 
     token = safe_decrypt_token(account.meta_access_token)
-    async with httpx.AsyncClient() as client:
+    async with http_client() as client:
         resp = await client.get(
             f"{settings.meta_graph_url}/{account.meta_page_id}/adaccounts",
             params={
@@ -458,7 +458,7 @@ def _serialize_connection(c: MetaConnection) -> dict:
 
 async def _subscribe_page_leadgen(page_id: str, page_token: str) -> None:
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with http_client(timeout=15.0) as client:
             resp = await client.post(
                 f"{settings.meta_graph_url}/{page_id}/subscribed_apps",
                 params={"subscribed_fields": "leadgen", "access_token": page_token},
@@ -472,7 +472,7 @@ async def _subscribe_page_leadgen(page_id: str, page_token: str) -> None:
 
 async def _discover_ad_account(token: str, meta_user_id: str) -> str | None:
     try:
-        async with httpx.AsyncClient() as client:
+        async with http_client() as client:
             resp = await client.get(
                 f"{settings.meta_graph_url}/me/adaccounts",
                 params={"access_token": token, "fields": "id", "limit": "1"},
@@ -486,7 +486,7 @@ async def _discover_ad_account(token: str, meta_user_id: str) -> str | None:
 
 async def _discover_waba(token: str, meta_user_id: str) -> str | None:
     try:
-        async with httpx.AsyncClient() as client:
+        async with http_client() as client:
             resp = await client.get(
                 f"{settings.meta_graph_url}/{meta_user_id}/whatsapp_business_accounts",
                 params={"access_token": token, "fields": "id", "limit": "1"},

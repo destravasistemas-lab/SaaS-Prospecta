@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import httpx
 
+from app.core.http import client as http_client
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.security import get_current_user
@@ -85,7 +85,7 @@ async def instagram_callback(
     # Troca code por short-lived token (POST multipart/form-data como a doc do Instagram mostra)
     used_app_id = settings.ig_app_id or settings.meta_app_id
     used_secret = settings.ig_app_secret or settings.meta_app_secret
-    async with httpx.AsyncClient() as client:
+    async with http_client() as client:
         token_resp = await client.post(
             IG_TOKEN_URL,
             files={
@@ -112,7 +112,7 @@ async def instagram_callback(
     from datetime import datetime, timezone, timedelta
     # Endpoint de troca é SEM versão e SEM client_id (só client_secret + token).
     # Usar "/v21.0/access_token" retorna "Unsupported request - method type: get".
-    async with httpx.AsyncClient() as client:
+    async with http_client() as client:
         ll_resp = await client.get(
             "https://graph.instagram.com/access_token",
             params={
@@ -133,7 +133,7 @@ async def instagram_callback(
     # user_id = ID da conta profissional (é o que o webhook manda em entry.id);
     # id = ID app-scoped. Guardamos o user_id como ig_business_account_id para o
     # roteamento do webhook bater, e o id app-scoped em meta_user_id.
-    async with httpx.AsyncClient() as client:
+    async with http_client() as client:
         me_resp = await client.get(
             f"{IG_GRAPH_URL}/me",
             params={

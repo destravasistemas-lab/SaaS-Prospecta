@@ -26,7 +26,7 @@ from app.services import ads_sync, instagram_service
 from app.services.meta_token_service import encrypt_token
 
 TOKEN = "SYNC_TOKEN_SECRET"
-_RealAsyncClient = httpx.AsyncClient
+from tests.conftest import fake_meta
 
 
 def _graph(overrides: dict | None = None, seen: list | None = None):
@@ -49,10 +49,7 @@ def _graph(overrides: dict | None = None, seen: list | None = None):
 
 
 def _use(handler):
-    return patch.object(
-        ads_sync.httpx, "AsyncClient",
-        lambda **kw: _RealAsyncClient(transport=httpx.MockTransport(handler), **kw),
-    )
+    return fake_meta(handler)
 
 
 @pytest_asyncio.fixture
@@ -257,7 +254,7 @@ async def test_overview_reads_the_snapshot_without_calling_meta(client, sync_db,
     ))
     await sync_db.flush()
 
-    with patch.object(ads_sync.httpx, "AsyncClient", side_effect=AssertionError("não deve chamar a Meta")):
+    with patch("app.core.http.shared", side_effect=AssertionError("não deve chamar a Meta")):
         resp = await client.get("/api/v1/marketing/synced-overview", headers=headers)
     body = resp.json()
     assert body["campaign_counts"] == {"c1": {"ad_sets": 2, "ads": 1}}
@@ -279,8 +276,7 @@ async def test_disconnect_deletes_the_snapshot(client, sync_db, make_user):
     await sync_db.flush()
 
     handler = lambda request: httpx.Response(200, json={"success": True})
-    with patch("app.routes.auth.httpx.AsyncClient",
-               lambda **kw: _RealAsyncClient(transport=httpx.MockTransport(handler), **kw)):
+    with fake_meta(handler):
         resp = await client.delete(f"/api/v1/auth/meta/connections/{conn.id}", headers=headers)
     assert resp.status_code == 200
     await sync_db.flush()
@@ -318,10 +314,7 @@ def _ig_transport(status, body, calls):
         calls.append(request)
         return httpx.Response(status, text=body) if isinstance(body, str) else httpx.Response(status, json=body)
 
-    return patch.object(
-        instagram_service.httpx, "AsyncClient",
-        lambda **kw: _RealAsyncClient(transport=httpx.MockTransport(handler), **kw),
-    )
+    return fake_meta(handler)
 
 
 @pytest.mark.parametrize("body", ["Internal Server Error", {"error": {"code": 2, "message": "oops"}}])

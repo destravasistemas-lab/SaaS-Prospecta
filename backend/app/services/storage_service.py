@@ -12,8 +12,8 @@ Usa a REST API do Supabase Storage via httpx (sem adicionar o SDK).
 """
 import logging
 
-import httpx
 
+from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ async def upload(path: str, content: bytes, content_type: str) -> str:
         # sobrescreve se já existir (nomes são uuid, então praticamente nunca)
         "x-upsert": "true",
     }
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with http_client(timeout=30) as client:
         resp = await client.post(url, headers=headers, content=content)
     if resp.status_code not in (200, 201):
         raise RuntimeError(
@@ -71,7 +71,7 @@ async def delete(path: str) -> None:
     """Apaga um objeto do bucket. Best-effort — só loga se falhar."""
     url = f"{_base()}/object/{settings.supabase_bucket}/{path}"
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with http_client(timeout=15) as client:
             resp = await client.delete(url, headers=_headers())
         if resp.status_code not in (200, 204):
             logger.warning("Falha ao apagar mídia %s (%s): %s", path, resp.status_code, resp.text)
@@ -100,7 +100,7 @@ async def list_objects(prefix: str = "", limit: int = 1000) -> list[dict]:
         "sortBy": {"column": "created_at", "order": "asc"},
     }
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with http_client(timeout=30) as client:
             resp = await client.post(url, headers={**_headers(), "Content-Type": "application/json"}, json=body)
         if resp.status_code != 200:
             logger.warning("Falha ao listar bucket (%s): %s", resp.status_code, resp.text)

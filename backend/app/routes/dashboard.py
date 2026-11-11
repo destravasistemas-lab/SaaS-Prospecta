@@ -5,8 +5,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
-import httpx
-
+from app.core.http import client as http_client
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.security import get_current_user
@@ -93,7 +92,7 @@ async def get_dashboard(
             token = safe_decrypt_token(account.meta_access_token)
             page_id = account.meta_page_id
 
-            async with httpx.AsyncClient() as client:
+            async with http_client() as client:
                 try:
                     insights_resp = await client.get(
                         f"{META_GRAPH_URL}/{page_id}/insights",
@@ -194,7 +193,7 @@ async def get_dashboard(
                                         else 0.0
                                     )
 
-                                    performance_data = _generate_performance_data(
+                                    performance_data = await _generate_performance_data(
                                         ad_id, token, now
                                     )
                             except Exception as e:
@@ -405,7 +404,7 @@ async def get_agency_dashboard(
     )
 
 
-def _generate_performance_data(
+async def _generate_performance_data(
     ad_account_id: str, token: str, now: datetime
 ) -> list:
     data = []
@@ -415,9 +414,8 @@ def _generate_performance_data(
         until_str = now.strftime("%Y-%m-%d")
 
         try:
-            import httpx
-            with httpx.Client() as client:
-                resp = client.get(
+            async with http_client(timeout=15.0) as client:
+                resp = await client.get(
                     f"{META_GRAPH_URL}/act_{ad_account_id.split('_')[-1]}/insights",
                     params={
                         "access_token": token,

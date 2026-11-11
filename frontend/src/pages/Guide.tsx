@@ -194,10 +194,12 @@ function groups(t: T, callingOn: boolean): Group[] {
             t('Em Follow-ups → Disparar, importe um CSV (nome, telefone, opt_in) ou use os leads que já existem.', 'In Follow-ups → Send, import a CSV (name, phone, opt_in) or use your existing leads.'),
             t('Selecione os contatos, ou todos, e clique em Disparar.', 'Select contacts, or all of them, and click Send.'),
             t('Escolha o template, preencha as variáveis e confirme. Em Templates → Disparar, o envio vai para toda a base com opt-in.', 'Pick the template, fill in the variables and confirm. In Templates → Broadcast, it goes to your whole opted-in base.'),
+            t('O progresso aparece na tela. Pode fechar a janela: o envio continua no servidor. Em Templates, o botão Parar disparo interrompe o que ainda não saiu.', 'Progress shows on screen. You can close the window: sending continues on the server. In Templates, Stop broadcast halts whatever has not been sent yet.'),
             t('Acompanhe em Aguardando (sem resposta) e Responderam.', 'Track it in Awaiting reply and Replied.'),
           ],
           rules: [
             t('Só contatos com opt-in aparecem na lista, e quem fez opt-out nunca recebe.', 'Only opted-in contacts appear in the list, and anyone who opted out never receives it.'),
+            t('Cada contato recebe uma vez por disparo. Clicar de novo enquanto o mesmo template está sendo enviado só mostra o progresso.', 'Each contact gets it once per broadcast. Clicking again while the same template is sending just shows the progress.'),
             t('Telefones do CSV são padronizados para 55DDDNÚMERO. Duplicados e inválidos são ignorados.', 'CSV phones are normalized to country code + area code + number. Duplicates and invalid ones are skipped.'),
           ],
         },

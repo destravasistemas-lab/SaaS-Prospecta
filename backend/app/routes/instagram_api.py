@@ -8,8 +8,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-import httpx
 
+from app.core.http import client as http_client
 from app.core.database import get_db
 from app.core.config import settings
 from app.core.security import get_current_user
@@ -75,7 +75,7 @@ async def get_instagram_profile(
     current_user: User = Depends(get_current_user),
 ):
     conn, token, ig_id = await _get_ig_connection(db, current_user)
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with http_client(timeout=10.0) as client:
         resp = await client.get(
             f"{settings.ig_graph_url}/{ig_id}",
             params={
@@ -442,7 +442,7 @@ async def get_insights(
 
     # 1) Dados do perfil (seguidores/posts) — precisa funcionar sempre.
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with http_client(timeout=15.0) as client:
             user_resp = await client.get(
                 f"{settings.ig_graph_url}/{ig_id}",
                 params={
@@ -462,7 +462,7 @@ async def get_insights(
     # seguidores), zera as métricas em vez de derrubar a resposta inteira.
     insights_data: dict = {}
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with http_client(timeout=15.0) as client:
             insights_resp = await client.get(
                 f"{settings.ig_graph_url}/{ig_id}/insights",
                 params={
@@ -530,7 +530,7 @@ async def get_stories_insights(
     conn, token, ig_id = await _get_ig_connection(db, current_user, ig_user_id)
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with http_client(timeout=15.0) as client:
             stories_resp = await client.get(
                 f"{settings.ig_graph_url}/{ig_id}/stories",
                 params={
@@ -659,7 +659,7 @@ async def send_instagram_dm(
     token = decrypt_token(conn.access_token_encrypted)
     ig_biz_id = conn.ig_business_account_id
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with http_client(timeout=15.0) as client:
         resp = await client.post(
             f"{settings.ig_graph_url}/{ig_biz_id}/messages",
             json={

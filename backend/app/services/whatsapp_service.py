@@ -9,8 +9,8 @@ Requer:
 import asyncio
 import logging
 
-import httpx
 
+from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ _MAX_RETRIES = 3
 async def _request(method: str, url: str, **kwargs) -> dict:
     last_resp = None
     for attempt in range(_MAX_RETRIES):
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with http_client(timeout=15.0) as client:
             last_resp = await client.request(method, url, **kwargs)
 
         if last_resp.status_code not in _RETRY_STATUSES:
@@ -359,7 +359,7 @@ async def call_action(
     payload: dict = {"messaging_product": "whatsapp", "call_id": call_id, "action": action}
     if sdp:
         payload["session"] = {"sdp_type": "answer", "sdp": sdp}
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with http_client(timeout=15.0) as client:
         resp = await client.post(
             f"{settings.meta_graph_url}/{phone_number_id}/calls",
             headers={"Authorization": f"Bearer {token}"},
@@ -386,7 +386,7 @@ async def upload_media(
     filename: str = "file",
 ) -> dict:
     """Sobe um arquivo para a Meta e retorna {"id": "<media_id>"}."""
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    async with http_client(timeout=60.0) as client:
         resp = await client.post(
             f"{settings.meta_graph_url}/{phone_number_id}/media",
             headers={"Authorization": f"Bearer {token}"},
@@ -401,7 +401,7 @@ async def upload_media(
 
 async def fetch_media(token: str, media_id: str) -> tuple[bytes, str]:
     """Baixa uma mídia da Meta. Retorna (bytes, mime_type)."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with http_client(timeout=30.0) as client:
         r1 = await client.get(
             f"{settings.meta_graph_url}/{media_id}",
             headers={"Authorization": f"Bearer {token}"},
@@ -423,7 +423,7 @@ async def download_media(token: str, media_id: str, return_url_only: bool = Fals
     Passo 2: baixa o arquivo (se return_url_only=False).
     Retorna os bytes brutos ou a URL pública.
     """
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with http_client(timeout=30.0) as client:
         r1 = await client.get(
             f"{settings.meta_graph_url}/{media_id}",
             headers={"Authorization": f"Bearer {token}"},
