@@ -2,18 +2,17 @@
 RAG — base de conhecimento por tenant: PDF → texto → chunks → embeddings →
 recuperação semântica (cosseno).
 
-Os embeddings ficam em float32 binário no Postgres e a similaridade é
-calculada com numpy numa thread: antes era JSON + laço em Python no event
-loop, e uma base de 3.000 trechos travava o servidor por ~1,6 s a cada
-pergunta. Funciona em qualquer Postgres, sem a extensão pgvector.
+Os embeddings ficam como JSON no Postgres e a similaridade é computada em
+Python: para o volume típico de uma base de conhecimento (milhares de chunks
+por tenant) isso resolve em milissegundos e dispensa a extensão pgvector —
+funciona em qualquer Postgres (local, Neon, RDS). Trocar por pgvector depois
+é só substituir `retrieve()`.
 """
-import asyncio
 import io
 import logging
 import math
 
-import numpy as np
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai import KnowledgeDoc, KnowledgeChunk
@@ -106,7 +105,7 @@ async def index_document(
                     account_id=doc.account_id,
                     chunk_index=batch_start + i,
                     content=content,
-                    embedding_f32=np.asarray(emb, dtype=np.float32).tobytes(),
+                    embedding=emb,
                 ))
 
         doc.status = "ready"
@@ -131,52 +130,17 @@ async def retrieve(
     if not query_embedding:
         return []
     rows = (await db.execute(
-        select(KnowledgeChunk.id, KnowledgeChunk.embedding_f32)
+        select(KnowledgeChunk.content, KnowledgeChunk.embedding)
         .join(KnowledgeDoc, KnowledgeDoc.id == KnowledgeChunk.doc_id)
         .where(
             KnowledgeChunk.account_id == account_id,
             KnowledgeDoc.status == "ready",
         )
     )).all()
-    ids = [chunk_id for chunk_id, blob in rows if blob is not None]
-    blobs = [blob for _, blob in rows if blob is not None]
 
-    # Chunks indexados antes do float32: converte uma vez e grava.
-    legacy = [chunk_id for chunk_id, blob in rows if blob is None]
-    if legacy:
-        for chunk_id, emb in (await db.execute(
-            select(KnowledgeChunk.id, KnowledgeChunk.embedding).where(KnowledgeChunk.id.in_(legacy))
-        )).all():
-            if not emb:
-                continue
-            blob = np.asarray(emb, dtype=np.float32).tobytes()
-            await db.execute(
-                update(KnowledgeChunk).where(KnowledgeChunk.id == chunk_id)
-                .values(embedding_f32=blob, embedding=None).execution_options(synchronize_session=False)
-            )
-            ids.append(chunk_id)
-            blobs.append(blob)
-        await db.flush()
-
-    best = await asyncio.to_thread(_top_k, blobs, query_embedding, top_k)
-    if not best:
-        return []
-    chosen = [ids[i] for i, _ in best]
-    contents = dict((await db.execute(
-        select(KnowledgeChunk.id, KnowledgeChunk.content).where(KnowledgeChunk.id.in_(chosen))
-    )).all())
-    return [contents[chunk_id] for chunk_id in chosen if chunk_id in contents]
-
-
-def _top_k(blobs: list[bytes], query: list[float], top_k: int, min_score: float = 0.3) -> list[tuple[int, float]]:
-    """Índices (na lista de blobs) dos mais parecidos com a pergunta, por cosseno."""
-    q = np.asarray(query, dtype=np.float32)
-    size = q.nbytes
-    keep = [i for i, b in enumerate(blobs) if len(b) == size]  # dimensão diferente: modelo antigo
-    if not keep:
-        return []
-    matrix = np.frombuffer(b"".join(blobs[i] for i in keep), dtype=np.float32).reshape(len(keep), -1)
-    norms = np.linalg.norm(matrix, axis=1) * np.linalg.norm(q)
-    scores = np.divide(matrix @ q, norms, out=np.zeros(len(keep), dtype=np.float32), where=norms != 0)
-    order = np.argsort(-scores)[:top_k]
-    return [(keep[i], float(scores[i])) for i in order if scores[i] > min_score]
+    scored = [
+        (cosine_similarity(query_embedding, emb or []), content)
+        for content, emb in rows
+    ]
+    scored.sort(key=lambda t: t[0], reverse=True)
+    return [content for score, content in scored[:top_k] if score > 0.3]

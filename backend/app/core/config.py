@@ -110,14 +110,6 @@ class Settings(BaseSettings):
     # Entrega os eventos do WebSocket entre instâncias da API pelo Redis
     ws_redis_fanout: bool = False
 
-    # Agendador, fila de disparos e sync rodando neste processo. Desligue nas
-    # instâncias da API quando rodar `python -m app.worker` à parte.
-    background_jobs_enabled: bool = True
-    # Eventos de webhook processados ao mesmo tempo por instância
-    webhook_concurrency: int = 16
-    # Envios simultâneos de um lote de disparo
-    broadcast_send_concurrency: int = 10
-
     # Super admins do sistema (emails separados por vírgula). Podem gerenciar
     # os módulos bloqueados de QUALQUER conta (agências e empresas).
     super_admin_emails: str = ""

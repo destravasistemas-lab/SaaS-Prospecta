@@ -7,12 +7,12 @@ import time
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
+import httpx
 
-from app.core.http import client as http_client
-from app.core.database import get_db, session_factory_for
+from app.core.database import get_db
 from app.core.config import settings
 from app.core.ws_manager import ws_manager
 from app.core.phone import normalize_phone
@@ -24,11 +24,10 @@ from app.models.meta_connection import (
 )
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.models.queue import WebhookEvent
 from app.services import instagram_service
 from app.services.lead_merge import auto_merge_by_phone
 from app.services.lead_identity import resolve_or_create_lead
-from app.services.meta_token_service import safe_decrypt_token, decrypt_token, encrypt_token
+from app.services.meta_token_service import safe_decrypt_token, decrypt_token
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhook", tags=["webhook"])
@@ -73,7 +72,7 @@ async def verify_instagram_webhook(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.post("/meta")
-async def receive_webhook(request: Request, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def receive_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     body = await request.body()
 
     sig_header = request.headers.get("X-Hub-Signature-256", "")
@@ -90,18 +89,6 @@ async def receive_webhook(request: Request, background: BackgroundTasks, db: Asy
     if b'"sdp"' not in body:  # o SDP das chamadas não entra em log
         logger.debug("Webhook payload: %s", payload)
 
-    # Grava e responde na hora; o processamento roda logo depois da resposta e,
-    # se falhar ou a instância cair, é repetido (services/webhook_queue.py).
-    event = WebhookEvent(payload_encrypted=encrypt_token(body.decode("utf-8")))
-    db.add(event)
-    await db.commit()
-    from app.services import webhook_queue
-    background.add_task(webhook_queue.process_event, event.id, session_factory_for(request.app))
-    return {"status": "received"}
-
-
-async def process_payload(payload: dict, db: AsyncSession) -> None:
-    """Distribui cada entrada do webhook para o handler do canal."""
     obj = payload.get("object", "")
 
     for item in payload.get("entry", []):
@@ -143,6 +130,8 @@ async def process_payload(payload: dict, db: AsyncSession) -> None:
                 continue
             for msg_value in messaging:
                 await handle_ig_dm(account, msg_value, db)
+
+    return {"status": "received"}
 
 
 # ---------------------------------------------------------------------------
@@ -1068,7 +1057,7 @@ async def dispatch_event(event_type: str, tenant_id: str, payload: dict) -> None
     event = {"event_type": event_type, "tenant_id": tenant_id, "payload": payload}
     if settings.n8n_webhook_url:
         try:
-            async with http_client() as client:
+            async with httpx.AsyncClient() as client:
                 await client.post(settings.n8n_webhook_url, json=event, timeout=5.0)
         except Exception as exc:
             logger.warning("dispatch_event: failed to reach n8n (%s)", exc)

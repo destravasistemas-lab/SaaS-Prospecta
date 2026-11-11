@@ -77,13 +77,3 @@ async def make_user(db_session):
         return tid, {"Authorization": f"Bearer {create_access_token(uid, tid, role)}"}
 
     return _make
-
-
-def fake_meta(handler):
-    """Faz o cliente HTTP compartilhado do app responder com `handler` (como httpx.MockTransport)."""
-    import httpx
-    from unittest.mock import patch
-    from app.core import http
-
-    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-    return patch.object(http, "shared", lambda: client)

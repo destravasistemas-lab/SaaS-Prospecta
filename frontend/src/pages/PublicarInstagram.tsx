@@ -262,7 +262,6 @@ export default function PublicarInstagram() {
 
   const statusLabel: Record<string, { label: string; color: string }> = {
     scheduled: { label: t('Agendado', 'Scheduled'), color: 'text-blue-400' },
-    publishing: { label: t('Publicando…', 'Publishing…'), color: 'text-blue-300' },
     published: { label: t('Publicado', 'Published'), color: 'text-green-400' },
     failed: { label: t('Falhou', 'Failed'), color: 'text-red-400' },
   }

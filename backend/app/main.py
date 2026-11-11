@@ -38,7 +38,6 @@ import app.models.privacy           # noqa: F401
 import app.models.followup          # noqa: F401
 import app.models.ads_sync          # noqa: F401
 import app.models.whatsapp_call     # noqa: F401
-import app.models.queue             # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -114,9 +113,6 @@ _MIGRATIONS = [
 
     # Origem dos leads do webhook leadgen (enum nativo: create_all não altera tipo existente)
     "ALTER TYPE lead_source ADD VALUE IF NOT EXISTS 'LEAD_ADS'",
-
-    # Embeddings da base de conhecimento em float32 (busca vetorial com numpy)
-    "ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS embedding_f32 BYTEA",
 ]
 
 
@@ -127,15 +123,13 @@ async def lifespan(app: FastAPI):
         for sql in _MIGRATIONS:
             await conn.execute(text(sql))
 
-    jobs = settings.background_jobs_enabled
-    scheduler_task = asyncio.create_task(_start_scheduler()) if jobs else None
-    ads_sync_task = asyncio.create_task(_start_ads_sync()) if jobs and settings.ads_sync_enabled else None
-    broadcast_task = asyncio.create_task(_start_broadcasts()) if jobs else None
+    scheduler_task = asyncio.create_task(_start_scheduler())
+    ads_sync_task = asyncio.create_task(_start_ads_sync()) if settings.ads_sync_enabled else None
     ws_fanout_task = asyncio.create_task(ws_manager.fanout_loop()) if settings.ws_redis_fanout else None
 
     yield
 
-    for task in filter(None, (scheduler_task, ads_sync_task, broadcast_task, ws_fanout_task)):
+    for task in filter(None, (scheduler_task, ads_sync_task, ws_fanout_task)):
         task.cancel()
         try:
             await task
@@ -144,19 +138,12 @@ async def lifespan(app: FastAPI):
     # Graceful shutdown: cancela os timers de debounce pendentes da IA
     from app.services.ai_debounce import shutdown as ai_shutdown
     await ai_shutdown()
-    from app.core import http
-    await http.close()
     await engine.dispose()
 
 
 async def _start_scheduler():
     from app.services.scheduler import scheduler_loop
     await scheduler_loop()
-
-
-async def _start_broadcasts():
-    from app.services.broadcast_worker import broadcast_loop
-    await broadcast_loop()
 
 
 async def _start_ads_sync():

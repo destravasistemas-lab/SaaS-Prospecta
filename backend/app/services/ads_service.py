@@ -8,8 +8,8 @@ import asyncio
 import json
 import logging
 
+import httpx
 
-from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def _act(ad_account_id: str) -> str:
 
 async def _request(method: str, url: str, **kwargs) -> dict:
     for attempt in range(_MAX_RETRIES):
-        async with http_client(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.request(method, url, **kwargs)
 
         if resp.status_code not in _RETRY_STATUSES:
@@ -236,7 +236,7 @@ async def upload_ad_video(
     token: str, ad_account_id: str, content: bytes, filename: str,
 ) -> dict:
     """Sobe um vídeo para a conta de anúncios. Retorna {"id": "<video_id>"}."""
-    async with http_client(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post(
             f"{settings.meta_graph_url}/{_act(ad_account_id)}/advideos",
             params={"access_token": token},

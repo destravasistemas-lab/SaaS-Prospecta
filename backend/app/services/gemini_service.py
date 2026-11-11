@@ -13,7 +13,6 @@ import logging
 
 import httpx
 
-from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -54,7 +53,7 @@ async def generate_content(
     }
     url = f"{_BASE}/models/{settings.gemini_model}:generateContent"
     try:
-        async with http_client(timeout=timeout or settings.ai_request_timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout or settings.ai_request_timeout) as client:
             resp = await client.post(url, params={"key": api_key}, json=body)
     except httpx.TimeoutException as exc:
         raise GeminiTimeout(str(exc)) from exc
@@ -88,7 +87,7 @@ async def embed_texts(api_key: str, texts: list[str], task_type: str = "RETRIEVA
     }
     url = f"{_BASE}/{model}:batchEmbedContents"
     try:
-        async with http_client(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(url, params={"key": api_key}, json=body)
     except httpx.TimeoutException as exc:
         raise GeminiTimeout(str(exc)) from exc
@@ -125,7 +124,7 @@ async def transcribe_audio(api_key: str, audio_bytes: bytes, mime_type: str = "a
     }
     url = f"{_BASE}/models/{settings.gemini_model}:generateContent"
     try:
-        async with http_client(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(url, params={"key": api_key}, json=body)
     except httpx.TimeoutException as exc:
         raise GeminiTimeout(str(exc)) from exc

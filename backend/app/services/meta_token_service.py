@@ -13,9 +13,9 @@ import logging
 import time
 from datetime import datetime, timezone, timedelta
 
+import httpx
 from cryptography.fernet import Fernet, InvalidToken
 
-from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def safe_encrypt_token(token: str) -> str:
 
 async def exchange_for_long_lived_token(short_lived_token: str) -> dict:
     """Exchange a short-lived (~1 h) token for a long-lived one (~60 days)."""
-    async with http_client() as client:
+    async with httpx.AsyncClient() as client:
         resp = await client.get(
             f"{settings.meta_graph_url}/oauth/access_token",
             params={
@@ -115,7 +115,7 @@ async def exchange_code_for_token(code: str) -> dict:
     redirect_uri — the code comes from the JS SDK login dialog, not a
     server-side redirect.
     """
-    async with http_client() as client:
+    async with httpx.AsyncClient() as client:
         resp = await client.get(
             f"{settings.meta_graph_url}/oauth/access_token",
             params={

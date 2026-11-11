@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime, timedelta, timezone
 import logging
 
-from app.core.http import client as http_client
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ class AsaasService:
             if cpf_cnpj:
                 payload["cpfCnpj"] = cpf_cnpj
             
-            async with http_client() as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.base_url}/customers",
                     json=payload,
@@ -81,7 +80,7 @@ class AsaasService:
             if redirect_url:
                 payload["redirectUrl"] = redirect_url
             
-            async with http_client() as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.base_url}/payments",
                     json=payload,
@@ -100,7 +99,7 @@ class AsaasService:
     async def get_payment(self, payment_id: str) -> dict:
         """Get payment details"""
         try:
-            async with http_client() as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/payments/{payment_id}",
                     headers=self.headers,
@@ -119,7 +118,7 @@ class AsaasService:
             if customer_id:
                 params["customer"] = customer_id
             
-            async with http_client() as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/payments",
                     headers=self.headers,

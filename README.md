@@ -156,17 +156,14 @@ Push na `main` publica sozinho pelo Render:
 
 Variáveis marcadas com `sync: false` no `render.yaml` são definidas no painel do Render.
 
-## Filas e trabalho em segundo plano
+## Limites atuais para escalar
 
-- **Webhook:** a rota confere a assinatura, grava o evento criptografado em `webhook_events` e responde. O processamento roda logo depois (`services/webhook_queue.py`); se falhar, o agendador tenta de novo até 3 vezes.
-- **Disparos:** `POST /whatsapp/broadcast` cria um `broadcast_jobs` com um `broadcast_recipients` por contato e responde 202. O worker envia em lotes com `FOR UPDATE SKIP LOCKED`, então cada contato recebe uma vez mesmo com várias instâncias. Um segundo disparo do mesmo template, com outro ainda ativo, recebe 409.
-- **Agendador:** posts, follow-ups, retentativas de webhook e sync de anúncios rodam sob `pg_try_advisory_lock`. Cada post é reservado com um `UPDATE` condicional antes de publicar.
-- **HTTP:** as chamadas externas usam um cliente compartilhado (`core/http.py`) que reaproveita conexões.
-- **RAG:** embeddings em float32 (`embedding_f32`); a similaridade roda em numpy numa thread, fora do event loop.
+Hoje a API roda em **uma instância com um worker**. Para rodar mais de uma, ainda falta:
 
-Os jobs rodam dentro da API por padrão. Para separá-los, defina `BACKGROUND_JOBS_ENABLED=false` na API e suba um worker com `python -m app.worker`.
-
-Ainda pendente para mais de uma instância: o WebSocket só avisa navegadores conectados à mesma instância, a menos que `WS_REDIS_FANOUT` esteja ligado com Redis.
+- **Agendador:** posts, follow-ups e sync rodam dentro do processo da API, sem trava. Duas instâncias enviariam em duplicidade.
+- **Disparos:** `POST /whatsapp/broadcast` envia em loop dentro da requisição HTTP, sem fila.
+- **Webhook:** processa tudo inline, avisa o navegador antes de gravar no banco e pode chamar a Meta e a Gemini no meio da transação.
+- **RAG:** carrega os trechos do cliente e calcula a similaridade em Python, a cada pergunta.
 
 ## Mais documentação
 

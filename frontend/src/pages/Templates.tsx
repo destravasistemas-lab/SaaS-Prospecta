@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FileText, Plus, RefreshCw, Trash2, X, Link2, AlertCircle, Send, Users } from 'lucide-react'
 import api, { apiError } from '../services/api'
-import { broadcastText, cancelBroadcast, isFinished, runBroadcast as startBroadcast, type BroadcastJob } from '../services/broadcast'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 
@@ -66,7 +65,6 @@ export default function Templates() {
   const [noOptIn, setNoOptIn] = useState(0)
   const [broadcasting, setBroadcasting] = useState(false)
   const [bcResult, setBcResult] = useState('')
-  const [bcJob, setBcJob] = useState<BroadcastJob | null>(null)
 
   useEffect(() => { load() }, [])
 
@@ -159,11 +157,15 @@ export default function Templates() {
     setBroadcasting(true)
     setBcResult('')
     try {
-      const job = await startBroadcast(
-        { template_name: bcTpl.name, language: bcTpl.language || 'pt_BR', variables: bcVars },
-        (progress) => { setBcJob(progress); setBcResult(broadcastText(progress)) },
-      )
-      setBcResult(broadcastText(job))
+      const { data } = await api.post('/whatsapp/broadcast', {
+        template_name: bcTpl.name,
+        language: bcTpl.language || 'pt_BR',
+        variables: bcVars,
+      })
+      setBcResult(t(
+        `Disparo concluído: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`,
+        `Broadcast finished: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`,
+      ) + (data.error ? ` ${t('Motivo das falhas', 'Failure reason')}: ${data.error}` : ''))
     } catch (err: any) {
       setBcResult(apiError(err, t('Erro no disparo em massa.', 'Broadcast failed.')))
     } finally {
@@ -481,17 +483,9 @@ export default function Templates() {
             )}
 
             <div className="flex gap-3">
-              <button onClick={() => { setBcTpl(null); setBcJob(null) }} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors">
+              <button onClick={() => setBcTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors">
                 {bcResult ? t('Fechar', 'Close') : t('Cancelar', 'Cancel')}
               </button>
-              {bcJob && !isFinished(bcJob) && (
-                <button
-                  onClick={() => cancelBroadcast(bcJob.id).then((job) => { setBcJob(job); setBcResult(broadcastText(job)) }).catch(() => {})}
-                  className="flex-1 py-2.5 bg-red-900/20 text-red-400 hover:bg-red-900/40 text-sm font-medium rounded-lg transition-colors"
-                >
-                  {t('Parar disparo', 'Stop broadcast')}
-                </button>
-              )}
               {!bcResult && (
                 <button
                   onClick={runBroadcast}

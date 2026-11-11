@@ -3,7 +3,7 @@ from datetime import datetime, timezone, date
 
 from sqlalchemy import (
     String, Text, Integer, BigInteger, Float, Boolean, DateTime, Date,
-    ForeignKey, Index, JSON, LargeBinary,
+    ForeignKey, Index, JSON,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -72,9 +72,10 @@ class KnowledgeDoc(Base):
 
 class KnowledgeChunk(Base):
     """
-    Chunk de texto + embedding (dim 768 — text-embedding-004), guardado em
-    float32 binário. A similaridade é calculada com numpy fora do event loop,
-    sem exigir a extensão pgvector. A coluna JSON fica só para chunks antigos.
+    Chunk de texto + embedding (JSON de floats, dim 768 — text-embedding-004).
+    A similaridade (cosseno) é computada em Python; volumes típicos de base de
+    conhecimento (milhares de chunks) resolvem em milissegundos e o schema
+    funciona em qualquer Postgres (sem exigir a extensão pgvector).
     """
     __tablename__ = "knowledge_chunks"
 
@@ -90,7 +91,6 @@ class KnowledgeChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list | None] = mapped_column(JSON, nullable=True)
-    embedding_f32: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
 
     __table_args__ = (
         Index("ix_kchunk_account_doc", "account_id", "doc_id"),

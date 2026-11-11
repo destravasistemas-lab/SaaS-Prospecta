@@ -29,7 +29,6 @@ from app.routes.privacy import purge_meta_user_data
 from app.services import messaging_policy
 from app.services.lead_merge import merge_leads
 from app.services.meta_token_service import encrypt_token
-from tests.conftest import fake_meta
 from tests.test_attribution_flow import _post
 
 SDP_OFFER = "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\na=ice-pwd:SEGREDO_DO_OFFER\r\n"
@@ -128,11 +127,16 @@ class _FakeMeta:
         self.status = status
 
     def __enter__(self):
+        real_client = httpx.AsyncClient
+
         def handler(request):
             self.requests.append(request)
             return httpx.Response(self.status, json=self.response)
 
-        self._patch = fake_meta(handler)
+        self._patch = patch(
+            "app.services.whatsapp_service.httpx.AsyncClient",
+            lambda **kw: real_client(transport=httpx.MockTransport(handler), **kw),
+        )
         self._patch.start()
         return self
 

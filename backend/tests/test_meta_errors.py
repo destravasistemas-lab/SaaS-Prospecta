@@ -91,11 +91,9 @@ async def test_broadcast_counts_meta_rejections_as_failed(client, db_session):
     _, _, _, headers = await _admin_with_lead(db_session, "PNID_ERR4", "5583977770004")
     with patch("app.services.whatsapp_service.send_template", new_callable=AsyncMock, return_value=NOT_REGISTERED):
         resp = await client.post("/api/v1/whatsapp/broadcast", json={"template_name": "promo"}, headers=headers)
-    assert resp.status_code == 202
-    job = (await client.get(f"/api/v1/whatsapp/broadcast/jobs/{resp.json()['id']}", headers=headers)).json()
     # Account-level error: the broadcast stops and reports it instead of "succeeding"
-    assert job["status"] == "failed" and job["error_code"] == 133010
-    assert "Registrar número" in job["error"] or "Register number" in job["error"]
+    assert resp.status_code == 502
+    assert resp.json()["detail"]["meta_code"] == 133010
 
 
 @pytest.mark.asyncio
@@ -104,9 +102,8 @@ async def test_broadcast_reports_per_contact_failures(client, db_session):
     per_contact = {"error": {"message": "Recipient not in allowed list", "code": 131030}}
     with patch("app.services.whatsapp_service.send_template", new_callable=AsyncMock, return_value=per_contact):
         resp = await client.post("/api/v1/whatsapp/broadcast", json={"template_name": "promo"}, headers=headers)
-    assert resp.status_code == 202
-    body = (await client.get(f"/api/v1/whatsapp/broadcast/jobs/{resp.json()['id']}", headers=headers)).json()
-    assert body["status"] == "done"
+    assert resp.status_code == 200
+    body = resp.json()
     assert body["sent"] == 0 and body["failed"] == 1 and body["error"]
 
 
