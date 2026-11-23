@@ -363,7 +363,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       {enabled && (
         <>
           <audio ref={audioRef} autoPlay playsInline className="hidden" />
-          <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 w-80 max-w-[calc(100vw-2rem)]">
+          <div className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[60] flex flex-col gap-3 w-80 max-w-[calc(100vw-2rem)]">
             {error && (
               <div role="alert" className="flex items-start gap-2 bg-raised border border-red-500/30 rounded-xl p-3 shadow-xl">
                 <p className="flex-1 text-xs text-red-300 leading-relaxed">{error}</p>
