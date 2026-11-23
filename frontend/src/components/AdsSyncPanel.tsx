@@ -34,10 +34,10 @@ export default function AdsSyncPanel({ overview }: { overview: SyncedOverview })
   if (!overview.synced_at || !columns.some((c) => overview.breakdowns[c.dimension]?.length)) return null
 
   return (
-    <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 mb-8">
+    <div className="bg-card rounded-xl border border-white/[0.06] p-5 mb-8">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-        <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Público · últimos 7 dias', 'Audience · last 7 days')}</h3>
-        <p className="text-[11px] text-[#666]">
+        <h3 className="text-sm font-semibold text-ink">{t('Público · últimos 7 dias', 'Audience · last 7 days')}</h3>
+        <p className="text-[11px] text-ink-4">
           {t('Atualizado em', 'Updated')} {new Date(overview.synced_at).toLocaleString(locale)}
         </p>
       </div>
@@ -47,14 +47,14 @@ export default function AdsSyncPanel({ overview }: { overview: SyncedOverview })
           const max = Math.max(1, ...rows.map((r) => r.impressions))
           return (
             <div key={dimension}>
-              <p className="text-xs font-medium text-[#8a8a9e] mb-2">{title}</p>
-              {rows.length === 0 && <p className="text-xs text-[#555]">—</p>}
+              <p className="text-xs font-medium text-ink-3 mb-2">{title}</p>
+              {rows.length === 0 && <p className="text-xs text-ink-4">—</p>}
               <div className="space-y-2">
                 {rows.map((r) => (
                   <div key={r.key}>
                     <div className="flex justify-between gap-2 text-xs">
-                      <span className="text-[#c0c0d0] truncate">{labels[r.key] ?? r.key}</span>
-                      <span className="text-[#666] shrink-0">
+                      <span className="text-ink-2 truncate">{labels[r.key] ?? r.key}</span>
+                      <span className="text-ink-4 shrink-0">
                         {r.impressions.toLocaleString(locale)} · R$ {r.spend.toFixed(2)}
                       </span>
                     </div>

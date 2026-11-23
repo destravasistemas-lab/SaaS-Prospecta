@@ -59,7 +59,7 @@ const planLabel: Record<string, [string, string]> = {
 }
 
 const planColor: Record<string, string> = {
-  free:    'text-[#555] bg-white/[0.03] border-white/[0.04]',
+  free:    'text-ink-4 bg-white/[0.03] border-white/[0.04]',
   starter: 'text-blue-400 bg-blue-900/20 border-blue-500/20',
   pro:     'text-purple-400 bg-purple-900/20 border-purple-500/20',
   premium: 'text-amber-400 bg-amber-900/20 border-amber-500/20',
@@ -69,13 +69,13 @@ function MetricCard({ icon: Icon, iconColor, value, label, sub }: {
   icon: React.ElementType; iconColor: string; value: string | number; label: string; sub?: string
 }) {
   return (
-    <div className="bg-[#170e2c] border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.1] transition-colors">
+    <div className="bg-card border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.1] transition-colors">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${iconColor}`}>
         <Icon size={15} strokeWidth={1.75} />
       </div>
-      <p className="text-xl font-semibold text-[#e2e2e8] leading-none mb-1">{value}</p>
-      <p className="text-xs text-[#555]">{label}</p>
-      {sub && <p className="text-[10px] text-[#444] mt-0.5">{sub}</p>}
+      <p className="text-xl font-semibold text-ink leading-none mb-1">{value}</p>
+      <p className="text-xs text-ink-4">{label}</p>
+      {sub && <p className="text-[10px] text-ink-5 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -214,11 +214,11 @@ export default function Clients() {
       {/* Header */}
       <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-ink flex items-center gap-2">
             <Building2 size={20} className="text-indigo-400" />
             {t('Meus Clientes', 'My Clients')}
           </h1>
-          <p className="text-[#555] text-sm mt-0.5">
+          <p className="text-ink-4 text-sm mt-0.5">
             {t('Gerencie as contas dos seus clientes como agência.', "Manage your clients' accounts as an agency.")}
           </p>
           <HelpLink section="agencias" className="mt-1" />
@@ -239,7 +239,7 @@ export default function Clients() {
       {/* Agency metrics */}
       {agencyStats && (
         <div className="mb-6">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#444] mb-3 flex items-center gap-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-5 mb-3 flex items-center gap-2">
             <BarChart3 size={11} />
             {t('Visão geral da agência', 'Agency overview')}
             <span className="flex-1 h-px bg-white/[0.05]" />
@@ -281,7 +281,7 @@ export default function Clients() {
       {loading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 animate-pulse">
+            <div key={i} className="bg-card rounded-xl border border-white/[0.06] p-5 animate-pulse">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-white/[0.04]" />
                 <div className="flex-1 space-y-2">
@@ -293,12 +293,12 @@ export default function Clients() {
           ))}
         </div>
       ) : clients.length === 0 ? (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-16 text-center">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-16 text-center">
           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
             <Building2 size={24} className="text-indigo-400" />
           </div>
-          <h3 className="text-base font-semibold text-[#e2e2e8] mb-2">{t('Nenhum cliente ainda', 'No clients yet')}</h3>
-          <p className="text-[#444] text-sm max-w-sm mx-auto mb-5">
+          <h3 className="text-base font-semibold text-ink mb-2">{t('Nenhum cliente ainda', 'No clients yet')}</h3>
+          <p className="text-ink-5 text-sm max-w-sm mx-auto mb-5">
             {t('Crie contas para seus clientes e gerencie tudo em um só lugar.', 'Create accounts for your clients and manage everything in one place.')}
           </p>
           <button
@@ -315,7 +315,7 @@ export default function Clients() {
             return (
               <div
                 key={client.id}
-                className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-5 hover:border-white/[0.1] transition-colors"
+                className="bg-card rounded-xl border border-white/[0.06] p-5 hover:border-white/[0.1] transition-colors"
               >
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
@@ -326,7 +326,7 @@ export default function Clients() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-[#e2e2e8] font-semibold text-sm">{client.brand_name}</h3>
+                      <h3 className="text-ink font-semibold text-sm">{client.brand_name}</h3>
                       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
                         client.is_active
                           ? 'bg-green-900/20 text-green-400 border-green-500/20'
@@ -359,31 +359,31 @@ export default function Clients() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[#555] text-xs mt-0.5">@{client.username}</p>
+                    <p className="text-ink-4 text-xs mt-0.5">@{client.username}</p>
                   </div>
 
                   {/* Stats from agency dashboard */}
                   {stat && (
                     <div className="hidden md:flex items-center gap-5 mr-4">
                       <div className="text-center">
-                        <p className="text-sm font-semibold text-[#e2e2e8] leading-none">{stat.leads}</p>
-                        <p className="text-[10px] text-[#444] mt-0.5">{t('leads', 'leads')}</p>
+                        <p className="text-sm font-semibold text-ink leading-none">{stat.leads}</p>
+                        <p className="text-[10px] text-ink-5 mt-0.5">{t('leads', 'leads')}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-semibold text-green-400 leading-none">{stat.conversion_rate}%</p>
-                        <p className="text-[10px] text-[#444] mt-0.5">{t('conversão', 'conversion')}</p>
+                        <p className="text-[10px] text-ink-5 mt-0.5">{t('conversão', 'conversion')}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[10px] text-[#444]">Instagram</p>
+                        <p className="text-[10px] text-ink-5">Instagram</p>
                         {stat.instagram_connected
                           ? <Wifi size={12} className="text-green-400 mx-auto mt-0.5" />
-                          : <WifiOff size={12} className="text-[#444] mx-auto mt-0.5" />
+                          : <WifiOff size={12} className="text-ink-5 mx-auto mt-0.5" />
                         }
                       </div>
                       {stat.new_leads_7d > 0 && (
                         <div className="text-center">
                           <p className="text-sm font-semibold text-blue-400 leading-none">+{stat.new_leads_7d}</p>
-                          <p className="text-[10px] text-[#444] mt-0.5">{t('7 dias', '7 days')}</p>
+                          <p className="text-[10px] text-ink-5 mt-0.5">{t('7 dias', '7 days')}</p>
                         </div>
                       )}
                     </div>
@@ -394,7 +394,7 @@ export default function Clients() {
                     <button
                       onClick={() => openModules(client)}
                       title={t('Bloquear/liberar módulos deste cliente', "Block/allow this client's modules")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-[#8a8a9e] hover:text-white rounded-lg text-xs font-semibold transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-ink-3 hover:text-white rounded-lg text-xs font-semibold transition-colors"
                     >
                       <Blocks size={12} />
                       {t('Módulos', 'Modules')}
@@ -419,11 +419,11 @@ export default function Clients() {
                 {/* Mobile stats */}
                 {stat && (
                   <div className="flex md:hidden items-center gap-4 mt-3 pt-3 border-t border-white/[0.04]">
-                    <span className="text-xs text-[#555]">{stat.leads} leads</span>
+                    <span className="text-xs text-ink-4">{stat.leads} leads</span>
                     <span className="text-xs text-green-400">{stat.conversion_rate}% {t('conversão', 'conversion')}</span>
                     {stat.instagram_connected
                       ? <span className="text-xs text-green-400 flex items-center gap-1"><Wifi size={10} /> Instagram</span>
-                      : <span className="text-xs text-[#444] flex items-center gap-1"><WifiOff size={10} /> {t('Sem Instagram', 'No Instagram')}</span>
+                      : <span className="text-xs text-ink-5 flex items-center gap-1"><WifiOff size={10} /> {t('Sem Instagram', 'No Instagram')}</span>
                     }
                   </div>
                 )}
@@ -436,13 +436,13 @@ export default function Clients() {
       {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-base font-semibold text-white">{t('Novo Cliente', 'New Client')}</h3>
-                <p className="text-xs text-[#555] mt-0.5">{t('Crie uma subconta para seu cliente.', 'Create a sub-account for your client.')}</p>
+                <p className="text-xs text-ink-4 mt-0.5">{t('Crie uma subconta para seu cliente.', 'Create a sub-account for your client.')}</p>
               </div>
-              <button onClick={() => setShowCreate(false)} className="text-[#444] hover:text-[#888] transition-colors">
+              <button onClick={() => setShowCreate(false)} className="text-ink-5 hover:text-ink-3 transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -455,55 +455,55 @@ export default function Clients() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome da empresa / cliente *', 'Company / client name *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Nome da empresa / cliente *', 'Company / client name *')}</label>
                 <input
                   type="text"
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
                   placeholder={t('Ex: Padaria do João', "E.g. John's Bakery")}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('E-mail do dono *', 'Owner email *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('E-mail do dono *', 'Owner email *')}</label>
                 <input
                   type="email"
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
                   placeholder={t('dono@empresa.com', 'owner@company.com')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
-                <p className="text-[10px] text-[#555] mt-1">
+                <p className="text-[10px] text-ink-4 mt-1">
                   {t('O dono recebe um link de verificação neste e-mail — o login dele só ativa depois de confirmar.', 'The owner receives a verification link at this email — their login activates only after confirming.')}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome de usuário *', 'Username *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Nome de usuário *', 'Username *')}</label>
                 <input
                   type="text"
                   value={createUsername}
                   onChange={(e) => setCreateUsername(e.target.value)}
                   placeholder={t('Ex: padariajoao', 'E.g. johnsbakery')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Senha *', 'Password *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Senha *', 'Password *')}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={createPassword}
                     onChange={(e) => setCreatePassword(e.target.value)}
                     placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
-                    className="w-full px-4 py-2.5 pr-10 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                    className="w-full px-4 py-2.5 pr-10 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#444] hover:text-[#888]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-5 hover:text-ink-3"
                   >
                     {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -511,13 +511,13 @@ export default function Clients() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome completo (opcional)', 'Full name (optional)')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Nome completo (opcional)', 'Full name (optional)')}</label>
                 <input
                   type="text"
                   value={createFullName}
                   onChange={(e) => setCreateFullName(e.target.value)}
                   placeholder={t('Ex: João Silva', 'E.g. John Smith')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
               </div>
 
@@ -525,7 +525,7 @@ export default function Clients() {
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
-                  className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors"
+                  className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   {t('Cancelar', 'Cancel')}
                 </button>
@@ -545,16 +545,16 @@ export default function Clients() {
       {/* Modal: módulos do cliente (bloquear/liberar) */}
       {modulesOf && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
                 <Blocks size={16} className="text-indigo-400" /> {t('Módulos', 'Modules')} — {modulesOf.brand_name}
               </h3>
-              <button onClick={() => setModulesOf(null)} className="text-[#444] hover:text-[#888] transition-colors">
+              <button onClick={() => setModulesOf(null)} className="text-ink-5 hover:text-ink-3 transition-colors">
                 <X size={18} />
               </button>
             </div>
-            <p className="text-xs text-[#555] mb-5">
+            <p className="text-xs text-ink-4 mb-5">
               {t('Desligue um módulo para escondê-lo e bloqueá-lo por completo para este cliente.', 'Turn a module off to hide and fully block it for this client.')}
             </p>
 
@@ -562,10 +562,10 @@ export default function Clients() {
               {MODULES.map((m) => {
                 const blocked = blockedDraft.includes(m.key)
                 return (
-                  <div key={m.key} className="flex items-center justify-between gap-3 bg-[#0f0820] border border-white/[0.05] rounded-lg p-3">
+                  <div key={m.key} className="flex items-center justify-between gap-3 bg-field border border-white/[0.05] rounded-lg p-3">
                     <div className="min-w-0">
-                      <p className={`text-sm font-medium ${blocked ? 'text-[#555] line-through' : 'text-[#e2e2e8]'}`}>{t(...m.label)}</p>
-                      <p className="text-[11px] text-[#555]">{t(...m.desc)}</p>
+                      <p className={`text-sm font-medium ${blocked ? 'text-ink-4 line-through' : 'text-ink'}`}>{t(...m.label)}</p>
+                      <p className="text-[11px] text-ink-4">{t(...m.desc)}</p>
                     </div>
                     <button
                       onClick={() =>
@@ -586,7 +586,7 @@ export default function Clients() {
             <div className="flex gap-3 pt-5">
               <button
                 onClick={() => setModulesOf(null)}
-                className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors"
+                className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors"
               >
                 {t('Cancelar', 'Cancel')}
               </button>

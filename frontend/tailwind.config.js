@@ -64,6 +64,20 @@ export default {
           600: '#cbd5e1',
           700: '#f1f5f9',
         },
+        // Painel interno: tokens semânticos (fundo, cartão, campo e 5 níveis de texto)
+        canvas: '#0a0b10',
+        panel: '#0e1016',
+        card: '#13151d',
+        field: '#0c0d13',
+        raised: '#1b1e29',
+        line: 'rgba(255,255,255,0.07)',
+        ink: {
+          DEFAULT: '#ececf1',
+          2: '#c6c9d4',
+          3: '#a0a4b3',
+          4: '#7d8193',
+          5: '#5f6375',
+        },
         surface: {
           DEFAULT: '#030712',
           card: '#070e22',

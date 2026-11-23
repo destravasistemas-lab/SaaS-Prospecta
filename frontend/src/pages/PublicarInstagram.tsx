@@ -291,38 +291,38 @@ export default function PublicarInstagram() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#e2e2e8] mb-2">Instagram</h2>
+      <h2 className="text-2xl font-bold text-ink mb-2">Instagram</h2>
       <HelpLink section="instagram-publicar" className="mb-2" />
-      <p className="text-[#555] text-sm mb-6">{t('Publique, agende e automatize as respostas do seu Instagram — tudo em uma tela só.', 'Publish, schedule and automate replies on your Instagram — all in one screen.')}</p>
+      <p className="text-ink-4 text-sm mb-6">{t('Publique, agende e automatize as respostas do seu Instagram — tudo em uma tela só.', 'Publish, schedule and automate replies on your Instagram — all in one screen.')}</p>
 
       {profile && (
-        <div className="flex items-center gap-4 mb-6 bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 max-w-2xl">
+        <div className="flex items-center gap-4 mb-6 bg-card rounded-xl border border-white/[0.06] p-4 max-w-2xl">
           {profile.profile_picture_url ? (
             <img src={profile.profile_picture_url} alt="" className="w-12 h-12 rounded-full object-cover" />
           ) : (
             <div className="w-12 h-12 rounded-full bg-white/[0.06]" />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[#e2e2e8] font-semibold text-sm truncate">@{profile.username}{profile.name ? <span className="text-[#8a8a9e] font-normal"> · {profile.name}</span> : null}</p>
-            <p className="text-[#555] text-xs">{t('ID da conta', 'Account ID')}: {profile.id}{profile.account_type ? ` · ${profile.account_type}` : ''}</p>
+            <p className="text-ink font-semibold text-sm truncate">@{profile.username}{profile.name ? <span className="text-ink-3 font-normal"> · {profile.name}</span> : null}</p>
+            <p className="text-ink-4 text-xs">{t('ID da conta', 'Account ID')}: {profile.id}{profile.account_type ? ` · ${profile.account_type}` : ''}</p>
           </div>
           <div className="flex gap-5 text-center shrink-0">
             <div>
-              <p className="text-[#e2e2e8] font-bold text-sm">{(profile.followers_count ?? 0).toLocaleString(locale)}</p>
-              <p className="text-[#555] text-[10px]">{t('Seguidores', 'Followers')}</p>
+              <p className="text-ink font-bold text-sm">{(profile.followers_count ?? 0).toLocaleString(locale)}</p>
+              <p className="text-ink-4 text-[10px]">{t('Seguidores', 'Followers')}</p>
             </div>
             <div>
-              <p className="text-[#e2e2e8] font-bold text-sm">{(profile.media_count ?? 0).toLocaleString(locale)}</p>
-              <p className="text-[#555] text-[10px]">{t('Posts', 'Posts')}</p>
+              <p className="text-ink font-bold text-sm">{(profile.media_count ?? 0).toLocaleString(locale)}</p>
+              <p className="text-ink-4 text-[10px]">{t('Posts', 'Posts')}</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex gap-1 mb-6 bg-[#170e2c] rounded-lg p-1 border border-white/[0.06] w-fit">
+      <div className="flex gap-1 mb-6 bg-card rounded-lg p-1 border border-white/[0.06] w-fit">
         {(['publish_auto', 'scheduled', 'media'] as Tab[]).map(tb => (
           <button key={tb} onClick={() => setTab(tb)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === tb ? 'bg-indigo-600 text-white' : 'text-[#666] hover:text-[#e2e2e8]'}`}>
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === tb ? 'bg-indigo-600 text-white' : 'text-ink-4 hover:text-ink'}`}>
             {tb === 'publish_auto' ? t('Publicar & Automação', 'Publish & Automation') : tb === 'scheduled' ? t('Agendados', 'Scheduled') : t('Mídias & Métricas', 'Media & Insights')}
           </button>
         ))}
@@ -334,20 +334,20 @@ export default function PublicarInstagram() {
       {tab === 'publish_auto' && (
         <div className="grid xl:grid-cols-2 gap-6 items-start">
           {/* ---------- Coluna 1: publicar / agendar post (com automação inline do post) ---------- */}
-          <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
-            <h3 className="text-[#e2e2e8] font-semibold text-sm mb-4 flex items-center gap-2"><Send size={15} className="text-indigo-400" /> {t('Publicar ou agendar post', 'Publish or schedule a post')}</h3>
+          <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+            <h3 className="text-ink font-semibold text-sm mb-4 flex items-center gap-2"><Send size={15} className="text-indigo-400" /> {t('Publicar ou agendar post', 'Publish or schedule a post')}</h3>
             <div className="mb-4">
-              <label className="block text-[#666] text-xs font-medium mb-1">{t('Tipo de Mídia', 'Media Type')}</label>
+              <label className="block text-ink-4 text-xs font-medium mb-1">{t('Tipo de Mídia', 'Media Type')}</label>
               <select value={mediaType} onChange={e => setMediaType(e.target.value)}
-                className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8]">
+                className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink">
                 <option value="IMAGE">{t('Imagem', 'Image')}</option>
                 <option value="VIDEO">{t('Vídeo / Reel', 'Video / Reel')}</option>
               </select>
             </div>
             <div className="mb-4">
-              <label className="block text-[#666] text-xs font-medium mb-1">{t('Mídia', 'Media')}</label>
+              <label className="block text-ink-4 text-xs font-medium mb-1">{t('Mídia', 'Media')}</label>
               <label className={`flex items-center justify-center gap-2 w-full border border-dashed rounded-lg px-3 py-4 text-sm cursor-pointer transition-colors ${
-                uploading ? 'border-indigo-500/40 text-indigo-300' : 'border-white/[0.12] text-[#888] hover:border-indigo-500/40 hover:text-[#e2e2e8]'
+                uploading ? 'border-indigo-500/40 text-indigo-300' : 'border-white/[0.12] text-ink-3 hover:border-indigo-500/40 hover:text-ink'
               }`}>
                 <input
                   type="file"
@@ -365,69 +365,69 @@ export default function PublicarInstagram() {
               {mediaType === 'IMAGE' && mediaUrl && (
                 <img src={mediaUrl} alt="" className="mt-2 max-h-40 rounded-lg object-contain" />
               )}
-              <p className="text-[#444] text-[11px] mt-2">{t('Ou informe a URL pública de uma mídia já hospedada:', 'Or enter the public URL of already hosted media:')}</p>
+              <p className="text-ink-5 text-[11px] mt-2">{t('Ou informe a URL pública de uma mídia já hospedada:', 'Or enter the public URL of already hosted media:')}</p>
               <input type="url" value={mediaUrl} onChange={e => { setMediaUrl(e.target.value); setUploadedName('') }}
                 placeholder={t('https://exemplo.com/imagem.jpg', 'https://example.com/image.jpg')}
-                className="w-full mt-1 bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333]" />
+                className="w-full mt-1 bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5" />
             </div>
             <div className="mb-4">
-              <label className="block text-[#666] text-xs font-medium mb-1">{t('Legenda', 'Caption')}</label>
+              <label className="block text-ink-4 text-xs font-medium mb-1">{t('Legenda', 'Caption')}</label>
               <textarea value={caption} onChange={e => setCaption(e.target.value)} rows={3}
                 placeholder={t('Escreva a legenda do post...', 'Write the post caption...')}
-                className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333] resize-none" />
+                className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5 resize-none" />
             </div>
             <div className="mb-4">
-              <label className="block text-[#666] text-xs font-medium mb-1">Hashtags</label>
+              <label className="block text-ink-4 text-xs font-medium mb-1">Hashtags</label>
               <input type="text" value={hashtags} onChange={e => setHashtags(e.target.value)}
                 placeholder="#marketing #instagram #negocios"
-                className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333]" />
+                className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5" />
             </div>
 
             {/* Automação de comentário deste post */}
             <div className="mb-4 border border-white/[0.08] rounded-lg overflow-hidden">
               <button type="button" onClick={() => setAutoEnabled(!autoEnabled)}
                 className="w-full flex items-center justify-between px-3 py-2.5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-                <span className="flex items-center gap-2 text-[13px] text-[#e2e2e8]">
+                <span className="flex items-center gap-2 text-[13px] text-ink">
                   <span className={`w-8 h-4 rounded-full relative transition-colors ${autoEnabled ? 'bg-indigo-500' : 'bg-white/[0.1]'}`}>
                     <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${autoEnabled ? 'left-4' : 'left-0.5'}`} />
                   </span>
                   🤖 {t('Automação de comentário neste post', 'Comment automation on this post')}
                 </span>
-                <span className="text-[#555] text-xs">{autoEnabled ? t('Ativada', 'On') : t('Desativada', 'Off')}</span>
+                <span className="text-ink-4 text-xs">{autoEnabled ? t('Ativada', 'On') : t('Desativada', 'Off')}</span>
               </button>
 
               {autoEnabled && (
                 <div className="p-3 space-y-3 border-t border-white/[0.06]">
-                  <p className="text-[11px] text-[#666]">
+                  <p className="text-[11px] text-ink-4">
                     {t(
                       'Quando alguém comentar a palavra-chave neste post, o bot responde ao comentário e envia uma resposta privada (Private Reply) no Direct — uma por comentário, como a Meta exige.',
                       'When someone comments the keyword on this post, the bot replies to the comment and sends one Private Reply in Direct — one per comment, as Meta requires.',
                     )}
                   </p>
                   <div>
-                    <label className="block text-[#666] text-xs font-medium mb-1">{t('Palavra-chave do comentário', 'Comment keyword')}</label>
+                    <label className="block text-ink-4 text-xs font-medium mb-1">{t('Palavra-chave do comentário', 'Comment keyword')}</label>
                     <input type="text" value={autoKeyword} onChange={e => setAutoKeyword(e.target.value)}
                       placeholder={t('Ex: QUERO', 'E.g. INFO')}
-                      className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333]" />
+                      className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5" />
                   </div>
                   <div>
-                    <label className="block text-[#666] text-xs font-medium mb-1">{t('Resposta pública no comentário (opcional)', 'Public reply to the comment (optional)')}</label>
+                    <label className="block text-ink-4 text-xs font-medium mb-1">{t('Resposta pública no comentário (opcional)', 'Public reply to the comment (optional)')}</label>
                     <input type="text" value={autoCommentReply} onChange={e => setAutoCommentReply(e.target.value)}
                       placeholder={t('Te chamei no direto, {{primeiro_nome}}! 📩', 'Sent you a DM, {{primeiro_nome}}! 📩')}
-                      className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333]" />
+                      className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5" />
                   </div>
                   <div>
-                    <label className="block text-[#666] text-xs font-medium mb-1">{t('1ª mensagem no Direct (resposta privada)', '1st Direct message (private reply)')}</label>
+                    <label className="block text-ink-4 text-xs font-medium mb-1">{t('1ª mensagem no Direct (resposta privada)', '1st Direct message (private reply)')}</label>
                     <textarea value={autoDmMessage} onChange={e => setAutoDmMessage(e.target.value)} rows={2}
                       placeholder={t('Oi {{primeiro_nome}}! Responde SIM aqui que eu te mando o link 👇', 'Hi {{primeiro_nome}}! Reply YES here and I will send you the link 👇')}
-                      className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333] resize-none" />
+                      className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5 resize-none" />
                   </div>
                   <div>
-                    <label className="block text-[#666] text-xs font-medium mb-1">{t('2ª mensagem com o link (opcional)', '2nd message with the link (optional)')}</label>
+                    <label className="block text-ink-4 text-xs font-medium mb-1">{t('2ª mensagem com o link (opcional)', '2nd message with the link (optional)')}</label>
                     <textarea value={autoLinkMessage} onChange={e => setAutoLinkMessage(e.target.value)} rows={2}
                       placeholder={t('Perfeito, {{primeiro_nome}}! 🎉 Aqui está: seusite.com.br', 'Great, {{primeiro_nome}}! 🎉 Here it is: yoursite.com')}
-                      className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#333] resize-none" />
-                    <p className="text-[10px] text-[#555] mt-1">
+                      className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-5 resize-none" />
+                    <p className="text-[10px] text-ink-4 mt-1">
                       {t(
                         'Enviada só depois que a pessoa responder no Direct (dentro da janela de 24h). Se deixar vazio, o bot envia a 1ª mensagem uma vez e passa para o atendente.',
                         'Sent only after the person replies in Direct (within the 24h window). If left empty, the bot sends the 1st message once and hands off to an agent.',
@@ -435,7 +435,7 @@ export default function PublicarInstagram() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[10px] text-[#555]">{t('Variáveis:', 'Variables:')}</span>
+                    <span className="text-[10px] text-ink-4">{t('Variáveis:', 'Variables:')}</span>
                     {['{{primeiro_nome}}', '{{nome}}', '{{usuario}}'].map(v => (
                       <code key={v} className="text-[10px] bg-black/30 text-indigo-200 px-1.5 py-0.5 rounded">{v}</code>
                     ))}
@@ -445,10 +445,10 @@ export default function PublicarInstagram() {
             </div>
 
             <div className="mb-4">
-              <label className="block text-[#666] text-xs font-medium mb-1">{t(`Agendar para (opcional · até ${MAX_SCHEDULE_DAYS} dias)`, `Schedule for (optional · up to ${MAX_SCHEDULE_DAYS} days)`)}</label>
+              <label className="block text-ink-4 text-xs font-medium mb-1">{t(`Agendar para (opcional · até ${MAX_SCHEDULE_DAYS} dias)`, `Schedule for (optional · up to ${MAX_SCHEDULE_DAYS} days)`)}</label>
               <input type="datetime-local" value={scheduledFor} onChange={e => setScheduledFor(e.target.value)}
                 min={minScheduleDate()} max={maxScheduleDate()}
-                className="w-full bg-[#0f0820] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-[#e2e2e8]" />
+                className="w-full bg-field border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-ink" />
             </div>
             <div className="flex gap-3">
               <button onClick={handlePublish} disabled={publishing}
@@ -456,7 +456,7 @@ export default function PublicarInstagram() {
                 {publishing ? t('Publicando...', 'Publishing...') : t('Publicar Agora', 'Publish Now')}
               </button>
               <button onClick={handleSchedule} disabled={publishing || !scheduledFor}
-                className="px-4 py-2 bg-[#170e2c] border border-white/[0.06] hover:bg-white/[0.04] disabled:opacity-50 text-[#666] rounded-lg text-sm font-semibold transition-colors">
+                className="px-4 py-2 bg-card border border-white/[0.06] hover:bg-white/[0.04] disabled:opacity-50 text-ink-4 rounded-lg text-sm font-semibold transition-colors">
                 {publishing ? t('Salvando...', 'Saving...') : t('Agendar', 'Schedule')}
               </button>
             </div>
@@ -464,35 +464,35 @@ export default function PublicarInstagram() {
 
           {/* ---------- Coluna 2: automações cadastradas (ver / pausar / remover) ---------- */}
           <div>
-            <h3 className="text-[#e2e2e8] font-semibold text-sm mb-3">{t('Automações cadastradas', 'Your automations')}</h3>
-            <p className="text-[#555] text-xs mb-3">{t('Fluxos criados ao publicar um post (ative a automação ao lado). Aqui você acompanha, pausa ou remove.', 'Flows created when publishing a post (turn on the automation on the left). Track, pause or remove them here.')}</p>
+            <h3 className="text-ink font-semibold text-sm mb-3">{t('Automações cadastradas', 'Your automations')}</h3>
+            <p className="text-ink-4 text-xs mb-3">{t('Fluxos criados ao publicar um post (ative a automação ao lado). Aqui você acompanha, pausa ou remove.', 'Flows created when publishing a post (turn on the automation on the left). Track, pause or remove them here.')}</p>
             <HelpLink section="automacao-comentario" className="mb-3" />
             {loadingAutomations ? (
-              <div className="text-[#555] text-sm">{t('Carregando...', 'Loading...')}</div>
+              <div className="text-ink-4 text-sm">{t('Carregando...', 'Loading...')}</div>
             ) : automations.length === 0 ? (
-              <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 text-center">
-                <p className="text-[#555] text-sm">{t('Nenhuma automação cadastrada ainda.', 'No automations yet.')}</p>
+              <div className="bg-card rounded-xl border border-white/[0.06] p-8 text-center">
+                <p className="text-ink-4 text-sm">{t('Nenhuma automação cadastrada ainda.', 'No automations yet.')}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {automations.map((a) => (
-                  <div key={a.id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4">
+                  <div key={a.id} className="bg-card rounded-xl border border-white/[0.06] p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-sm font-semibold text-[#e2e2e8]">"{a.keyword}"</span>
-                          <span className="text-xs px-2 py-0.5 rounded bg-white/[0.04] text-[#888]">{triggerLabel(a.trigger_type)}</span>
-                          {a.media_id && <span className="text-xs px-2 py-0.5 rounded bg-white/[0.04] text-[#888]">{t('1 post específico', '1 specific post')}</span>}
-                          <span className={`text-xs font-medium ${a.is_active ? 'text-green-400' : 'text-[#555]'}`}>
+                          <span className="text-sm font-semibold text-ink">"{a.keyword}"</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-white/[0.04] text-ink-3">{triggerLabel(a.trigger_type)}</span>
+                          {a.media_id && <span className="text-xs px-2 py-0.5 rounded bg-white/[0.04] text-ink-3">{t('1 post específico', '1 specific post')}</span>}
+                          <span className={`text-xs font-medium ${a.is_active ? 'text-green-400' : 'text-ink-4'}`}>
                             {a.is_active ? t('Ativa', 'Active') : t('Inativa', 'Inactive')}
                           </span>
                         </div>
-                        <p className="text-[#888] text-xs truncate">{a.auto_reply_message}</p>
-                        {a.dm_message && <p className="text-[#666] text-xs truncate mt-1">📩 DM: {a.dm_message}</p>}
+                        <p className="text-ink-3 text-xs truncate">{a.auto_reply_message}</p>
+                        {a.dm_message && <p className="text-ink-4 text-xs truncate mt-1">📩 DM: {a.dm_message}</p>}
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
                         <button onClick={() => toggleAutomation(a)}
-                          className="px-2.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-[#888] rounded-lg text-xs font-medium transition-colors">
+                          className="px-2.5 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] text-ink-3 rounded-lg text-xs font-medium transition-colors">
                           {a.is_active ? t('Pausar', 'Pause') : t('Ativar', 'Activate')}
                         </button>
                         <button onClick={() => deleteAutomation(a.id)}
@@ -512,27 +512,27 @@ export default function PublicarInstagram() {
       {tab === 'scheduled' && (
         <div>
           {loadingSchedules ? (
-            <div className="text-[#555] text-sm">{t('Carregando agendamentos...', 'Loading schedules...')}</div>
+            <div className="text-ink-4 text-sm">{t('Carregando agendamentos...', 'Loading schedules...')}</div>
           ) : schedules.length === 0 ? (
-            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 text-center">
-              <p className="text-[#555] text-sm">{t('Nenhum agendamento encontrado.', 'No scheduled posts found.')}</p>
+            <div className="bg-card rounded-xl border border-white/[0.06] p-8 text-center">
+              <p className="text-ink-4 text-sm">{t('Nenhum agendamento encontrado.', 'No scheduled posts found.')}</p>
             </div>
           ) : (
             <div className="grid gap-4 max-w-2xl">
               {schedules.map(s => (
-                <div key={s.id} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4">
+                <div key={s.id} className="bg-card rounded-xl border border-white/[0.06] p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-white/[0.04] text-[#666]">{s.media_type}</span>
-                        <span className={`text-xs font-medium ${statusLabel[s.status]?.color || 'text-[#555]'}`}>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-white/[0.04] text-ink-4">{s.media_type}</span>
+                        <span className={`text-xs font-medium ${statusLabel[s.status]?.color || 'text-ink-4'}`}>
                           {statusLabel[s.status]?.label || s.status}
                         </span>
-                        {s.media_id_response && <span className="text-xs text-[#444]">ID: {s.media_id_response}</span>}
+                        {s.media_id_response && <span className="text-xs text-ink-5">ID: {s.media_id_response}</span>}
                       </div>
-                      <p className="text-[#e2e2e8] text-sm truncate">{s.caption || t('Sem legenda', 'No caption')}</p>
-                      {s.hashtags && <p className="text-[#555] text-xs truncate mt-0.5">{s.hashtags}</p>}
-                      <div className="flex gap-4 mt-2 text-xs text-[#444]">
+                      <p className="text-ink text-sm truncate">{s.caption || t('Sem legenda', 'No caption')}</p>
+                      {s.hashtags && <p className="text-ink-4 text-xs truncate mt-0.5">{s.hashtags}</p>}
+                      <div className="flex gap-4 mt-2 text-xs text-ink-5">
                         <span>{t('Agendado', 'Scheduled')}: {new Date(s.scheduled_for).toLocaleString(locale)}</span>
                         {s.published_at && <span>{t('Publicado', 'Published')}: {new Date(s.published_at).toLocaleString(locale)}</span>}
                       </div>
@@ -561,10 +561,10 @@ export default function PublicarInstagram() {
       {tab === 'media' && (
         <div className="space-y-6">
           {loadingInsights ? (
-            <div className="text-[#555] text-sm">{t('Carregando métricas...', 'Loading insights...')}</div>
+            <div className="text-ink-4 text-sm">{t('Carregando métricas...', 'Loading insights...')}</div>
           ) : insights && (
-            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
-              <h3 className="text-[#e2e2e8] font-semibold text-sm mb-4">{t('Métricas do Instagram (últimos 30 dias)', 'Instagram insights (last 30 days)')}</h3>
+            <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+              <h3 className="text-ink font-semibold text-sm mb-4">{t('Métricas do Instagram (últimos 30 dias)', 'Instagram insights (last 30 days)')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { label: t('Seguidores', 'Followers'), value: insights.followers_count },
@@ -577,8 +577,8 @@ export default function PublicarInstagram() {
                   { label: t('Cliques em Links', 'Link Clicks'), value: insights.website_clicks },
                 ].map(m => (
                   <div key={m.label} className="bg-white/[0.03] rounded-lg p-3">
-                    <p className="text-[#555] text-xs">{m.label}</p>
-                    <p className="text-[#e2e2e8] text-lg font-bold">{m.value}</p>
+                    <p className="text-ink-4 text-xs">{m.label}</p>
+                    <p className="text-ink text-lg font-bold">{m.value}</p>
                   </div>
                 ))}
               </div>
@@ -586,14 +586,14 @@ export default function PublicarInstagram() {
           )}
 
           {loadingStories ? (
-            <div className="text-[#555] text-sm">{t('Carregando stories...', 'Loading stories...')}</div>
+            <div className="text-ink-4 text-sm">{t('Carregando stories...', 'Loading stories...')}</div>
           ) : stories.length > 0 && (
-            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
-              <h3 className="text-[#e2e2e8] font-semibold text-sm mb-4">{t('Stories Recentes', 'Recent Stories')}</h3>
+            <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+              <h3 className="text-ink font-semibold text-sm mb-4">{t('Stories Recentes', 'Recent Stories')}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-[#555] text-xs text-left">
+                    <tr className="text-ink-4 text-xs text-left">
                       <th className="pb-2 pr-4">{t('Tipo', 'Type')}</th>
                       <th className="pb-2 pr-4">{t('Alcance', 'Reach')}</th>
                       <th className="pb-2 pr-4">{t('Impressões', 'Impressions')}</th>
@@ -606,7 +606,7 @@ export default function PublicarInstagram() {
                   </thead>
                   <tbody>
                     {stories.map((s: any) => (
-                      <tr key={s.id} className="border-t border-white/[0.06] text-[#888]">
+                      <tr key={s.id} className="border-t border-white/[0.06] text-ink-3">
                         <td className="py-2 pr-4">{s.media_type}</td>
                         <td className="py-2 pr-4">{s.reach}</td>
                         <td className="py-2 pr-4">{s.impressions}</td>
@@ -624,32 +624,32 @@ export default function PublicarInstagram() {
           )}
 
           {loadingMedia ? (
-            <div className="text-[#555] text-sm">{t('Carregando mídias...', 'Loading media...')}</div>
+            <div className="text-ink-4 text-sm">{t('Carregando mídias...', 'Loading media...')}</div>
           ) : mediaList.length === 0 ? (
-            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 text-center">
-              <p className="text-[#555] text-sm">{t('Nenhuma mídia encontrada.', 'No media found.')}</p>
+            <div className="bg-card rounded-xl border border-white/[0.06] p-8 text-center">
+              <p className="text-ink-4 text-sm">{t('Nenhuma mídia encontrada.', 'No media found.')}</p>
             </div>
           ) : (
-            <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
-              <h3 className="text-[#e2e2e8] font-semibold text-sm mb-4">{t('Mídias Recentes', 'Recent Media')}</h3>
+            <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+              <h3 className="text-ink font-semibold text-sm mb-4">{t('Mídias Recentes', 'Recent Media')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {mediaList.map(m => (
                   <div key={m.id} className="bg-white/[0.03] rounded-lg overflow-hidden">
                     {m.thumbnail_url || m.media_url ? (
                       <img src={m.thumbnail_url || m.media_url || undefined} alt={m.caption || undefined} className="w-full h-40 object-cover" />
                     ) : (
-                      <div className="w-full h-40 flex items-center justify-center text-[#444] text-xs">{m.media_type}</div>
+                      <div className="w-full h-40 flex items-center justify-center text-ink-5 text-xs">{m.media_type}</div>
                     )}
                     <div className="p-2">
-                      <p className="text-[#e2e2e8] text-xs truncate">{m.caption || t('Sem legenda', 'No caption')}</p>
-                      <div className="flex gap-3 mt-1 text-[#555] text-xs">
+                      <p className="text-ink text-xs truncate">{m.caption || t('Sem legenda', 'No caption')}</p>
+                      <div className="flex gap-3 mt-1 text-ink-4 text-xs">
                         <span>❤️ {m.like_count}</span>
                         <span>💬 {m.comments_count}</span>
                       </div>
-                      {m.timestamp && <p className="text-[#444] text-xs mt-1">{new Date(m.timestamp).toLocaleDateString(locale)}</p>}
+                      {m.timestamp && <p className="text-ink-5 text-xs mt-1">{new Date(m.timestamp).toLocaleDateString(locale)}</p>}
                       <button
                         onClick={() => setCommentsFor(m)}
-                        className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-white/[0.05] hover:bg-indigo-600/30 text-[#c0c0d0] hover:text-white text-xs font-medium transition-colors"
+                        className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-white/[0.05] hover:bg-indigo-600/30 text-ink-2 hover:text-white text-xs font-medium transition-colors"
                       >
                         <MessageCircle size={12} /> {t('Gerenciar comentários', 'Manage comments')}
                       </button>

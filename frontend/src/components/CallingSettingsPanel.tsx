@@ -125,8 +125,8 @@ export default function CallingSettingsPanel() {
     <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-[#e2e2e8]">{t('Receber ligações', 'Receive calls')}</p>
-          <p className="text-[11px] text-[#64748b] mt-0.5">
+          <p className="text-sm font-medium text-ink">{t('Receber ligações', 'Receive calls')}</p>
+          <p className="text-[11px] text-ink-4 mt-0.5">
             {t(
               'Mostra o botão de ligar no WhatsApp da empresa. As chamadas tocam no painel de quem tem acesso ao WhatsApp, e o áudio não é gravado.',
               'Shows the call button on the business WhatsApp. Calls ring in the panel of everyone with WhatsApp access, and the audio is not recorded.',
@@ -147,7 +147,7 @@ export default function CallingSettingsPanel() {
       </div>
 
       {!isAdmin && (
-        <p className="text-[11px] text-[#64748b]">{t('Só um admin da conta pode alterar.', 'Only an account admin can change this.')}</p>
+        <p className="text-[11px] text-ink-4">{t('Só um admin da conta pode alterar.', 'Only an account admin can change this.')}</p>
       )}
 
       {settings?.meets_messaging_limit === false && (
@@ -168,7 +168,7 @@ export default function CallingSettingsPanel() {
 
       {settings?.enabled && (
         <form onSubmit={saveHours} className="space-y-2.5">
-          <label className="flex items-center gap-2 text-xs text-[#c0c0d0]">
+          <label className="flex items-center gap-2 text-xs text-ink-2">
             <input type="checkbox" checked={hoursOn} disabled={readOnly} onChange={(e) => setHoursOn(e.target.checked)} />
             {t('Atender só em horários definidos', 'Only take calls during set hours')}
           </label>
@@ -185,7 +185,7 @@ export default function CallingSettingsPanel() {
                       disabled={readOnly}
                       onClick={() => setSelectedDays(on ? selectedDays.filter((d) => d !== day.id) : [...selectedDays, day.id])}
                       className={`px-2 py-1 rounded-md text-[11px] border transition-colors ${
-                        on ? 'bg-indigo-600/30 border-indigo-500/40 text-indigo-200' : 'bg-white/[0.03] border-white/[0.08] text-[#666]'
+                        on ? 'bg-indigo-600/30 border-indigo-500/40 text-indigo-200' : 'bg-white/[0.03] border-white/[0.08] text-ink-4'
                       }`}
                     >
                       {day.label}
@@ -193,15 +193,15 @@ export default function CallingSettingsPanel() {
                   )
                 })}
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-[#8a8a9e]">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-ink-3">
                 <input type="time" required value={openTime} disabled={readOnly} onChange={(e) => setOpenTime(e.target.value)}
-                  className="px-2 py-1 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-md" />
+                  className="px-2 py-1 bg-field border border-white/[0.08] text-ink rounded-md" />
                 {t('até', 'to')}
                 <input type="time" required value={closeTime} disabled={readOnly} onChange={(e) => setCloseTime(e.target.value)}
-                  className="px-2 py-1 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-md" />
+                  className="px-2 py-1 bg-field border border-white/[0.08] text-ink rounded-md" />
                 <input type="text" required value={timezone} disabled={readOnly} onChange={(e) => setTimezone(e.target.value)}
                   aria-label={t('Fuso horário', 'Time zone')}
-                  className="px-2 py-1 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-md w-44" />
+                  className="px-2 py-1 bg-field border border-white/[0.08] text-ink rounded-md w-44" />
               </div>
             </>
           )}

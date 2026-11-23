@@ -1,299 +1,175 @@
-import { useState, useEffect } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, Megaphone, Link2, Send,
-  Users, Settings, CreditCard, Building2, LogOut,
-  ChevronRight, ChevronDown, MessageSquare, FileText, Clock,
-  Headphones, Camera, Zap, Shield, BookOpen,
-  type LucideIcon,
+  Home, Users, Link2, Send, Megaphone, MessageSquare, FileText, Zap, Shield,
+  BookOpen, CreditCard, Building2, LogOut, Settings, UserCog, Camera, Sparkles,
+  X, type LucideIcon,
 } from 'lucide-react'
 import api from '../services/api'
 import AccountSwitcher from './AccountSwitcher'
+import { hasModule, useMe } from './MeContext'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
 
-type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; sub?: string }
-type NavGroup = { id: string; label: string; icon: LucideIcon; items: NavItem[] }
+type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; hint?: string; badge?: number }
+type NavSection = { label?: string; items: NavItem[] }
 
-function navItemClass(isActive: boolean): string {
-  return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-    isActive
-      ? 'bg-violet-500/15 text-violet-200 border border-violet-400/30 shadow-sm shadow-violet-500/10'
-      : 'text-[#64748b] hover:bg-white/[0.04] hover:text-white'
-  }`
+function NavRow({ item }: { item: NavItem }) {
+  const Icon = item.icon
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) => `group relative flex items-center gap-3 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-colors ${
+        isActive ? 'bg-white/[0.06] text-white' : 'text-ink-3 hover:bg-white/[0.03] hover:text-ink'
+      }`}
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-violet-400" />}
+          <Icon size={16} strokeWidth={1.75} className={isActive ? 'text-violet-300' : 'text-ink-4 group-hover:text-ink-2'} />
+          <span className="flex-1 min-w-0">
+            <span className="block truncate">{item.label}</span>
+            {item.hint && <span className="block text-[10px] text-emerald-400/80 truncate leading-tight">{item.hint}</span>}
+          </span>
+          {!!item.badge && (
+            <span className="min-w-5 h-5 px-1.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-semibold flex items-center justify-center">
+              {item.badge}
+            </span>
+          )}
+        </>
+      )}
+    </NavLink>
+  )
 }
 
 export default function Sidebar({ menuOpen, onClose }: { menuOpen: boolean; onClose: () => void }) {
   const navigate = useNavigate()
-  const location = useLocation()
   const { t } = useI18n()
-
-  const topLinks: NavItem[] = [
-    { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/app/leads', label: t('Leads', 'Leads'), icon: Users },
-    { to: '/app/conexao', label: t('Conexões Meta', 'Meta Connections'), icon: Link2 },
-  ]
-
-  const bottomLinks: NavItem[] = [
-    { to: '/app/equipe', label: t('Equipe', 'Team'), icon: Users },
-    { to: '/app/configuracoes', label: t('Configurações', 'Settings'), icon: Settings },
-    { to: '/app/guia', label: t('Guia do sistema', 'System guide'), icon: BookOpen },
-    { to: '/pricing', label: t('Planos', 'Plans'), icon: CreditCard },
-  ]
-  const [planType, setPlanType] = useState<string | null>(null)
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const me = useMe()
   const [waNumber, setWaNumber] = useState<string | null>(null)
-  const [blockedModules, setBlockedModules] = useState<string[]>([])
-  // Módulos efetivos deste usuário (conta - bloqueados ∩ permitidos do usuário).
-  const [modules, setModules] = useState<string[] | null>(null)
-
-  // Um módulo "some" do menu se não estiver nos módulos efetivos do usuário.
-  // Fallback para blocked_modules quando o backend antigo não mandar `modules`.
-  const blocked = (m: string) =>
-    modules !== null ? !modules.includes(m) : blockedModules.includes(m)
-
-  // Módulos bloqueados pela agência-mãe/super admin somem do menu
-  // (o backend também bloqueia as rotas com 403).
-  const groups: NavGroup[] = [
-    {
-      id: 'atendimento',
-      label: t('Atendimento ao Cliente', 'Customer Service'),
-      icon: Headphones,
-      items: [
-        ...(!blocked('whatsapp') ? [
-          { to: '/app/whatsapp', label: 'WhatsApp', icon: MessageSquare, sub: waNumber ?? undefined },
-        ] : []),
-        ...(!blocked('ia') ? [
-          { to: '/app/ia', label: t('IA & Conhecimento', 'AI & Knowledge'), icon: Zap },
-        ] : []),
-        ...(!blocked('whatsapp') ? [
-          { to: '/app/templates', label: 'Templates', icon: FileText },
-          { to: '/app/followups', label: 'Follow-ups', icon: Clock },
-        ] : []),
-      ],
-    },
-    ...(!blocked('instagram') ? [{
-      id: 'instagram',
-      label: 'Instagram',
-      icon: Camera,
-      items: [
-        { to: '/app/publicar', label: t('Publicar & Automação', 'Publish & Automation'), icon: Send },
-        { to: '/app/instagram-dm', label: t('Direct', 'Direct Messages'), icon: MessageSquare },
-      ],
-    }] : []),
-    ...(!blocked('ads') ? [{
-      id: 'ads',
-      label: 'Meta Ads',
-      icon: Megaphone,
-      items: [
-        { to: '/app/marketing', label: t('Campanhas', 'Campaigns'), icon: Megaphone },
-      ],
-    }] : []),
-  ].filter((g) => g.items.length > 0)
-
-  // Abre por padrão o grupo que contém a rota atual
-  const [open, setOpen] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    for (const g of groups) {
-      initial[g.id] = g.items.some((i) => location.pathname.startsWith(i.to))
-    }
-    return initial
-  })
+  const [pendingApprovals, setPendingApprovals] = useState(0)
 
   useEffect(() => {
-    api.get('/auth/me').then(({ data }) => {
-      if (data?.plan_type) setPlanType(data.plan_type)
-      if (Array.isArray(data?.blocked_modules)) setBlockedModules(data.blocked_modules)
-      if (Array.isArray(data?.modules)) setModules(data.modules)
-      setIsSuperAdmin(!!data?.is_super_admin)
-
-      // Número do WhatsApp conectado (via Meta) — mostrado sob o item WhatsApp.
-      // Só depois do /auth/me: com o módulo bloqueado a rota responde 403.
-      const hasWhatsApp = Array.isArray(data?.modules)
-        ? data.modules.includes('whatsapp')
-        : !(data?.blocked_modules ?? []).includes('whatsapp')
-      if (!hasWhatsApp) return
-      api.get('/whatsapp/credentials').then(({ data: wa }) => {
-        if (wa?.credentials?.phone_number) setWaNumber(wa.credentials.phone_number)
+    if (!me) return
+    if (hasModule(me, 'whatsapp')) {
+      api.get('/whatsapp/credentials').then(({ data }) => {
+        if (data?.credentials?.phone_number) setWaNumber(data.credentials.phone_number)
       }).catch(() => {})
-    }).catch(() => {})
-  }, [])
+    }
+    if (me.is_super_admin) {
+      api.get('/admin/tenants').then(({ data }) => {
+        setPendingApprovals((data as { approval_status: string }[]).filter((a) => a.approval_status === 'pending').length)
+      }).catch(() => {})
+    }
+  }, [me])
 
-  const isAgency = planType === 'agencia'
+  const wa = hasModule(me, 'whatsapp')
+  const ig = hasModule(me, 'instagram')
+  const ads = hasModule(me, 'ads')
+  const ia = hasModule(me, 'ia')
 
-  function toggleGroup(id: string) {
-    setOpen((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
+  const sections: NavSection[] = [
+    { items: [{ to: '/app', label: t('Início', 'Home'), icon: Home, end: true }] },
+    {
+      label: t('Conversas', 'Inbox'),
+      items: [
+        ...(wa ? [{ to: '/app/whatsapp', label: 'WhatsApp', icon: MessageSquare, hint: waNumber ?? undefined }] : []),
+        ...(ig ? [{ to: '/app/instagram-dm', label: t('Direct do Instagram', 'Instagram Direct'), icon: Camera }] : []),
+      ],
+    },
+    {
+      label: t('Crescimento', 'Growth'),
+      items: [
+        ...(ig ? [{ to: '/app/publicar', label: t('Posts e automações', 'Posts & automations'), icon: Sparkles }] : []),
+        ...(wa ? [
+          { to: '/app/followups', label: t('Disparos', 'Broadcasts'), icon: Send },
+          { to: '/app/templates', label: 'Templates', icon: FileText },
+        ] : []),
+        ...(ads ? [{ to: '/app/marketing', label: t('Anúncios', 'Ads'), icon: Megaphone }] : []),
+      ],
+    },
+    {
+      label: t('Clientes', 'Customers'),
+      items: [
+        { to: '/app/leads', label: 'Leads', icon: Users },
+        ...(ia ? [{ to: '/app/ia', label: t('IA e conhecimento', 'AI & knowledge'), icon: Zap }] : []),
+      ],
+    },
+    ...(me?.plan_type === 'agencia' ? [{
+      label: t('Agência', 'Agency'),
+      items: [{ to: '/app/clientes', label: t('Empresas clientes', 'Client businesses'), icon: Building2 }],
+    }] : []),
+    ...(me?.is_super_admin ? [{
+      label: t('Sistema', 'System'),
+      items: [{ to: '/app/super-admin', label: 'Super Admin', icon: Shield, badge: pendingApprovals }],
+    }] : []),
+    {
+      label: t('Conta', 'Account'),
+      items: [
+        { to: '/app/conexao', label: t('Conexões', 'Connections'), icon: Link2 },
+        { to: '/app/equipe', label: t('Equipe', 'Team'), icon: UserCog },
+        { to: '/app/configuracoes', label: t('Configurações', 'Settings'), icon: Settings },
+        { to: '/app/planos', label: t('Planos', 'Plans'), icon: CreditCard },
+        { to: '/app/guia', label: t('Guia', 'Guide'), icon: BookOpen },
+      ],
+    },
+  ].filter((s) => s.items.length > 0)
 
   function handleLogout() {
     localStorage.clear()
     navigate('/login')
   }
 
+  const initials = (me?.full_name || me?.username || '?').trim().slice(0, 1).toUpperCase()
+
   return (
     <aside
-      // Abaixo de lg vira gaveta: tocar num link fecha, mesmo que a rota não mude.
       onClick={(e) => { if ((e.target as HTMLElement).closest('a')) onClose() }}
-      className={`w-64 bg-[#0c0618] lg:min-h-screen flex flex-col border-r border-[#a78bfa]/10 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-72 max-lg:max-w-[85vw] max-lg:overflow-y-auto max-lg:transition-transform ${
+      className={`w-64 shrink-0 bg-panel border-r border-line flex flex-col lg:sticky lg:top-0 lg:h-screen max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-80 max-lg:max-w-[88vw] max-lg:transition-transform max-lg:duration-200 ${
         menuOpen ? '' : 'max-lg:-translate-x-full max-lg:invisible'
       }`}
     >
-      {/* Logo */}
-      <div className="px-5 pt-6 pb-4">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2.5 group"
-        >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 flex items-center justify-center shadow-lg shadow-[#d946ef]/30">
-            <span className="text-white font-bold text-sm tracking-tight">P</span>
-          </div>
-          <div className="flex flex-col text-left">
-            <span className="text-sm font-semibold text-white tracking-tight">
-              {BRANDING.namePrefix}<span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-orange-300 bg-clip-text text-transparent">{BRANDING.nameHighlight}</span>{BRANDING.nameSuffix}
-            </span>
-            <span className="text-[10px] text-violet-400/90 font-medium tracking-wide flex items-center gap-1">
-              by {BRANDING.company}
-            </span>
-          </div>
+      <div className="h-16 shrink-0 px-5 flex items-center gap-2.5">
+        <button onClick={() => navigate('/app')} className="flex items-center gap-2.5 flex-1 min-w-0">
+          <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-600/25 text-white font-bold text-sm">P</span>
+          <span className="text-left">
+            <span className="block text-sm font-semibold text-white tracking-tight">{BRANDING.name}</span>
+            <span className="block text-[10px] text-ink-4">by {BRANDING.company}</span>
+          </span>
+        </button>
+        <button onClick={onClose} aria-label={t('Fechar menu', 'Close menu')} className="lg:hidden w-9 h-9 -mr-2 flex items-center justify-center rounded-lg text-ink-3 hover:bg-white/[0.06]">
+          <X size={18} />
         </button>
       </div>
 
-      {/* Account switcher (agência ↔ clientes) */}
       <AccountSwitcher />
 
-      {/* Main nav */}
-      <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 lg:overflow-y-auto">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2 mt-1">
-          {t('Principal', 'Main')}
-        </p>
-        {topLinks.map((link) => {
-          const Icon = link.icon
-          return (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={'end' in link ? link.end : false}
-              className={({ isActive }) => navItemClass(isActive)}
-            >
-              <Icon size={15} strokeWidth={1.75} />
-              <span className="flex-1">{link.label}</span>
-            </NavLink>
-          )
-        })}
-
-        {/* Grupos (dropdown) */}
-        {groups.map((group) => {
-          const GroupIcon = group.icon
-          const isOpen = !!open[group.id]
-          const hasActive = group.items.some((i) => location.pathname.startsWith(i.to))
-          return (
-            <div key={group.id} className="mt-1">
-              <button
-                onClick={() => toggleGroup(group.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  hasActive && !isOpen
-                    ? 'text-violet-300'
-                    : 'text-[#64748b] hover:bg-white/[0.04] hover:text-white'
-                }`}
-              >
-                <GroupIcon size={15} strokeWidth={1.75} />
-                <span className="flex-1 text-left">{group.label}</span>
-                {isOpen
-                  ? <ChevronDown size={13} className="opacity-50" />
-                  : <ChevronRight size={13} className="opacity-50" />}
-              </button>
-
-              {isOpen && (
-                <div className="ml-3 pl-3 border-l border-white/[0.06] flex flex-col gap-0.5 mt-0.5">
-                  {group.items.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) => navItemClass(isActive)}
-                      >
-                        <Icon size={14} strokeWidth={1.75} />
-                        <span className="flex-1 min-w-0">
-                          <span className="block truncate">{item.label}</span>
-                          {item.sub && (
-                            <span className="block text-[10px] text-emerald-500/80 truncate leading-tight">
-                              {item.sub}
-                            </span>
-                          )}
-                        </span>
-                      </NavLink>
-                    )
-                  })}
-                </div>
-              )}
+      <nav className="flex-1 overflow-y-auto px-3 pb-3">
+        {sections.map((section, i) => (
+          <div key={section.label ?? i} className={i ? 'mt-4' : 'mt-1'}>
+            {section.label && (
+              <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-5">{section.label}</p>
+            )}
+            <div className="flex flex-col gap-0.5">
+              {section.items.map((item) => <NavRow key={item.to} item={item} />)}
             </div>
-          )
-        })}
-
-        {isAgency && (
-          <>
-            <div className="h-px bg-white/[0.05] my-3 mx-2" />
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2">
-              {t('Agência', 'Agency')}
-            </p>
-            <NavLink
-              to="/app/clientes"
-              className={({ isActive }) => navItemClass(isActive)}
-            >
-              <Building2 size={15} strokeWidth={1.75} />
-              <span className="flex-1">{t('Clientes', 'Clients')}</span>
-              <ChevronRight size={12} className="opacity-40" />
-            </NavLink>
-          </>
-        )}
-
-        {isSuperAdmin && (
-          <>
-            <div className="h-px bg-white/[0.05] my-3 mx-2" />
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[#3a3a4a] px-2 mb-2">
-              {t('Sistema', 'System')}
-            </p>
-            <NavLink
-              to="/app/super-admin"
-              className={({ isActive }) => navItemClass(isActive)}
-            >
-              <Shield size={15} strokeWidth={1.75} />
-              <span className="flex-1">Super Admin</span>
-              <ChevronRight size={12} className="opacity-40" />
-            </NavLink>
-          </>
-        )}
+          </div>
+        ))}
       </nav>
 
-      {/* Bottom nav */}
-      <div className="px-3 pb-4 border-t border-white/[0.05] pt-3 flex flex-col gap-0.5">
-        {bottomLinks.map((link) => {
-          const Icon = link.icon
-          return (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => navItemClass(isActive)}
-            >
-              <Icon size={15} strokeWidth={1.75} />
-              {link.label}
-            </NavLink>
-          )
-        })}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-[#5a5a6e] hover:bg-white/[0.04] hover:text-red-400 transition-all w-full mt-1"
-        >
-          <LogOut size={15} strokeWidth={1.75} />
-          {t('Sair', 'Log out')}
-        </button>
-        <LanguageToggle compact className="mt-2 self-center" />
-        <div className="mt-2.5 pt-2 border-t border-white/[0.04] px-1 text-center">
-          <p className="text-[10px] text-violet-400/70 tracking-tight font-medium">
-            {t(BRANDING.developedBy, 'Developed by Destrava')}
-          </p>
+      <div className="shrink-0 border-t border-line px-3 py-3">
+        <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.03] px-2.5 py-2">
+          <span className="w-8 h-8 rounded-full bg-violet-500/20 text-violet-200 text-xs font-semibold flex items-center justify-center shrink-0">{initials}</span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-xs font-medium text-ink truncate">{me?.full_name || me?.username || '…'}</span>
+            <span className="block text-[10px] text-ink-4 truncate">{me?.brand_name}</span>
+          </span>
+          <button onClick={handleLogout} title={t('Sair', 'Log out')} aria-label={t('Sair', 'Log out')} className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-4 hover:text-red-400 hover:bg-white/[0.04]">
+            <LogOut size={15} />
+          </button>
         </div>
+        <LanguageToggle compact className="mt-3 w-full justify-center" />
       </div>
     </aside>
   )

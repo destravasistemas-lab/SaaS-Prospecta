@@ -536,15 +536,15 @@ export default function WhatsApp() {
   return (
     <div className="flex gap-4 h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] lg:h-[calc(100vh-4rem)]">
       {/* ---------- Coluna esquerda: filas + lista (no celular, some com a conversa aberta) ---------- */}
-      <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
+      <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-card border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
         <div className="px-4 pt-4 pb-3 border-b border-white/[0.06] flex items-center justify-between">
-          <h1 className="text-sm font-semibold text-[#e2e2e8] flex items-center gap-2">
+          <h1 className="text-sm font-semibold text-ink flex items-center gap-2">
             <MessageSquare size={16} className="text-emerald-400" />
             WhatsApp
           </h1>
           <Link
             to="/app/templates"
-            className="flex items-center gap-1.5 text-[11px] text-[#5a5a6e] hover:text-[#c0c0d0] transition-colors no-underline"
+            className="flex items-center gap-1.5 text-[11px] text-ink-4 hover:text-ink-2 transition-colors no-underline"
             title={t('Templates de WhatsApp', 'WhatsApp templates')}
           >
             <FileText size={13} />
@@ -562,13 +562,13 @@ export default function WhatsApp() {
                 key={q.id}
                 onClick={() => setQueue(q.id)}
                 className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] font-medium transition-colors ${
-                  active ? 'bg-white/[0.06] text-[#e2e2e8]' : 'text-[#5a5a6e] hover:bg-white/[0.03]'
+                  active ? 'bg-white/[0.06] text-ink' : 'text-ink-4 hover:bg-white/[0.03]'
                 }`}
               >
                 <Icon size={15} className={active ? q.color : ''} />
                 <span className="flex items-center gap-1">
                   {t(q.pt, q.en)}
-                  <span className={`px-1 rounded ${active ? 'bg-white/10 text-[#c0c0d0]' : 'text-[#444]'}`}>
+                  <span className={`px-1 rounded ${active ? 'bg-white/10 text-ink-2' : 'text-ink-5'}`}>
                     {counts[q.id]}
                   </span>
                 </span>
@@ -580,7 +580,7 @@ export default function WhatsApp() {
         {/* Lista de conversas */}
         <div className="flex-1 overflow-y-auto">
           {visible.length === 0 ? (
-            <div className="p-6 text-center text-[#4a4a5a] text-xs mt-8">
+            <div className="p-6 text-center text-ink-5 text-xs mt-8">
               {t('Nenhuma conversa nesta fila.', 'No conversations in this queue.')}
             </div>
           ) : (
@@ -594,14 +594,14 @@ export default function WhatsApp() {
                     isSel ? 'bg-indigo-600/10' : 'hover:bg-white/[0.03]'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-ink-3 shrink-0">
                     {(c.customer_name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-[#e2e2e8] truncate">
+                    <p className="text-[13px] font-medium text-ink truncate">
                       {c.customer_name || t('Sem nome', 'No name')}
                     </p>
-                    <p className="text-[11px] text-[#5a5a6e] truncate">{statusText(c.atendimento_status)}</p>
+                    <p className="text-[11px] text-ink-4 truncate">{statusText(c.atendimento_status)}</p>
                   </div>
                   {c.unread_count > 0 && (
                     <span className="bg-emerald-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shrink-0">
@@ -616,14 +616,14 @@ export default function WhatsApp() {
       </div>
 
       {/* ---------- Coluna direita: thread ---------- */}
-      <div className={`flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? '' : 'max-lg:hidden'}`}>
+      <div className={`flex-1 flex flex-col bg-card border border-white/[0.06] rounded-xl overflow-hidden ${selected ? '' : 'max-lg:hidden'}`}>
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
               <MessageSquare size={28} className="text-emerald-400/70" />
             </div>
-            <p className="text-[#e2e2e8] font-medium mb-1">{t('Selecione uma conversa', 'Select a conversation')}</p>
-            <p className="text-[#5a5a6e] text-sm max-w-xs">
+            <p className="text-ink font-medium mb-1">{t('Selecione uma conversa', 'Select a conversation')}</p>
+            <p className="text-ink-4 text-sm max-w-xs">
               {t('As conversas aparecem aqui quando um cliente manda mensagem no WhatsApp.', 'Conversations show up here when a customer messages you on WhatsApp.')}
             </p>
             <HelpLink section="whatsapp" className="mt-3" />
@@ -635,16 +635,16 @@ export default function WhatsApp() {
               <button
                 onClick={() => setSelectedId(null)}
                 aria-label={t('Voltar para a lista', 'Back to the list')}
-                className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-[#8a8a9e] hover:text-white"
+                className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-ink-3 hover:text-white"
               >
                 <ArrowLeft size={18} />
               </button>
-              <div className="max-sm:hidden w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
+              <div className="max-sm:hidden w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-ink-3 shrink-0">
                 {getConvName().charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#e2e2e8] truncate">{getConvName()}</p>
-                <p className="text-[11px] text-[#5a5a6e]">
+                <p className="text-sm font-medium text-ink truncate">{getConvName()}</p>
+                <p className="text-[11px] text-ink-4">
                   {statusText(selected.atendimento_status)}
                   {windowLabel && (
                     <span className="text-emerald-400/70"> · {t('janela de 24h', '24h window')}: {windowLabel}</span>
@@ -671,7 +671,7 @@ export default function WhatsApp() {
                 className={`shrink-0 flex items-center gap-1.5 max-sm:h-9 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
                   selected.bot_active
                     ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                    : 'bg-white/[0.04] border-white/[0.08] text-[#5a5a6e]'
+                    : 'bg-white/[0.04] border-white/[0.08] text-ink-4'
                 }`}
               >
                 <Power size={13} />
@@ -684,9 +684,9 @@ export default function WhatsApp() {
             {/* Thread */}
             <div ref={threadRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
               {loadingMsgs ? (
-                <p className="text-center text-[#4a4a5a] text-xs mt-8">{t('Carregando…', 'Loading…')}</p>
+                <p className="text-center text-ink-5 text-xs mt-8">{t('Carregando…', 'Loading…')}</p>
               ) : messages.length === 0 ? (
-                <p className="text-center text-[#4a4a5a] text-xs mt-8">{t('Nenhuma mensagem ainda.', 'No messages yet.')}</p>
+                <p className="text-center text-ink-5 text-xs mt-8">{t('Nenhuma mensagem ainda.', 'No messages yet.')}</p>
               ) : (
                 messages.map((m) => {
                   const out = m.direction === 'outbound'
@@ -702,14 +702,14 @@ export default function WhatsApp() {
                           <button
                             onClick={() => { setReplyTo(m); setReactingId(null) }}
                             title={t('Responder', 'Reply')}
-                            className="w-7 h-7 rounded-full bg-[#20153a] border border-white/[0.08] text-[#8a8a9e] hover:text-white flex items-center justify-center"
+                            className="w-7 h-7 rounded-full bg-raised border border-white/[0.08] text-ink-3 hover:text-white flex items-center justify-center"
                           >
                             <Reply size={13} />
                           </button>
                           <button
                             onClick={() => setReactingId(reactingId === m.id ? null : m.id)}
                             title={t('Reagir', 'React')}
-                            className="w-7 h-7 rounded-full bg-[#20153a] border border-white/[0.08] text-[#8a8a9e] hover:text-white flex items-center justify-center"
+                            className="w-7 h-7 rounded-full bg-raised border border-white/[0.08] text-ink-3 hover:text-white flex items-center justify-center"
                           >
                             <SmilePlus size={13} />
                           </button>
@@ -718,7 +718,7 @@ export default function WhatsApp() {
                         {/* Picker de reação */}
                         {reactingId === m.id && (
                           <div
-                            className={`absolute -top-9 ${out ? 'right-0' : 'left-0'} flex gap-0.5 bg-[#20153a] border border-white/[0.1] rounded-full px-1.5 py-1 shadow-xl z-20`}
+                            className={`absolute -top-9 ${out ? 'right-0' : 'left-0'} flex gap-0.5 bg-raised border border-white/[0.1] rounded-full px-1.5 py-1 shadow-xl z-20`}
                           >
                             {REACTION_EMOJIS.map((e) => (
                               <button
@@ -739,13 +739,13 @@ export default function WhatsApp() {
                           className={`rounded-2xl px-3.5 py-2 ${
                             out
                               ? 'bg-indigo-600 text-white rounded-br-sm'
-                              : 'bg-white/[0.06] text-[#e2e2e8] rounded-bl-sm'
+                              : 'bg-white/[0.06] text-ink rounded-bl-sm'
                           }`}
                         >
                           {/* Quote (mensagem citada) */}
                           {m.context_text && (
                             <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 text-[11px] ${
-                              out ? 'bg-white/10 border-white/40 text-white/70' : 'bg-black/20 border-emerald-400/60 text-[#8a8a9e]'
+                              out ? 'bg-white/10 border-white/40 text-white/70' : 'bg-black/20 border-emerald-400/60 text-ink-3'
                             }`}>
                               <p className="truncate">{m.context_text}</p>
                             </div>
@@ -756,7 +756,7 @@ export default function WhatsApp() {
                           {m.text && (
                             <p className="text-[13px] whitespace-pre-wrap break-words">{m.text}</p>
                           )}
-                          <div className={`flex items-center gap-1 justify-end mt-0.5 ${out ? 'text-white/60' : 'text-[#5a5a6e]'}`}>
+                          <div className={`flex items-center gap-1 justify-end mt-0.5 ${out ? 'text-white/60' : 'text-ink-4'}`}>
                             <span className="text-[10px]">{fmtTime(m.created_at)}</span>
                             {out && <MsgStatus status={m.status} error={m.payload?.error} />}
                           </div>
@@ -765,7 +765,7 @@ export default function WhatsApp() {
                         {/* Reações aplicadas */}
                         {reactions.length > 0 && (
                           <div className={`absolute -bottom-3 ${out ? 'right-2' : 'left-2'} flex gap-0.5`}>
-                            <span className="bg-[#20153a] border border-white/[0.1] rounded-full px-1.5 py-px text-[11px] shadow">
+                            <span className="bg-raised border border-white/[0.1] rounded-full px-1.5 py-px text-[11px] shadow">
                               {reactions.join(' ')}
                             </span>
                           </div>
@@ -801,11 +801,11 @@ export default function WhatsApp() {
                   <p className="text-[10px] text-indigo-400 font-semibold">
                     {t('Respondendo', 'Replying to')} {replyTo.direction === 'inbound' ? getConvName() : t('você', 'yourself')}
                   </p>
-                  <p className="text-[11px] text-[#8a8a9e] truncate">
+                  <p className="text-[11px] text-ink-3 truncate">
                     {replyTo.text || `[${replyTo.media_type || t('mídia', 'media')}]`}
                   </p>
                 </div>
-                <button onClick={() => setReplyTo(null)} className="text-[#5a5a6e] hover:text-white shrink-0">
+                <button onClick={() => setReplyTo(null)} className="text-ink-4 hover:text-white shrink-0">
                   <X size={14} />
                 </button>
               </div>
@@ -817,7 +817,7 @@ export default function WhatsApp() {
                 <button
                   onClick={openTplPicker}
                   title={t('Enviar template (fora da janela de 24h)', 'Send template (outside the 24h window)')}
-                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white flex items-center justify-center transition-colors"
+                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-ink-3 hover:text-white flex items-center justify-center transition-colors"
                 >
                   <FileText size={16} />
                 </button>
@@ -825,7 +825,7 @@ export default function WhatsApp() {
                   onClick={openInteractive}
                   disabled={composerDisabled}
                   title={t('Mensagem interativa (botões ou lista)', 'Interactive message (buttons or list)')}
-                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
+                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-ink-3 hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
                 >
                   <LayoutList size={16} />
                 </button>
@@ -833,7 +833,7 @@ export default function WhatsApp() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={composerDisabled || attaching}
                   title={t('Anexar arquivo (imagem, vídeo, áudio ou documento)', 'Attach file (image, video, audio or document)')}
-                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#8a8a9e] hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
+                  className="w-9 h-10 sm:w-10 shrink-0 rounded-xl bg-white/[0.05] border border-white/[0.08] text-ink-3 hover:text-white disabled:opacity-30 flex items-center justify-center transition-colors"
                 >
                   <Paperclip size={16} className={attaching ? 'animate-pulse' : ''} />
                 </button>
@@ -859,7 +859,7 @@ export default function WhatsApp() {
                         ? t('Escreva uma mensagem…', 'Type a message…')
                         : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')
                   }
-                  className="flex-1 min-w-0 resize-none max-h-32 px-3 sm:px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-indigo-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
+                  className="flex-1 min-w-0 resize-none max-h-32 px-3 sm:px-3.5 py-2.5 bg-field border border-white/[0.08] text-ink text-[13px] rounded-xl outline-none focus:border-indigo-500/60 placeholder-ink-5 disabled:opacity-50"
                 />
                 <button
                   onClick={sendReply}
@@ -877,10 +877,10 @@ export default function WhatsApp() {
       {/* Modal: enviar template */}
       {showTpl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Enviar template', 'Send template')}</h3>
-              <button onClick={() => setShowTpl(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+              <button onClick={() => setShowTpl(false)} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
             </div>
 
             {!recipientWaId && (
@@ -891,7 +891,7 @@ export default function WhatsApp() {
 
             {!pickedTpl ? (
               tpls.length === 0 ? (
-                <p className="text-[#5a5a6e] text-sm text-center py-6">
+                <p className="text-ink-4 text-sm text-center py-6">
                   {t('Nenhum template. Crie na página', 'No templates. Create one on the')}{' '}
                   <Link to="/app/templates" className="text-indigo-400">Templates</Link>{t('.', ' page.')}
                 </p>
@@ -901,35 +901,35 @@ export default function WhatsApp() {
                     <button
                       key={tpl.name}
                       onClick={() => pickTpl(tpl)}
-                      className="w-full text-left px-3 py-2.5 rounded-lg bg-[#0f0820] border border-white/[0.06] hover:border-indigo-500/40 transition-colors"
+                      className="w-full text-left px-3 py-2.5 rounded-lg bg-field border border-white/[0.06] hover:border-indigo-500/40 transition-colors"
                     >
-                      <p className="text-sm font-medium text-[#e2e2e8]">{tpl.name}</p>
-                      <p className="text-xs text-[#555] truncate">{tpl.components?.find((c) => c.type === 'BODY')?.text}</p>
+                      <p className="text-sm font-medium text-ink">{tpl.name}</p>
+                      <p className="text-xs text-ink-4 truncate">{tpl.components?.find((c) => c.type === 'BODY')?.text}</p>
                     </button>
                   ))}
                 </div>
               )
             ) : (
               <div>
-                <div className="bg-[#0f0820] border border-white/[0.06] rounded-lg p-3 mb-3">
-                  <p className="text-sm font-medium text-[#e2e2e8]">{pickedTpl.name}</p>
-                  <p className="text-xs text-[#555] mt-1">{pickedTpl.components?.find((c) => c.type === 'BODY')?.text}</p>
+                <div className="bg-field border border-white/[0.06] rounded-lg p-3 mb-3">
+                  <p className="text-sm font-medium text-ink">{pickedTpl.name}</p>
+                  <p className="text-xs text-ink-4 mt-1">{pickedTpl.components?.find((c) => c.type === 'BODY')?.text}</p>
                 </div>
                 {tplVars.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {tplVars.map((v, i) => (
                       <div key={i}>
-                        <label className="block text-[11px] text-[#666] mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
+                        <label className="block text-[11px] text-ink-4 mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
                         <input
                           value={v}
                           onChange={(e) => setTplVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
-                          className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                     ))}
                   </div>
                 )}
-                <label className="flex items-start gap-2 mb-3 text-[11px] text-[#8a8a9e] cursor-pointer">
+                <label className="flex items-start gap-2 mb-3 text-[11px] text-ink-3 cursor-pointer">
                   <input type="checkbox" checked={tplOptIn} onChange={(e) => setTplOptIn(e.target.checked)} className="mt-0.5 accent-indigo-500" />
                   <span>
                     {t(
@@ -939,7 +939,7 @@ export default function WhatsApp() {
                   </span>
                 </label>
                 <div className="flex gap-2">
-                  <button onClick={() => setPickedTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm rounded-lg transition-colors">{t('Voltar', 'Back')}</button>
+                  <button onClick={() => setPickedTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm rounded-lg transition-colors">{t('Voltar', 'Back')}</button>
                   <button onClick={sendTemplate} disabled={sendingTpl} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
                     {sendingTpl ? t('Enviando…', 'Sending…') : t('Enviar', 'Send')}
                   </button>
@@ -953,10 +953,10 @@ export default function WhatsApp() {
       {/* Modal: mensagem interativa (botões / lista) */}
       {showInt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Mensagem interativa', 'Interactive message')}</h3>
-              <button onClick={() => setShowInt(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+              <button onClick={() => setShowInt(false)} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
             </div>
 
             {/* Tipo */}
@@ -968,7 +968,7 @@ export default function WhatsApp() {
                   className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                     intKind === k
                       ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300'
-                      : 'bg-white/[0.03] border-white/[0.08] text-[#5a5a6e] hover:text-white'
+                      : 'bg-white/[0.03] border-white/[0.08] text-ink-4 hover:text-white'
                   }`}
                 >
                   {k === 'buttons' ? t('Botões (até 3)', 'Buttons (up to 3)') : t('Lista (até 10)', 'List (up to 10)')}
@@ -976,19 +976,19 @@ export default function WhatsApp() {
               ))}
             </div>
 
-            <label className="block text-[11px] text-[#666] mb-1">{t('Texto da mensagem', 'Message text')}</label>
+            <label className="block text-[11px] text-ink-4 mb-1">{t('Texto da mensagem', 'Message text')}</label>
             <textarea
               value={intBody}
               onChange={(e) => setIntBody(e.target.value)}
               rows={3}
               maxLength={1024}
               placeholder={t('Ex.: Como podemos te ajudar hoje?', 'E.g. How can we help you today?')}
-              className="w-full mb-3 px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
+              className="w-full mb-3 px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none resize-none"
             />
 
             {intKind === 'buttons' ? (
               <div className="space-y-2 mb-4">
-                <label className="block text-[11px] text-[#666]">{t('Botões de resposta rápida', 'Quick reply buttons')}</label>
+                <label className="block text-[11px] text-ink-4">{t('Botões de resposta rápida', 'Quick reply buttons')}</label>
                 {intButtons.map((b, i) => (
                   <div key={i} className="flex gap-2">
                     <input
@@ -996,12 +996,12 @@ export default function WhatsApp() {
                       maxLength={20}
                       onChange={(e) => setIntButtons((prev) => prev.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
                       placeholder={t(`Botão ${i + 1} (máx. 20 caracteres)`, `Button ${i + 1} (max 20 characters)`)}
-                      className="flex-1 px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                      className="flex-1 px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                     />
                     {intButtons.length > 1 && (
                       <button
                         onClick={() => setIntButtons((prev) => prev.filter((_, j) => j !== i))}
-                        className="w-9 shrink-0 text-[#5a5a6e] hover:text-red-400 flex items-center justify-center"
+                        className="w-9 shrink-0 text-ink-4 hover:text-red-400 flex items-center justify-center"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1019,14 +1019,14 @@ export default function WhatsApp() {
               </div>
             ) : (
               <div className="space-y-2 mb-4">
-                <label className="block text-[11px] text-[#666]">{t('Texto do botão que abre a lista', 'Text of the button that opens the list')}</label>
+                <label className="block text-[11px] text-ink-4">{t('Texto do botão que abre a lista', 'Text of the button that opens the list')}</label>
                 <input
                   value={intListButton}
                   maxLength={20}
                   onChange={(e) => setIntListButton(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 />
-                <label className="block text-[11px] text-[#666] pt-1">{t('Opções da lista', 'List options')}</label>
+                <label className="block text-[11px] text-ink-4 pt-1">{t('Opções da lista', 'List options')}</label>
                 {intRows.map((r, i) => (
                   <div key={i} className="flex gap-2">
                     <div className="flex-1 space-y-1">
@@ -1035,20 +1035,20 @@ export default function WhatsApp() {
                         maxLength={24}
                         onChange={(e) => setIntRows((prev) => prev.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
                         placeholder={t(`Opção ${i + 1} (máx. 24 caracteres)`, `Option ${i + 1} (max 24 characters)`)}
-                        className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                       />
                       <input
                         value={r.description}
                         maxLength={72}
                         onChange={(e) => setIntRows((prev) => prev.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))}
                         placeholder={t('Descrição (opcional)', 'Description (optional)')}
-                        className="w-full px-3 py-1.5 bg-[#0f0820] border border-white/[0.06] text-[#8a8a9e] text-xs rounded-lg focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-3 py-1.5 bg-field border border-white/[0.06] text-ink-3 text-xs rounded-lg focus:border-indigo-500 focus:outline-none"
                       />
                     </div>
                     {intRows.length > 1 && (
                       <button
                         onClick={() => setIntRows((prev) => prev.filter((_, j) => j !== i))}
-                        className="w-9 shrink-0 text-[#5a5a6e] hover:text-red-400 flex items-center justify-center"
+                        className="w-9 shrink-0 text-ink-4 hover:text-red-400 flex items-center justify-center"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1069,7 +1069,7 @@ export default function WhatsApp() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInt(false)}
-                className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm rounded-lg transition-colors"
+                className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm rounded-lg transition-colors"
               >
                 {t('Cancelar', 'Cancel')}
               </button>

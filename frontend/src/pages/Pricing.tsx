@@ -35,7 +35,8 @@ interface Subscription {
   is_active: boolean;
 }
 
-export default function Pricing() {
+/** `embedded`: dentro do painel (sem tela cheia nem botão Voltar). */
+export default function Pricing({ embedded = false }: { embedded?: boolean }) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,22 +105,24 @@ export default function Pricing() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0f0820]">
-        <div className="text-[#555]">{t('Carregando planos...', 'Loading plans...')}</div>
+      <div className={`flex items-center justify-center ${embedded ? 'py-20' : 'min-h-screen bg-field'}`}>
+        <div className="text-ink-4">{t('Carregando planos...', 'Loading plans...')}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0820] py-12 px-4">
+    <div className={embedded ? '' : 'min-h-screen bg-field py-12 px-4'}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => navigate(-1)} className="text-sm text-[#64748b] hover:text-white">← {t('Voltar', 'Back')}</button>
-          <LanguageToggle compact />
-        </div>
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">{t('Planos e Preços', 'Plans & Pricing')}</h1>
-          <p className="text-[#555]">
+        {!embedded && (
+          <div className="flex justify-between items-center mb-6">
+            <button onClick={() => navigate(-1)} className="text-sm text-ink-4 hover:text-white">← {t('Voltar', 'Back')}</button>
+            <LanguageToggle compact />
+          </div>
+        )}
+        <div className={embedded ? 'mb-8' : 'text-center mb-12'}>
+          <h1 className={embedded ? 'text-2xl font-semibold text-white mb-1' : 'text-4xl font-bold text-white mb-4'}>{t('Planos e Preços', 'Plans & Pricing')}</h1>
+          <p className="text-ink-4">
             {t('Escolha o plano perfeito para suas necessidades', 'Choose the right plan for your needs')}
           </p>
         </div>
@@ -134,7 +137,7 @@ export default function Pricing() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-4 gap-6 mb-12">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-12">
           {plans.map(localized).map((plan) => (
             <div
               key={plan.id}
@@ -144,7 +147,7 @@ export default function Pricing() {
                   : 'border-white/[0.06] hover:border-white/[0.12]'
               }`}
             >
-              <div className="bg-[#170e2c] p-6 h-full flex flex-col">
+              <div className="bg-card p-6 h-full flex flex-col">
                 {plan.id === 'premium' && (
                   <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg">
                     {t('MAIS POPULAR', 'MOST POPULAR')}
@@ -158,13 +161,13 @@ export default function Pricing() {
                 )}
 
                 <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-[#555] text-sm mb-4">{plan.description}</p>
+                <p className="text-ink-4 text-sm mb-4">{plan.description}</p>
 
                 <div className="mb-6">
                   <div className="text-4xl font-bold text-white">
                     R$ {plan.value === 0 ? '0' : plan.value.toFixed(0)}
                   </div>
-                  <p className="text-[#444] text-sm">
+                  <p className="text-ink-5 text-sm">
                     {plan.value > 0 ? t('/mês', '/month') : t('Para sempre', 'Forever')}
                   </p>
                 </div>
@@ -174,7 +177,7 @@ export default function Pricing() {
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start">
                         <span className="text-green-400 mr-3">✓</span>
-                        <span className="text-[#666] text-sm">{feature}</span>
+                        <span className="text-ink-4 text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -190,9 +193,9 @@ export default function Pricing() {
                   className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 ${
                     currentSubscription?.plan === plan.id &&
                     currentSubscription?.is_active
-                      ? 'bg-white/[0.04] text-[#555] cursor-not-allowed'
+                      ? 'bg-white/[0.04] text-ink-4 cursor-not-allowed'
                       : selectedPlan === plan.id
-                      ? 'bg-white/[0.04] text-[#666] cursor-wait'
+                      ? 'bg-white/[0.04] text-ink-4 cursor-wait'
                       : plan.id === 'premium'
                       ? 'bg-indigo-600 text-white hover:bg-indigo-500'
                       : 'bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20'
@@ -210,36 +213,36 @@ export default function Pricing() {
           ))}
         </div>
 
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 max-w-2xl mx-auto">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-8 max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold text-white mb-6">{t('Perguntas Frequentes', 'FAQ')}</h2>
           <div className="space-y-4">
             <div>
-              <h3 className="text-[#e2e2e8] font-semibold mb-2">
+              <h3 className="text-ink font-semibold mb-2">
                 {t('Posso mudar de plano a qualquer momento?', 'Can I change plans at any time?')}
               </h3>
-              <p className="text-[#555]">
+              <p className="text-ink-4">
                 {t('Sim! Você pode fazer upgrade ou downgrade a qualquer momento. A mudança será refletida no próximo ciclo de cobrança.', 'Yes! You can upgrade or downgrade at any time. The change applies to the next billing cycle.')}
               </p>
             </div>
             <div>
-              <h3 className="text-[#e2e2e8] font-semibold mb-2">
+              <h3 className="text-ink font-semibold mb-2">
                 {t('Há período de teste?', 'Is there a free trial?')}
               </h3>
-              <p className="text-[#555]">
+              <p className="text-ink-4">
                 {t('Sim, todos os planos pagos têm 7 dias de teste gratuito, sem cartão de crédito.', 'Yes, all paid plans include a 7-day free trial, no credit card required.')}
               </p>
             </div>
             <div>
-              <h3 className="text-[#e2e2e8] font-semibold mb-2">
+              <h3 className="text-ink font-semibold mb-2">
                 {t('O que acontece se eu cancelar?', 'What happens if I cancel?')}
               </h3>
-              <p className="text-[#555]">
+              <p className="text-ink-4">
                 {t('Você pode cancelar a qualquer momento. O acesso permanece até o fim do período pago.', 'You can cancel at any time. Access remains until the end of the paid period.')}
               </p>
             </div>
           </div>
         </div>
-        <LegalEntity className="mt-12 text-center text-xs text-[#64748b]" />
+        {!embedded && <LegalEntity className="mt-12 text-center text-xs text-ink-4" />}
       </div>
     </div>
   );

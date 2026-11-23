@@ -1181,14 +1181,18 @@ async def _find_lead(account_id: str, external_id: str, db: AsyncSession) -> Lea
     Casa tanto pelo handle primário quanto pelos IDs absorvidos numa mesclagem
     (alt_handles), para que um lead unificado seja reencontrado por qualquer canal.
     """
+    from app.core.phone import phone_variants
+
+    ids = phone_variants(external_id) if external_id.isdigit() else [external_id]
     result = await db.execute(
         select(Lead).where(
             Lead.account_id == account_id,
             or_(
-                Lead.instagram_handle == external_id,
-                Lead.alt_handles.like(f"%,{external_id},%"),
+                Lead.instagram_handle.in_(ids),
+                *[Lead.alt_handles.like(f"%,{i},%") for i in ids],
+                *([Lead.phone.in_(ids)] if external_id.isdigit() else []),
             ),
-        ).limit(1)
+        ).order_by(Lead.captured_at).limit(1)
     )
     return result.scalar_one_or_none()
 

@@ -33,17 +33,17 @@ export default function Configuracoes() {
     }
   }
 
-  const input = 'w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]'
+  const input = 'w-full px-4 py-2 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5'
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#e2e2e8] mb-6">{t('Configurações', 'Settings')}</h2>
+      <h2 className="text-2xl font-bold text-ink mb-6">{t('Configurações', 'Settings')}</h2>
       <HelpLink section="privacidade" className="mb-4 block" />
       <div className="max-w-lg space-y-6">
-        <form onSubmit={saveBrand} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-4">
-          <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Empresa', 'Business')}</h3>
+        <form onSubmit={saveBrand} className="bg-card rounded-xl border border-white/[0.06] p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-ink">{t('Empresa', 'Business')}</h3>
           <div>
-            <label className="block text-sm font-medium text-[#666] mb-1">{t('Nome da marca', 'Brand name')}</label>
+            <label className="block text-sm font-medium text-ink-4 mb-1">{t('Nome da marca', 'Brand name')}</label>
             <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder={t('Minha Marca', 'My Brand')} className={input} />
           </div>
           {message && <p className="text-xs text-emerald-400">{message}</p>}
@@ -57,17 +57,17 @@ export default function Configuracoes() {
           </button>
         </form>
 
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-3">
-          <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Idioma da interface', 'Interface language')}</h3>
+        <div className="bg-card rounded-xl border border-white/[0.06] p-6 space-y-3">
+          <h3 className="text-sm font-semibold text-ink">{t('Idioma da interface', 'Interface language')}</h3>
           <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} className={input}>
             <option value="pt">Português (Brasil)</option>
             <option value="en">English (US)</option>
           </select>
         </div>
 
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-3">
-          <h3 className="text-sm font-semibold text-[#e2e2e8]">{t('Privacidade e dados', 'Privacy & data')}</h3>
-          <p className="text-xs text-[#666]">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-6 space-y-3">
+          <h3 className="text-sm font-semibold text-ink">{t('Privacidade e dados', 'Privacy & data')}</h3>
+          <p className="text-xs text-ink-4">
             {t(
               'Para revogar o acesso às suas contas da Meta, use Desconectar em Conexões Meta. Para excluir todos os dados da sua conta, siga as instruções da página de Exclusão de Dados.',
               'To revoke access to your Meta accounts, use Disconnect on Meta Connections. To delete all data in your account, follow the instructions on the Data Deletion page.',
@@ -83,7 +83,7 @@ export default function Configuracoes() {
         </div>
 
         <div className="pt-2">
-          <p className="text-xs text-[#444]">{t('Versão', 'Version')}: 1.0.0</p>
+          <p className="text-xs text-ink-5">{t('Versão', 'Version')}: 1.0.0</p>
         </div>
       </div>
     </div>

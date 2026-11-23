@@ -96,7 +96,7 @@ A lista completa está em `backend/.env.example`. As principais:
 | `WHATSAPP_CONFIG_ID` | Configuração do Cadastro Incorporado |
 | `IG_APP_ID`, `IG_APP_SECRET` | Login do Instagram |
 | `APP_URL`, `PUBLIC_BASE_URL`, `CORS_ORIGINS` | Endereços públicos |
-| `SUPER_ADMIN_EMAILS` | Quem pode bloquear módulos de qualquer conta |
+| `SUPER_ADMIN_EMAILS` | Quem aprova cadastros e bloqueia módulos de qualquer conta |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Armazenamento de mídia dos posts |
 | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Pagamentos |
 | `RESEND_API_KEY` | E-mails |
@@ -121,6 +121,12 @@ Todos os webhooks chegam em `POST /api/v1/webhook/meta`, com a assinatura valida
 | `page` | `leadgen`, `leadgen_update` |
 
 Cada cliente conecta a própria conta. Os tokens ficam criptografados em `meta_connections`.
+
+## Aprovação de cadastro
+
+Conta criada pelo cadastro ou pelo checkout nasce com `accounts.approval_status = 'pending'`. Ela não recebe token, e qualquer token antigo é recusado com 403 (`pending_approval` ou `account_rejected`) até o super admin aprovar em **Super Admin**. Os super admins recebem um e-mail a cada cadastro novo, e o cliente recebe outro quando é aprovado.
+
+Contas que já existiam ficaram aprovadas. As empresas-filhas criadas por uma agência seguem a aprovação da conta-mãe.
 
 ## Isolamento entre clientes
 

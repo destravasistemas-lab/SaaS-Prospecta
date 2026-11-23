@@ -134,7 +134,7 @@ export default function AIConfig() {
     } catch { setError(t('Erro ao carregar os trechos.', 'Failed to load the chunks.')) }
   }
 
-  if (!cfg) return <div className="text-[#555] text-sm">{error || t('Carregando…', 'Loading…')}</div>
+  if (!cfg) return <div className="text-ink-4 text-sm">{error || t('Carregando…', 'Loading…')}</div>
 
   const pct = Math.min(100, Math.round((cfg.tokens_used_month / Math.max(1, cfg.token_limit_monthly)) * 100))
   const nearLimit = pct >= 80
@@ -142,10 +142,10 @@ export default function AIConfig() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#e2e2e8] mb-2 flex items-center gap-2">
+      <h2 className="text-2xl font-bold text-ink mb-2 flex items-center gap-2">
         <Bot size={22} className="text-indigo-400" /> {t('Assistente de IA', 'AI Assistant')}
       </h2>
-      <p className="text-[#555] text-sm mb-3">
+      <p className="text-ink-4 text-sm mb-3">
         {t(
           'Gemini 2.5 Flash + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo; se ficar indisponível, a conversa vai automaticamente para a fila humana.',
           'Gemini 2.5 Flash + your knowledge base (RAG). The AI replies on WhatsApp when the conversation bot is on; if it is unavailable, the conversation automatically goes to the human queue.',
@@ -165,12 +165,12 @@ export default function AIConfig() {
       <div className="grid xl:grid-cols-2 gap-6 items-start">
         {/* ---------- Coluna 1: configuração ---------- */}
         <div className="space-y-6">
-          <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6 space-y-5">
+          <div className="bg-card rounded-xl border border-white/[0.06] p-6 space-y-5">
             {/* Toggle global */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-[#e2e2e8] font-semibold text-sm">{t('IA ativa', 'AI enabled')}</h3>
-                <p className="text-[#555] text-xs mt-0.5">{t('Desligada, as conversas seguem para os bots por palavra-chave e a fila humana.', 'When off, conversations go to keyword bots and the human queue.')}</p>
+                <h3 className="text-ink font-semibold text-sm">{t('IA ativa', 'AI enabled')}</h3>
+                <p className="text-ink-4 text-xs mt-0.5">{t('Desligada, as conversas seguem para os bots por palavra-chave e a fila humana.', 'When off, conversations go to keyword bots and the human queue.')}</p>
               </div>
               <button
                 onClick={() => save({ enabled: !cfg.enabled })}
@@ -183,7 +183,7 @@ export default function AIConfig() {
 
             {/* API key */}
             <div>
-              <label className="block text-xs font-medium text-[#666] mb-1 flex items-center gap-1.5">
+              <label className="block text-xs font-medium text-ink-4 mb-1 flex items-center gap-1.5">
                 <KeyRound size={12} /> {t('API key da Gemini', 'Gemini API key')} {cfg.has_api_key && <span className="text-green-400">• {t('configurada', 'configured')}</span>}
               </label>
               <div className="flex gap-2">
@@ -192,7 +192,7 @@ export default function AIConfig() {
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={cfg.has_api_key ? t('•••••••••••• (só preencha para trocar)', '•••••••••••• (fill in only to change)') : t('Cole a API key do Google AI Studio', 'Paste your Google AI Studio API key')}
-                  className="flex-1 px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg text-sm focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="flex-1 px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
                 <button
                   onClick={() => apiKey.trim() && save({ gemini_api_key: apiKey.trim() })}
@@ -206,43 +206,43 @@ export default function AIConfig() {
 
             {/* System prompt */}
             <div>
-              <label className="block text-xs font-medium text-[#666] mb-1">
+              <label className="block text-xs font-medium text-ink-4 mb-1">
                 {t('Instruções do assistente (system prompt)', 'Assistant instructions (system prompt)')}
               </label>
               <textarea
                 value={cfg.system_prompt}
                 onChange={(e) => setCfg({ ...cfg, system_prompt: e.target.value })}
                 rows={6}
-                className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg text-sm resize-none focus:border-indigo-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm resize-none focus:border-indigo-500 focus:outline-none"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1">{t('Temperatura', 'Temperature')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1">{t('Temperatura', 'Temperature')}</label>
                 <input
                   type="number" step="0.1" min="0" max="2"
                   value={cfg.temperature}
                   onChange={(e) => setCfg({ ...cfg, temperature: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1">{t('Top-K do RAG', 'RAG Top-K')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1">{t('Top-K do RAG', 'RAG Top-K')}</label>
                 <input
                   type="number" min="1" max="10"
                   value={cfg.rag_top_k}
                   onChange={(e) => setCfg({ ...cfg, rag_top_k: parseInt(e.target.value) || 4 })}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1" title={t('Anti-loop: acima disso a IA ignora o remetente por 1 min', 'Anti-loop: above this the AI ignores the sender for 1 min')}>{t('Msgs/min por contato', 'Msgs/min per contact')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1" title={t('Anti-loop: acima disso a IA ignora o remetente por 1 min', 'Anti-loop: above this the AI ignores the sender for 1 min')}>{t('Msgs/min por contato', 'Msgs/min per contact')}</label>
                 <input
                   type="number" min="1" max="200"
                   value={cfg.sender_rate_limit_per_min}
                   onChange={(e) => setCfg({ ...cfg, sender_rate_limit_per_min: parseInt(e.target.value) || 20 })}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -262,9 +262,9 @@ export default function AIConfig() {
           </div>
 
           {/* Uso de tokens */}
-          <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
+          <div className="bg-card rounded-xl border border-white/[0.06] p-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[#e2e2e8] font-semibold text-sm">{t('Uso de tokens (mês)', 'Token usage (month)')}</h3>
+              <h3 className="text-ink font-semibold text-sm">{t('Uso de tokens (mês)', 'Token usage (month)')}</h3>
               <button
                 onClick={() => navigate('/pricing')}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 rounded-lg text-xs font-semibold"
@@ -274,7 +274,7 @@ export default function AIConfig() {
             </div>
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-xl font-bold text-white">{cfg.tokens_used_month.toLocaleString()}</span>
-              <span className="text-[#555] text-sm">/ {cfg.token_limit_monthly.toLocaleString()} tokens</span>
+              <span className="text-ink-4 text-sm">/ {cfg.token_limit_monthly.toLocaleString()} tokens</span>
               {nearLimit && (
                 <span className="flex items-center gap-1 text-amber-400 text-xs font-medium">
                   <AlertTriangle size={12} /> {pct}% {t('da cota', 'of quota')}
@@ -290,8 +290,8 @@ export default function AIConfig() {
 
             {usage && (
               <>
-                <p className="text-[#555] text-xs mb-2">
-                  {t('Últimos 14 dias · taxa de transferência para humano', 'Last 14 days · human handoff rate')}: <b className={usage.fallback_rate > 10 ? 'text-amber-400' : 'text-[#8a8a9e]'}>{usage.fallback_rate}%</b>
+                <p className="text-ink-4 text-xs mb-2">
+                  {t('Últimos 14 dias · taxa de transferência para humano', 'Last 14 days · human handoff rate')}: <b className={usage.fallback_rate > 10 ? 'text-amber-400' : 'text-ink-3'}>{usage.fallback_rate}%</b>
                 </p>
                 <div className="flex items-end gap-1 h-16">
                   {usage.series.map((p) => (
@@ -309,16 +309,16 @@ export default function AIConfig() {
         </div>
 
         {/* ---------- Coluna 2: base de conhecimento ---------- */}
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
-          <h3 className="text-[#e2e2e8] font-semibold text-sm mb-1 flex items-center gap-2">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+          <h3 className="text-ink font-semibold text-sm mb-1 flex items-center gap-2">
             <FileText size={15} className="text-emerald-400" /> {t('Base de conhecimento (RAG)', 'Knowledge base (RAG)')}
           </h3>
-          <p className="text-[#555] text-xs mb-4">
+          <p className="text-ink-4 text-xs mb-4">
             {t('Envie PDFs (catálogo, FAQ, políticas). O conteúdo vira contexto e a IA responde com as informações do seu negócio.', 'Upload PDFs (catalog, FAQ, policies). The content becomes context and the AI answers with your business information.')}
           </p>
 
           <label className={`flex items-center justify-center gap-2 w-full border border-dashed rounded-lg px-3 py-6 text-sm cursor-pointer transition-colors mb-4 ${
-            uploading ? 'border-indigo-500/40 text-indigo-300' : 'border-white/[0.12] text-[#888] hover:border-indigo-500/40 hover:text-[#e2e2e8]'
+            uploading ? 'border-indigo-500/40 text-indigo-300' : 'border-white/[0.12] text-ink-3 hover:border-indigo-500/40 hover:text-ink'
           }`}>
             <input type="file" accept="application/pdf" onChange={handleUpload} disabled={uploading} className="hidden" />
             <Upload size={16} />
@@ -326,33 +326,33 @@ export default function AIConfig() {
           </label>
 
           {docs.length === 0 ? (
-            <p className="text-[#555] text-sm text-center py-4">{t('Nenhum documento indexado ainda.', 'No documents indexed yet.')}</p>
+            <p className="text-ink-4 text-sm text-center py-4">{t('Nenhum documento indexado ainda.', 'No documents indexed yet.')}</p>
           ) : (
             <div className="space-y-2.5">
               {docs.map((d) => (
-                <div key={d.id} className="bg-[#0f0820] border border-white/[0.05] rounded-lg p-3 flex items-center gap-3">
-                  <FileText size={16} className="text-[#555] shrink-0" />
+                <div key={d.id} className="bg-field border border-white/[0.05] rounded-lg p-3 flex items-center gap-3">
+                  <FileText size={16} className="text-ink-4 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[#e2e2e8] text-sm truncate">{d.filename}</p>
+                    <p className="text-ink text-sm truncate">{d.filename}</p>
                     <p className="text-xs mt-0.5">
-                      <span className={statusLabel[d.status]?.color || 'text-[#555]'}>{statusLabel[d.status]?.label || d.status}</span>
-                      {d.status === 'ready' && <span className="text-[#555]"> · {d.chunk_count} {t('trechos', 'chunks')}</span>}
+                      <span className={statusLabel[d.status]?.color || 'text-ink-4'}>{statusLabel[d.status]?.label || d.status}</span>
+                      {d.status === 'ready' && <span className="text-ink-4"> · {d.chunk_count} {t('trechos', 'chunks')}</span>}
                       {d.error && <span className="text-red-400"> · {d.error}</span>}
                     </p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     {d.status === 'ready' && (
                       <button onClick={() => viewChunks(d)} title={t('Ver trechos', 'View chunks')}
-                        className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[#888] flex items-center justify-center">
+                        className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-ink-3 flex items-center justify-center">
                         <Eye size={14} />
                       </button>
                     )}
                     <button onClick={() => reindexDoc(d.id)} title={t('Reindexar', 'Reindex')}
-                      className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-indigo-500/20 text-[#888] hover:text-indigo-400 flex items-center justify-center">
+                      className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-indigo-500/20 text-ink-3 hover:text-indigo-400 flex items-center justify-center">
                       <RefreshCw size={14} />
                     </button>
                     <button onClick={() => deleteDoc(d.id)} title={t('Remover', 'Remove')}
-                      className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-red-500/20 text-[#888] hover:text-red-400 flex items-center justify-center">
+                      className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-red-500/20 text-ink-3 hover:text-red-400 flex items-center justify-center">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -366,14 +366,14 @@ export default function AIConfig() {
       {/* Modal: chunks do documento */}
       {chunksOf && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4 py-8" onClick={() => setChunksOf(null)}>
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold text-white mb-1">{chunksOf.doc.filename}</h3>
-            <p className="text-[#555] text-xs mb-4">{chunksOf.chunks.length} {t('trechos indexados', 'indexed chunks')}</p>
+            <p className="text-ink-4 text-xs mb-4">{chunksOf.chunks.length} {t('trechos indexados', 'indexed chunks')}</p>
             <div className="space-y-2">
               {chunksOf.chunks.map((c) => (
-                <div key={c.index} className="bg-[#0f0820] border border-white/[0.05] rounded-lg p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#444] mb-1">{t('Trecho', 'Chunk')} {c.index + 1}</p>
-                  <p className="text-[#c0c0d0] text-xs leading-relaxed">{c.content.slice(0, 400)}{c.content.length > 400 ? '…' : ''}</p>
+                <div key={c.index} className="bg-field border border-white/[0.05] rounded-lg p-3">
+                  <p className="text-[10px] uppercase tracking-wider text-ink-5 mb-1">{t('Trecho', 'Chunk')} {c.index + 1}</p>
+                  <p className="text-ink-2 text-xs leading-relaxed">{c.content.slice(0, 400)}{c.content.length > 400 ? '…' : ''}</p>
                 </div>
               ))}
             </div>

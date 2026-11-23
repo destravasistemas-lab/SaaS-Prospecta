@@ -26,6 +26,9 @@ export default function Login() {
   const [signupLoading, setSignupLoading] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
+  // Cadastro em análise ou recusado (vem do login, do cadastro ou do painel via ?status=)
+  const [notice, setNotice] = useState<string | null>(searchParams.get('status'))
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -36,10 +39,18 @@ export default function Login() {
       localStorage.setItem('refresh_token', data.refresh_token)
       localStorage.setItem('user_id', data.user_id)
       localStorage.setItem('tenant_id', data.tenant_id)
-      const redirect = searchParams.get('redirect') || '/app'
-      navigate(redirect)
-    } catch {
-      setError(t('E-mail ou senha inválidos.', 'Invalid email or password.'))
+      // Primeiro acesso depois da aprovação: escolher entre negócio próprio e agência.
+      const step = await api.get('/auth/onboarding/status').then((r) => r.data.onboarding_step).catch(() => 1)
+      navigate(step === 0 ? '/onboarding' : searchParams.get('redirect') || '/app')
+    } catch (err: any) {
+      const code = err?.response?.data?.detail?.code
+      if (code === 'pending_approval' || code === 'account_rejected') {
+        setNotice(code)
+      } else {
+        setError(err?.response?.status === 401
+          ? t('E-mail ou senha inválidos.', 'Invalid email or password.')
+          : apiError(err, t('Não foi possível entrar.', 'Could not sign in.')))
+      }
     } finally {
       setLoading(false)
     }
@@ -62,17 +73,15 @@ export default function Login() {
     }
     setSignupLoading(true)
     try {
-      const { data } = await api.post('/auth/register', {
+      await api.post('/auth/register', {
         brand_name: signupName.trim(),
         username: signupEmail.trim(),
         full_name: signupName.trim(),
         password: signupPassword,
       })
-      localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('refresh_token', data.refresh_token)
-      localStorage.setItem('user_id', data.user_id)
-      localStorage.setItem('tenant_id', data.tenant_id)
-      navigate('/onboarding')
+      setUsername(signupEmail.trim())
+      setTab('login')
+      setNotice('pending_approval')
     } catch (err: any) {
       setSignupError(apiError(err, t('Erro ao criar conta.', 'Failed to create account.')))
     } finally {
@@ -81,7 +90,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0618] flex flex-col items-center justify-center px-5 pt-10 pb-32 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-5 pt-10 pb-32 relative overflow-hidden font-sans">
 
       {/* glows */}
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[320px] bg-violet-500/15 blur-[120px] pointer-events-none" />
@@ -116,6 +125,26 @@ export default function Login() {
             {tab === 'login' ? t('Entre na sua conta para continuar', 'Sign in to your account to continue') : t('Comece grátis, sem cartão de crédito', 'Start free, no credit card required')}
           </p>
         </div>
+
+        {notice === 'pending_approval' && (
+          <div role="status" className="mb-6 rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3.5">
+            <p className="text-sm font-semibold text-amber-200">{t('Cadastro em análise', 'Registration under review')}</p>
+            <p className="text-[13px] text-amber-100/70 mt-1 leading-relaxed">
+              {t(
+                'Recebemos seu cadastro. Assim que ele for aprovado, você recebe um e-mail e já pode entrar com este e-mail e senha.',
+                'We got your registration. Once it is approved you will get an email and can sign in with this email and password.',
+              )}
+            </p>
+          </div>
+        )}
+        {notice === 'account_rejected' && (
+          <div role="alert" className="mb-6 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3.5">
+            <p className="text-sm font-semibold text-red-200">{t('Cadastro não aprovado', 'Registration not approved')}</p>
+            <p className="text-[13px] text-red-100/70 mt-1">
+              {t('Fale com o suporte:', 'Contact support:')} {BRANDING.supportEmail}
+            </p>
+          </div>
+        )}
 
         {/* tabs */}
         <div className="flex border-b border-white/[0.07] mb-6">

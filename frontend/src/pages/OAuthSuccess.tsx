@@ -24,16 +24,16 @@ export default function OAuthSuccess() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0c0618] flex flex-col items-center justify-center gap-4 px-4 text-center">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center gap-4 px-4 text-center">
       {error ? (
         <>
           <p className="text-white font-semibold">{t('A conexão não foi concluída', 'The connection was not completed')}</p>
-          <p className="text-sm text-[#94a3b8] max-w-sm">{error}</p>
+          <p className="text-sm text-ink-3 max-w-sm">{error}</p>
         </>
       ) : (
         <>
           <p className="text-white font-semibold">{t('Conta conectada!', 'Account connected!')}</p>
-          <p className="text-sm text-[#94a3b8]">{t('Você já pode fechar esta janela.', 'You can close this window now.')}</p>
+          <p className="text-sm text-ink-3">{t('Você já pode fechar esta janela.', 'You can close this window now.')}</p>
         </>
       )}
       <a href="/app/conexao" className="text-sm text-violet-400 underline">

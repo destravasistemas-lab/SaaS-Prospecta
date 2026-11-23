@@ -61,6 +61,7 @@ export default function App() {
           <Route path="/app/leads" element={<Leads />} />
           <Route path="/app/configuracoes" element={<Configuracoes />} />
           <Route path="/app/guia" element={<Guide />} />
+          <Route path="/app/planos" element={<Pricing embedded />} />
           <Route path="/app/clientes" element={<Clients />} />
           <Route path="/app/super-admin" element={<SuperAdmin />} />
           <Route path="/app/marketing" element={<Marketing />} />

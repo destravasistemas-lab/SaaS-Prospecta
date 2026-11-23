@@ -75,22 +75,22 @@ export function LeadCallsModal({ leadId, leadName, onClose }: { leadId: string; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-      <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[80vh] flex flex-col">
+      <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="text-base font-semibold text-white flex items-center gap-2 min-w-0">
             <Phone size={16} className="text-indigo-400 shrink-0" />
             <span className="truncate">{t('Chamadas', 'Calls')} · {leadName}</span>
           </h3>
-          <button onClick={onClose} className="text-[#444] hover:text-[#888] transition-colors"><X size={18} /></button>
+          <button onClick={onClose} className="text-ink-5 hover:text-ink-3 transition-colors"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto space-y-2">
           {error && <p className="text-xs text-red-400">{error}</p>}
-          {!error && calls === null && <p className="text-xs text-[#666]">{t('Carregando…', 'Loading…')}</p>}
-          {calls?.length === 0 && <p className="text-xs text-[#666]">{t('Nenhuma chamada registrada.', 'No calls recorded.')}</p>}
+          {!error && calls === null && <p className="text-xs text-ink-4">{t('Carregando…', 'Loading…')}</p>}
+          {calls?.length === 0 && <p className="text-xs text-ink-4">{t('Nenhuma chamada registrada.', 'No calls recorded.')}</p>}
           {calls?.map((call) => (
             <div key={call.id} className="flex items-center justify-between gap-3 bg-white/[0.03] rounded-lg px-3 py-2">
               <CallLogLine call={call} createdAt={call.created_at} />
-              <span className="text-[11px] text-[#666] shrink-0">{new Date(call.created_at).toLocaleString(locale)}</span>
+              <span className="text-[11px] text-ink-4 shrink-0">{new Date(call.created_at).toLocaleString(locale)}</span>
             </div>
           ))}
         </div>

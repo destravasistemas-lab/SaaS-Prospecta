@@ -19,19 +19,19 @@ export default function Privacy() {
       </LegalSection>
 
       <LegalSection title={t('2. Dados que coletamos', '2. Data we collect')}>
-        <p className="font-medium text-[#cbd5e1]">{t('Dados da sua conta na plataforma', 'Your platform account data')}</p>
+        <p className="font-medium text-ink-2">{t('Dados da sua conta na plataforma', 'Your platform account data')}</p>
         <ul className="list-disc list-inside space-y-1">
           <li>{t('Nome, e-mail, nome da empresa e senha (armazenada apenas como hash bcrypt).', 'Name, email, company name and password (stored only as a bcrypt hash).')}</li>
           <li>{t('Dados de assinatura e pagamento processados pelo Asaas (não armazenamos dados de cartão).', 'Subscription and payment data processed by Asaas (we do not store card data).')}</li>
         </ul>
-        <p className="font-medium text-[#cbd5e1]">{t('Dados da Plataforma Meta (somente com sua autorização)', 'Meta Platform Data (only with your authorization)')}</p>
+        <p className="font-medium text-ink-2">{t('Dados da Plataforma Meta (somente com sua autorização)', 'Meta Platform Data (only with your authorization)')}</p>
         <ul className="list-disc list-inside space-y-1">
           <li>{t('Tokens de acesso da Meta — criptografados em repouso (Fernet/AES-128).', 'Meta access tokens — encrypted at rest (Fernet/AES-128).')}</li>
           <li>{t('WhatsApp: ID da conta WhatsApp Business (WABA), ID e número de telefone, templates de mensagem e mensagens trocadas com seus clientes.', 'WhatsApp: WhatsApp Business Account (WABA) ID, phone number ID and display number, message templates and messages exchanged with your customers.')}</li>
           <li>{t('Instagram: ID e @ da conta profissional, mídias publicadas e métricas (insights), comentários nas suas publicações e mensagens do Direct.', 'Instagram: professional account ID and username, published media and insights, comments on your posts and Direct messages.')}</li>
           <li>{t('Meta Ads: IDs da conta de anúncios e da Página, campanhas, conjuntos, anúncios, métricas e leads de formulários de Lead Ads.', 'Meta Ads: ad account and Page IDs, campaigns, ad sets, ads, metrics and leads from Lead Ads forms.')}</li>
         </ul>
-        <p className="font-medium text-[#cbd5e1]">{t('Dados dos seus clientes (contatos)', "Your customers' data (contacts)")}</p>
+        <p className="font-medium text-ink-2">{t('Dados dos seus clientes (contatos)', "Your customers' data (contacts)")}</p>
         <ul className="list-disc list-inside space-y-1">
           <li>{t('Nome público, @ do Instagram, telefone do WhatsApp, e-mail (quando informado), conteúdo das mensagens e registro de consentimento (opt-in/opt-out) para WhatsApp.', 'Public name, Instagram username, WhatsApp phone number, email (when provided), message content and WhatsApp consent record (opt-in/opt-out).')}</li>
         </ul>

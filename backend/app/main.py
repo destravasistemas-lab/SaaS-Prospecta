@@ -113,6 +113,10 @@ _MIGRATIONS = [
 
     # Origem dos leads do webhook leadgen (enum nativo: create_all não altera tipo existente)
     "ALTER TYPE lead_source ADD VALUE IF NOT EXISTS 'LEAD_ADS'",
+
+    # Aprovação de cadastro pelo super admin (contas existentes ficam aprovadas)
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NOT NULL DEFAULT 'approved'",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ",
 ]
 
 

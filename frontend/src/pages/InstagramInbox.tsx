@@ -238,9 +238,9 @@ export default function InstagramInbox() {
   return (
     <div className="flex gap-4 h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] lg:h-[calc(100vh-4rem)]">
       {/* ---------- Coluna esquerda: filas + lista (no celular, some com a conversa aberta) ---------- */}
-      <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
+      <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-card border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
         <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
-          <h1 className="text-sm font-semibold text-[#e2e2e8] flex items-center gap-2">
+          <h1 className="text-sm font-semibold text-ink flex items-center gap-2">
             <InstagramIcon size={16} className="text-pink-400" />
             Instagram Direct
           </h1>
@@ -256,13 +256,13 @@ export default function InstagramInbox() {
                 key={q.id}
                 onClick={() => setQueue(q.id)}
                 className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-[11px] font-medium transition-colors ${
-                  active ? 'bg-white/[0.06] text-[#e2e2e8]' : 'text-[#5a5a6e] hover:bg-white/[0.03]'
+                  active ? 'bg-white/[0.06] text-ink' : 'text-ink-4 hover:bg-white/[0.03]'
                 }`}
               >
                 <Icon size={15} className={active ? q.color : ''} />
                 <span className="flex items-center gap-1">
                   {t(q.pt, q.en)}
-                  <span className={`px-1 rounded ${active ? 'bg-white/10 text-[#c0c0d0]' : 'text-[#444]'}`}>
+                  <span className={`px-1 rounded ${active ? 'bg-white/10 text-ink-2' : 'text-ink-5'}`}>
                     {counts[q.id]}
                   </span>
                 </span>
@@ -274,7 +274,7 @@ export default function InstagramInbox() {
         {/* Lista de conversas */}
         <div className="flex-1 overflow-y-auto">
           {visible.length === 0 ? (
-            <div className="p-6 text-center text-[#4a4a5a] text-xs mt-8">
+            <div className="p-6 text-center text-ink-5 text-xs mt-8">
               {t('Nenhuma conversa nesta fila.', 'No conversations in this queue.')}
             </div>
           ) : (
@@ -288,14 +288,14 @@ export default function InstagramInbox() {
                     isSel ? 'bg-pink-600/10' : 'hover:bg-white/[0.03]'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-ink-3 shrink-0">
                     {(c.customer_name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-[#e2e2e8] truncate">
+                    <p className="text-[13px] font-medium text-ink truncate">
                       {c.customer_name || t('Sem nome', 'No name')}
                     </p>
-                    <p className="text-[11px] text-[#5a5a6e] truncate">{statusText(c.atendimento_status)}</p>
+                    <p className="text-[11px] text-ink-4 truncate">{statusText(c.atendimento_status)}</p>
                   </div>
                   {c.unread_count > 0 && (
                     <span className="bg-pink-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shrink-0">
@@ -310,14 +310,14 @@ export default function InstagramInbox() {
       </div>
 
       {/* ---------- Coluna direita: thread ---------- */}
-      <div className={`flex-1 flex flex-col bg-[#130b25] border border-white/[0.06] rounded-xl overflow-hidden ${selected ? '' : 'max-lg:hidden'}`}>
+      <div className={`flex-1 flex flex-col bg-card border border-white/[0.06] rounded-xl overflow-hidden ${selected ? '' : 'max-lg:hidden'}`}>
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
             <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center mb-4">
               <InstagramIcon size={28} className="text-pink-400/70" />
             </div>
-            <p className="text-[#e2e2e8] font-medium mb-1">{t('Selecione uma conversa', 'Select a conversation')}</p>
-            <p className="text-[#5a5a6e] text-sm max-w-xs">
+            <p className="text-ink font-medium mb-1">{t('Selecione uma conversa', 'Select a conversation')}</p>
+            <p className="text-ink-4 text-sm max-w-xs">
               {t('As conversas aparecem aqui quando alguém manda mensagem no Instagram Direct.', 'Conversations show up here when someone messages you on Instagram Direct.')}
             </p>
             <HelpLink section="instagram-direct" className="mt-3" />
@@ -329,18 +329,18 @@ export default function InstagramInbox() {
               <button
                 onClick={() => setSelectedId(null)}
                 aria-label={t('Voltar para a lista', 'Back to the list')}
-                className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-[#8a8a9e] hover:text-white"
+                className="lg:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-ink-3 hover:text-white"
               >
                 <ArrowLeft size={18} />
               </button>
-              <div className="max-sm:hidden w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-[#8a8a9e] shrink-0">
+              <div className="max-sm:hidden w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-bold text-ink-3 shrink-0">
                 {(selected.customer_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#e2e2e8] truncate">
+                <p className="text-sm font-medium text-ink truncate">
                   {selected.customer_name || t('Sem nome', 'No name')}
                 </p>
-                <p className="text-[11px] text-[#5a5a6e]">{statusText(selected.atendimento_status)}</p>
+                <p className="text-[11px] text-ink-4">{statusText(selected.atendimento_status)}</p>
               </div>
 
               {selected.atendente_id !== myId && (
@@ -360,7 +360,7 @@ export default function InstagramInbox() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
                   selected.bot_active
                     ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                    : 'bg-white/[0.04] border-white/[0.08] text-[#5a5a6e]'
+                    : 'bg-white/[0.04] border-white/[0.08] text-ink-4'
                 }`}
               >
                 <Power size={13} />
@@ -371,9 +371,9 @@ export default function InstagramInbox() {
             {/* Thread */}
             <div ref={threadRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
               {loadingMsgs ? (
-                <p className="text-center text-[#4a4a5a] text-xs mt-8">{t('Carregando…', 'Loading…')}</p>
+                <p className="text-center text-ink-5 text-xs mt-8">{t('Carregando…', 'Loading…')}</p>
               ) : messages.length === 0 ? (
-                <p className="text-center text-[#4a4a5a] text-xs mt-8">{t('Nenhuma mensagem ainda.', 'No messages yet.')}</p>
+                <p className="text-center text-ink-5 text-xs mt-8">{t('Nenhuma mensagem ainda.', 'No messages yet.')}</p>
               ) : (
                 messages.map((m) => {
                   const out = m.direction === 'outbound'
@@ -385,12 +385,12 @@ export default function InstagramInbox() {
                           className={`rounded-2xl px-3.5 py-2 ${
                             out
                               ? 'bg-pink-600 text-white rounded-br-sm'
-                              : 'bg-white/[0.06] text-[#e2e2e8] rounded-bl-sm'
+                              : 'bg-white/[0.06] text-ink rounded-bl-sm'
                           }`}
                         >
                           {m.context_text && (
                             <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 text-[11px] ${
-                              out ? 'bg-white/10 border-white/40 text-white/70' : 'bg-black/20 border-pink-400/60 text-[#8a8a9e]'
+                              out ? 'bg-white/10 border-white/40 text-white/70' : 'bg-black/20 border-pink-400/60 text-ink-3'
                             }`}>
                               <p className="truncate">{m.context_text}</p>
                             </div>
@@ -399,14 +399,14 @@ export default function InstagramInbox() {
                           {m.text && (
                             <p className="text-[13px] whitespace-pre-wrap break-words">{m.text}</p>
                           )}
-                          <div className={`flex items-center gap-1 justify-end mt-0.5 ${out ? 'text-white/60' : 'text-[#5a5a6e]'}`}>
+                          <div className={`flex items-center gap-1 justify-end mt-0.5 ${out ? 'text-white/60' : 'text-ink-4'}`}>
                             <span className="text-[10px]">{fmtTime(m.created_at)}</span>
                             {out && <MsgStatus status={m.status} error={m.payload?.error} />}
                           </div>
                         </div>
                         {reaction && (
                           <div className={`absolute -bottom-3 ${out ? 'right-2' : 'left-2'}`}>
-                            <span className="bg-[#20153a] border border-white/[0.1] rounded-full px-1.5 py-px text-[11px] shadow">
+                            <span className="bg-raised border border-white/[0.1] rounded-full px-1.5 py-px text-[11px] shadow">
                               {reaction}
                             </span>
                           </div>
@@ -442,7 +442,7 @@ export default function InstagramInbox() {
                   rows={1}
                   disabled={windowClosed}
                   placeholder={windowClosed ? t('Janela de 24h fechada', '24h window closed') : t('Escreva uma mensagem…  (Enter envia, Shift+Enter quebra linha)', 'Type a message…  (Enter sends, Shift+Enter for a new line)')}
-                  className="flex-1 min-w-0 resize-none max-h-32 px-3.5 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-[#3a3a4a] disabled:opacity-50"
+                  className="flex-1 min-w-0 resize-none max-h-32 px-3.5 py-2.5 bg-field border border-white/[0.08] text-ink text-[13px] rounded-xl outline-none focus:border-pink-500/60 placeholder-ink-5 disabled:opacity-50"
                 />
                 <button
                   onClick={sendReply}

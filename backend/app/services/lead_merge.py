@@ -107,12 +107,13 @@ async def merge_leads(survivor: Lead, absorbed: Lead, db: AsyncSession) -> Lead:
     return survivor
 
 
-async def _auto_merge_by_column(lead: Lead, column, value: str, db: AsyncSession) -> Lead:
-    """Funde `lead` com qualquer outro da conta cujo `column` == value (mais antigo sobrevive)."""
+async def _auto_merge_by_column(lead: Lead, column, value: str | list[str], db: AsyncSession) -> Lead:
+    """Funde `lead` com qualquer outro da conta cujo `column` está em value (mais antigo sobrevive)."""
+    values = value if isinstance(value, list) else [value]
     result = await db.execute(
         select(Lead).where(
             Lead.account_id == lead.account_id,
-            column == value,
+            column.in_(values),
             Lead.id != lead.id,
         )
     )
@@ -135,7 +136,8 @@ async def auto_merge_by_phone(lead: Lead, db: AsyncSession) -> Lead:
     """
     if not lead.phone:
         return lead
-    return await _auto_merge_by_column(lead, Lead.phone, lead.phone, db)
+    from app.core.phone import phone_variants
+    return await _auto_merge_by_column(lead, Lead.phone, phone_variants(lead.phone), db)
 
 
 async def auto_merge_by_email(lead: Lead, db: AsyncSession) -> Lead:

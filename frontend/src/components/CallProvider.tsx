@@ -365,21 +365,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
           <audio ref={audioRef} autoPlay playsInline className="hidden" />
           <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 w-80 max-w-[calc(100vw-2rem)]">
             {error && (
-              <div role="alert" className="flex items-start gap-2 bg-[#20153a] border border-red-500/30 rounded-xl p-3 shadow-xl">
+              <div role="alert" className="flex items-start gap-2 bg-raised border border-red-500/30 rounded-xl p-3 shadow-xl">
                 <p className="flex-1 text-xs text-red-300 leading-relaxed">{error}</p>
-                <button onClick={dismissError} title={t('Fechar', 'Close')} className="text-[#666] hover:text-white">
+                <button onClick={dismissError} title={t('Fechar', 'Close')} className="text-ink-4 hover:text-white">
                   <X size={14} />
                 </button>
               </div>
             )}
             {active && <ActiveCallCard call={active} onHangUp={hangUp} onToggleMute={toggleMute} />}
             {floating.map((call) => (
-              <div key={call.id} className="bg-[#20153a] border border-emerald-500/30 rounded-xl p-3 shadow-xl">
+              <div key={call.id} className="bg-raised border border-emerald-500/30 rounded-xl p-3 shadow-xl">
                 <div className="flex items-center gap-2 mb-2.5">
                   <Phone size={15} className="text-emerald-400 animate-pulse shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-medium text-white truncate">{call.contact_name || call.contact_wa_id}</p>
-                    <p className="text-[11px] text-[#8a8a9e]">{t('Chamada recebida no WhatsApp', 'Incoming WhatsApp call')}</p>
+                    <p className="text-[11px] text-ink-3">{t('Chamada recebida no WhatsApp', 'Incoming WhatsApp call')}</p>
                   </div>
                   <Link to={`/app/whatsapp?conv=${call.conversation_id}`} className="text-[11px] text-violet-400 hover:text-violet-300 shrink-0">
                     {t('Abrir conversa', 'Open chat')}
@@ -407,12 +407,12 @@ function ActiveCallCard({ call, onHangUp, onToggleMute }: { call: ActiveCall; on
   const clock = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`
 
   return (
-    <div className="bg-[#20153a] border border-indigo-500/30 rounded-xl p-3 shadow-xl">
+    <div className="bg-raised border border-indigo-500/30 rounded-xl p-3 shadow-xl">
       <div className="flex items-center gap-2 mb-2.5">
         <Phone size={15} className="text-indigo-400 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-white truncate">{call.contact_name}</p>
-          <p className="text-[11px] text-[#8a8a9e]">
+          <p className="text-[11px] text-ink-3">
             {call.phase === 'connecting' ? t('Conectando o áudio…', 'Connecting audio…') : clock}
           </p>
         </div>
@@ -424,7 +424,7 @@ function ActiveCallCard({ call, onHangUp, onToggleMute }: { call: ActiveCall; on
         <button
           onClick={onToggleMute}
           disabled={call.phase !== 'in_call'}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-40 text-[#e2e2e8] text-xs font-medium transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-40 text-ink text-xs font-medium transition-colors"
         >
           {call.muted ? <MicOff size={13} /> : <Mic size={13} />}
           {call.muted ? t('Ativar microfone', 'Unmute') : t('Mudo', 'Mute')}

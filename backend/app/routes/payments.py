@@ -19,7 +19,7 @@ from app.core.tenant_security import (
     require_tenant_owner,
     AuditLog
 )
-from app.models.account import Account
+from app.models.account import Account, APPROVAL_PENDING
 from app.models.user import User
 from app.models.subscription import Subscription, SubscriptionStatus, SubscriptionPlan
 from app.schemas.subscription import (
@@ -247,6 +247,7 @@ async def public_checkout(
             customer_email=data.email,
             customer_name=data.name,
             is_active=False,
+            approval_status=APPROVAL_PENDING,
         )
         db.add(account)
         await db.flush()

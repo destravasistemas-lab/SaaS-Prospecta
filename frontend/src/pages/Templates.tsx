@@ -186,11 +186,11 @@ export default function Templates() {
       {/* Header */}
       <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-ink flex items-center gap-2">
             <FileText size={20} className="text-emerald-400" />
             {t('Templates de WhatsApp', 'WhatsApp Templates')}
           </h1>
-          <p className="text-[#555] text-sm mt-0.5">
+          <p className="text-ink-4 text-sm mt-0.5">
             {t('Mensagens aprovadas pela Meta para iniciar conversas ou falar fora da janela de 24h (somente com opt-in).', 'Meta-approved messages to start conversations or talk outside the 24h window (opt-in contacts only).')}
           </p>
           <HelpLink section="templates" className="mt-1" />
@@ -200,7 +200,7 @@ export default function Templates() {
             <button
               onClick={sync}
               disabled={syncing}
-              className="flex items-center gap-2 px-3 py-2 border border-white/[0.08] text-[#c0c0d0] hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 border border-white/[0.08] text-ink-2 hover:text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
               {t('Sincronizar', 'Sync')}
@@ -217,24 +217,24 @@ export default function Templates() {
       </div>
 
       {/* Custo estimado do mês */}
-      <div className="bg-[#170e2c] border border-white/[0.06] rounded-xl p-4 mb-6">
+      <div className="bg-card border border-white/[0.06] rounded-xl p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-[#888]">{t('Custo estimado do mês (WhatsApp) — valores de referência; a cobrança é feita pela Meta', 'Estimated cost this month (WhatsApp) — reference values; billing is done by Meta')}</p>
-          <p className="text-lg font-semibold text-[#e2e2e8]">{brl(costs?.total ?? 0)}</p>
+          <p className="text-xs font-medium text-ink-3">{t('Custo estimado do mês (WhatsApp) — valores de referência; a cobrança é feita pela Meta', 'Estimated cost this month (WhatsApp) — reference values; billing is done by Meta')}</p>
+          <p className="text-lg font-semibold text-ink">{brl(costs?.total ?? 0)}</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {(['UTILITY', 'MARKETING', 'AUTHENTICATION'] as const).map((key) => {
             const c = CATEGORIES[key]
             const b = costs?.breakdown[key.toLowerCase()]
             return (
-              <div key={key} className="bg-[#0f0820] border border-white/[0.05] rounded-lg p-3">
+              <div key={key} className="bg-field border border-white/[0.05] rounded-lg p-3">
                 <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded border w-fit ${c.badge}`}>{catLabel(c)}</p>
-                <p className="text-sm font-semibold text-[#e2e2e8] mt-2 leading-none">
-                  {brl(c.cost)}<span className="text-[10px] text-[#444] font-normal"> {t('/mensagem', '/message')}</span>
+                <p className="text-sm font-semibold text-ink mt-2 leading-none">
+                  {brl(c.cost)}<span className="text-[10px] text-ink-5 font-normal"> {t('/mensagem', '/message')}</span>
                 </p>
                 {b && (
-                  <p className="text-[11px] text-[#666] mt-1.5">
-                    {b.count} {t('mensagens', 'messages')} · <span className="text-[#c0c0d0]">{brl(b.subtotal)}</span>
+                  <p className="text-[11px] text-ink-4 mt-1.5">
+                    {b.count} {t('mensagens', 'messages')} · <span className="text-ink-2">{brl(b.subtotal)}</span>
                   </p>
                 )}
               </div>
@@ -245,12 +245,12 @@ export default function Templates() {
 
       {/* Estados */}
       {noConnection ? (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-12 text-center">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-12 text-center">
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <AlertCircle size={24} className="text-amber-400" />
           </div>
-          <h3 className="text-base font-semibold text-[#e2e2e8] mb-2">{t('Nenhum WhatsApp conectado', 'No WhatsApp connected')}</h3>
-          <p className="text-[#555] text-sm max-w-sm mx-auto mb-5">
+          <h3 className="text-base font-semibold text-ink mb-2">{t('Nenhum WhatsApp conectado', 'No WhatsApp connected')}</h3>
+          <p className="text-ink-4 text-sm max-w-sm mx-auto mb-5">
             {t('Conecte um número WhatsApp Business para criar e gerenciar templates.', 'Connect a WhatsApp Business number to create and manage templates.')}
           </p>
           <a
@@ -262,14 +262,14 @@ export default function Templates() {
           </a>
         </div>
       ) : loading ? (
-        <p className="text-center text-[#555] text-sm py-10">{t('Carregando…', 'Loading…')}</p>
+        <p className="text-center text-ink-4 text-sm py-10">{t('Carregando…', 'Loading…')}</p>
       ) : templates.length === 0 ? (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-12 text-center">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-12 text-center">
           <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
             <FileText size={24} className="text-emerald-400" />
           </div>
-          <h3 className="text-base font-semibold text-[#e2e2e8] mb-2">{t('Nenhum template ainda', 'No templates yet')}</h3>
-          <p className="text-[#555] text-sm max-w-sm mx-auto mb-5">
+          <h3 className="text-base font-semibold text-ink mb-2">{t('Nenhum template ainda', 'No templates yet')}</h3>
+          <p className="text-ink-4 text-sm max-w-sm mx-auto mb-5">
             {t('Crie seu primeiro template ou sincronize os que já existem na Meta.', 'Create your first template or sync the ones that already exist at Meta.')}
           </p>
           <button
@@ -285,16 +285,16 @@ export default function Templates() {
             const cat = tpl.category ? CATEGORIES[tpl.category] : undefined
             const body = tpl.components?.find((c) => c.type === 'BODY')?.text
             return (
-              <div key={tpl.name} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-4 hover:border-white/[0.1] transition-colors">
+              <div key={tpl.name} className="bg-card rounded-xl border border-white/[0.06] p-4 hover:border-white/[0.1] transition-colors">
                 <div className="flex flex-wrap sm:flex-nowrap items-start gap-3">
                   <div className="flex-1 min-w-0 max-sm:basis-full">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="text-sm font-semibold text-[#e2e2e8] break-all">{tpl.name}</h3>
+                      <h3 className="text-sm font-semibold text-ink break-all">{tpl.name}</h3>
                       {cat && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${cat.badge}`}>{catLabel(cat)} · {brl(cat.cost)}</span>}
-                      {tpl.status && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE[tpl.status] ?? 'text-[#555] bg-white/[0.03] border-white/[0.05]'}`}>{tpl.status}</span>}
-                      <span className="text-[10px] text-[#444]">{tpl.language}</span>
+                      {tpl.status && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE[tpl.status] ?? 'text-ink-4 bg-white/[0.03] border-white/[0.05]'}`}>{tpl.status}</span>}
+                      <span className="text-[10px] text-ink-5">{tpl.language}</span>
                     </div>
-                    {body && <p className="text-xs text-[#666] truncate">{body}</p>}
+                    {body && <p className="text-xs text-ink-4 truncate">{body}</p>}
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button
@@ -324,10 +324,10 @@ export default function Templates() {
       {/* Modal criar */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-semibold text-white">{t('Novo Template', 'New Template')}</h3>
-              <button onClick={() => setShowCreate(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+              <button onClick={() => setShowCreate(false)} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
             </div>
 
             <form onSubmit={handleCreate} className="space-y-4">
@@ -339,28 +339,28 @@ export default function Templates() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Nome (snake_case) *', 'Name (snake_case) *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Nome (snake_case) *', 'Name (snake_case) *')}</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
                   placeholder={t('ex: confirmacao_pedido', 'e.g. order_confirmation')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Idioma *', 'Language *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Idioma *', 'Language *')}</label>
                 <select
                   value={tplLang}
                   onChange={(e) => setTplLang(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 >
                   {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Categoria *', 'Category *')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Categoria *', 'Category *')}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(CATEGORIES).map(([key, c]) => (
                     <button
@@ -370,7 +370,7 @@ export default function Templates() {
                       className={`px-2 py-2 rounded-lg border text-xs font-medium transition-colors ${
                         category === key
                           ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300'
-                          : 'bg-[#0f0820] border-white/[0.08] text-[#666] hover:text-[#c0c0d0]'
+                          : 'bg-field border-white/[0.08] text-ink-4 hover:text-ink-2'
                       }`}
                     >
                       {catLabel(c)}
@@ -381,18 +381,18 @@ export default function Templates() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Cabeçalho (opcional)', 'Header (optional)')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Cabeçalho (opcional)', 'Header (optional)')}</label>
                 <input
                   value={headerText}
                   onChange={(e) => setHeaderText(e.target.value)}
                   placeholder={t('Ex: Seu pedido foi confirmado!', 'E.g. Your order is confirmed!')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-[#666]">{t('Corpo *', 'Body *')}</label>
+                  <label className="text-xs font-medium text-ink-4">{t('Corpo *', 'Body *')}</label>
                   <button type="button" onClick={insertVar} className="text-[11px] text-indigo-400 hover:text-indigo-300">+ {t('variável', 'variable')} {'{{n}}'}</button>
                 </div>
                 <textarea
@@ -400,23 +400,23 @@ export default function Templates() {
                   onChange={(e) => setBodyText(e.target.value)}
                   rows={4}
                   placeholder={t('Olá {{1}}, seu pedido {{2}} está a caminho!', 'Hi {{1}}, your order {{2}} is on its way!')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5 resize-none"
                 />
-                <p className="text-[10px] text-[#444] mt-1">{t('Use {{1}}, {{2}}… para variáveis que você preenche no envio.', 'Use {{1}}, {{2}}… for variables you fill in when sending.')}</p>
+                <p className="text-[10px] text-ink-5 mt-1">{t('Use {{1}}, {{2}}… para variáveis que você preenche no envio.', 'Use {{1}}, {{2}}… for variables you fill in when sending.')}</p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Rodapé (opcional)', 'Footer (optional)')}</label>
+                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Rodapé (opcional)', 'Footer (optional)')}</label>
                 <input
                   value={footerText}
                   onChange={(e) => setFooterText(e.target.value)}
                   placeholder={t('Ex: Equipe Minha Empresa', 'E.g. My Company Team')}
-                  className="w-full px-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                 />
               </div>
 
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors">
+                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors">
                   {t('Cancelar', 'Cancel')}
                 </button>
                 <button type="submit" disabled={creating} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
@@ -431,19 +431,19 @@ export default function Templates() {
       {/* Modal disparo em massa */}
       {bcTpl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white">{t('Disparo em massa', 'Broadcast')}</h3>
-              <button onClick={() => setBcTpl(null)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+              <button onClick={() => setBcTpl(null)} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
             </div>
 
-            <div className="bg-[#0f0820] border border-white/[0.06] rounded-lg p-3 mb-4">
-              <p className="text-[11px] text-[#666]">Template</p>
-              <p className="text-sm font-medium text-[#e2e2e8]">{bcTpl.name}</p>
-              {bodyOf(bcTpl) && <p className="text-xs text-[#555] mt-1">{bodyOf(bcTpl)}</p>}
+            <div className="bg-field border border-white/[0.06] rounded-lg p-3 mb-4">
+              <p className="text-[11px] text-ink-4">Template</p>
+              <p className="text-sm font-medium text-ink">{bcTpl.name}</p>
+              {bodyOf(bcTpl) && <p className="text-xs text-ink-4 mt-1">{bodyOf(bcTpl)}</p>}
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-[#c0c0d0] mb-4">
+            <div className="flex items-center gap-2 text-sm text-ink-2 mb-4">
               <Users size={15} className="text-indigo-400" />
               {audience === null
                 ? t('Calculando público…', 'Calculating audience…')
@@ -454,12 +454,12 @@ export default function Templates() {
               <div className="space-y-2 mb-4">
                 {bcVars.map((v, i) => (
                   <div key={i}>
-                    <label className="block text-[11px] text-[#666] mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
+                    <label className="block text-[11px] text-ink-4 mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
                     <input
                       value={v}
                       onChange={(e) => setBcVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
                       placeholder={t(`valor para {{${i + 1}}}`, `value for {{${i + 1}}}`)}
-                      className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                      className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                     />
                   </div>
                 ))}
@@ -467,7 +467,7 @@ export default function Templates() {
             )}
 
             {bcResult ? (
-              <div className="bg-white/[0.04] border border-white/[0.08] text-[#c0c0d0] text-xs rounded-lg px-4 py-3 mb-4">{bcResult}</div>
+              <div className="bg-white/[0.04] border border-white/[0.08] text-ink-2 text-xs rounded-lg px-4 py-3 mb-4">{bcResult}</div>
             ) : (
               <div className="bg-amber-900/15 border border-amber-500/20 text-amber-400/90 text-[11px] rounded-lg px-3 py-2 mb-4">
                 {t(
@@ -483,7 +483,7 @@ export default function Templates() {
             )}
 
             <div className="flex gap-3">
-              <button onClick={() => setBcTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors">
+              <button onClick={() => setBcTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors">
                 {bcResult ? t('Fechar', 'Close') : t('Cancelar', 'Cancel')}
               </button>
               {!bcResult && (

@@ -52,7 +52,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0820] flex flex-col">
+    <div className="min-h-screen bg-field flex flex-col">
       <div className="px-4 py-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
@@ -71,9 +71,9 @@ export default function Onboarding() {
         <div className="max-w-4xl mx-auto w-full">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">{t('Que tipo de conta?', 'What type of account?')}</h2>
-            <p className="text-[#555] max-w-lg mx-auto">
+            <p className="text-ink-4 max-w-lg mx-auto">
               {t('Escolha como vai usar a plataforma. Você conecta Instagram, WhatsApp e Ads depois, na página', "Choose how you'll use the platform. You'll connect Instagram, WhatsApp and Ads next, on the")}{' '}
-              <span className="text-[#888]">{t('Conexões Meta', 'Meta Connections')}</span>{t('.', ' page.')}
+              <span className="text-ink-3">{t('Conexões Meta', 'Meta Connections')}</span>{t('.', ' page.')}
             </p>
           </div>
 
@@ -87,8 +87,8 @@ export default function Onboarding() {
                 key={opt.id}
                 className={`rounded-xl border p-6 flex flex-col transition-all cursor-pointer hover:scale-[1.02] ${
                   opt.featured
-                    ? 'bg-[#2a1550] border-indigo-500/40 shadow-xl shadow-indigo-900/20'
-                    : 'bg-[#170e2c] border-white/[0.06] hover:border-indigo-500/30'
+                    ? 'bg-raised border-indigo-500/40 shadow-xl shadow-indigo-900/20'
+                    : 'bg-card border-white/[0.06] hover:border-indigo-500/30'
                 }`}
                 onClick={() => handleSelect(opt.id)}
               >
@@ -99,10 +99,10 @@ export default function Onboarding() {
                   <span className="text-2xl">{opt.icon}</span>
                   <h4 className="text-xl font-bold text-white">{opt.name}</h4>
                 </div>
-                <p className={`text-sm mb-6 ${opt.featured ? 'text-indigo-300/60' : 'text-[#555]'}`}>{opt.description}</p>
+                <p className={`text-sm mb-6 ${opt.featured ? 'text-indigo-300/60' : 'text-ink-4'}`}>{opt.description}</p>
                 <ul className="space-y-3 mb-8 flex-1">
                   {opt.features.map((f) => (
-                    <li key={f} className={`flex items-center gap-2 text-sm ${opt.featured ? 'text-indigo-200/70' : 'text-[#666]'}`}>
+                    <li key={f} className={`flex items-center gap-2 text-sm ${opt.featured ? 'text-indigo-200/70' : 'text-ink-4'}`}>
                       <span className="text-indigo-400">✓</span>
                       {f}
                     </li>

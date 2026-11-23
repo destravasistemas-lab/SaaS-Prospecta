@@ -180,3 +180,33 @@ async def test_merge_endpoint_rejects_self(client, db_session):
         headers=headers,
     )
     assert resp.status_code == 400
+
+
+def test_phone_variants_cover_the_ninth_digit():
+    from app.core.phone import phone_variants
+    assert phone_variants("5583991361019") == ["5583991361019", "558391361019"]
+    assert phone_variants("558391361019") == ["558391361019", "5583991361019"]
+    assert phone_variants("558332221111") == ["558332221111"]  # fixo não ganha 9
+    assert phone_variants("16465894168") == ["16465894168"]
+
+
+async def test_whatsapp_without_ninth_digit_finds_existing_lead(db_session):
+    account, _ = await _account_and_user(db_session)
+    lead = Lead(account_id=account.id, instagram_handle="5583991361019", phone="5583991361019",
+                name="Davi", source=LeadSource.MANUAL, status=LeadStatus.NEW)
+    db_session.add(lead)
+    await db_session.flush()
+    found = await _find_lead(account.id, "558391361019", db_session)
+    assert found is not None and found.id == lead.id
+
+
+async def test_auto_merge_joins_phone_with_and_without_ninth_digit(db_session):
+    account, _ = await _account_and_user(db_session)
+    old = Lead(account_id=account.id, instagram_handle="a1", phone="5583991361019", name="Davi Meira Villar",
+               source=LeadSource.MANUAL, status=LeadStatus.NEW, captured_at=datetime.now(timezone.utc) - timedelta(days=1))
+    new = Lead(account_id=account.id, instagram_handle="558391361019", phone="558391361019", name="Davi Meira",
+               source=LeadSource.MANUAL, status=LeadStatus.NEW)
+    db_session.add_all([old, new])
+    await db_session.flush()
+    survivor = await auto_merge_by_phone(new, db_session)
+    assert survivor.id == old.id

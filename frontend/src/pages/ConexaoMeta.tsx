@@ -419,9 +419,9 @@ export default function ConexaoMeta() {
   if (!accountId) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-[#e2e2e8] mb-6">{t('Conexões Meta', 'Meta Connections')}</h2>
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
-          <p className="text-[#555] text-sm">{t('Complete o onboarding para conectar suas contas.', 'Complete onboarding to connect your accounts.')}</p>
+        <h2 className="text-2xl font-bold text-ink mb-6">{t('Conexões Meta', 'Meta Connections')}</h2>
+        <div className="bg-card rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
+          <p className="text-ink-4 text-sm">{t('Complete o onboarding para conectar suas contas.', 'Complete onboarding to connect your accounts.')}</p>
         </div>
       </div>
     )
@@ -431,9 +431,9 @@ export default function ConexaoMeta() {
   if (!token) {
     return (
       <div>
-        <h2 className="text-2xl font-bold text-[#e2e2e8] mb-6">{t('Conexões Meta', 'Meta Connections')}</h2>
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
-          <p className="text-[#555] text-sm">{t('Faça login primeiro para conectar suas contas.', 'Sign in first to connect your accounts.')}</p>
+        <h2 className="text-2xl font-bold text-ink mb-6">{t('Conexões Meta', 'Meta Connections')}</h2>
+        <div className="bg-card rounded-xl border border-white/[0.06] p-8 max-w-lg text-center">
+          <p className="text-ink-4 text-sm">{t('Faça login primeiro para conectar suas contas.', 'Sign in first to connect your accounts.')}</p>
         </div>
       </div>
     )
@@ -441,9 +441,9 @@ export default function ConexaoMeta() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#e2e2e8] mb-2">{t('Conexões Meta', 'Meta Connections')}</h2>
+      <h2 className="text-2xl font-bold text-ink mb-2">{t('Conexões Meta', 'Meta Connections')}</h2>
       <HelpLink section="conexoes" className="mb-3" />
-      <p className="text-[#555] text-sm mb-6 max-w-2xl">
+      <p className="text-ink-4 text-sm mb-6 max-w-2xl">
         {t(
           'Conecte suas contas do Instagram, WhatsApp e Meta Ads. Você pode desconectar a qualquer momento.',
           'Connect your Instagram, WhatsApp and Meta Ads accounts. You can disconnect at any time.',
@@ -462,7 +462,7 @@ export default function ConexaoMeta() {
       )}
 
       {loading ? (
-        <div className="text-[#555] text-sm">{t('Carregando conexões...', 'Loading connections...')}</div>
+        <div className="text-ink-4 text-sm">{t('Carregando conexões...', 'Loading connections...')}</div>
       ) : (
         <div className="grid gap-4 max-w-2xl">
           {PROVIDERS.map(({ key, label, icon, description }) => {
@@ -471,7 +471,7 @@ export default function ConexaoMeta() {
             const needsAction = conn && conn.status !== 'active'
 
             return (
-              <div key={key} className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-6">
+              <div key={key} className="bg-card rounded-xl border border-white/[0.06] p-6">
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-2xl flex-shrink-0">
                   {icon}
@@ -479,19 +479,19 @@ export default function ConexaoMeta() {
 
                 <div className="flex-1 min-w-0 max-sm:basis-[calc(100%-4rem)]">
                   <div className="flex flex-wrap items-center gap-x-2">
-                    <h3 className="text-[#e2e2e8] font-semibold text-sm">{label}</h3>
+                    <h3 className="text-ink font-semibold text-sm">{label}</h3>
                     {conn && (
                       <span className={`text-xs font-medium ${STATUS_COLOR[conn.status]}`}>
                         • {statusLabel(conn.status, t)}
                       </span>
                     )}
                   </div>
-                  <p className="text-[#555] text-xs mt-0.5">{description}</p>
+                  <p className="text-ink-4 text-xs mt-0.5">{description}</p>
                   {conn && isConnected && connectionDetail(conn, t) && (
                     <p className="text-emerald-400/80 text-xs mt-1 truncate">{connectionDetail(conn, t)}</p>
                   )}
                   {conn?.expires_at && (
-                    <p className="text-[#444] text-xs mt-1">
+                    <p className="text-ink-5 text-xs mt-1">
                       {t('Expira em', 'Expires on')}: {new Date(conn.expires_at).toLocaleDateString(locale)}
                     </p>
                   )}
@@ -502,7 +502,7 @@ export default function ConexaoMeta() {
                     <button
                       onClick={() => { setShowRegister(true); setRegisterMsg(null); setPin('') }}
                       title={t('Necessário uma vez antes do primeiro envio (erro 133010)', 'Required once before the first send (error 133010)')}
-                      className="px-3 py-1.5 bg-white/[0.05] border border-white/[0.1] text-[#c0c0d0] rounded-lg text-xs font-medium hover:bg-white/[0.09] transition-colors"
+                      className="px-3 py-1.5 bg-white/[0.05] border border-white/[0.1] text-ink-2 rounded-lg text-xs font-medium hover:bg-white/[0.09] transition-colors"
                     >
                       {t('Registrar número', 'Register number')}
                     </button>
@@ -536,9 +536,9 @@ export default function ConexaoMeta() {
       {/* Modal: registrar número na Cloud API */}
       {showRegister && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/60 backdrop-blur-sm px-4">
-          <form onSubmit={handleRegister} className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-[#e2e2e8] font-semibold text-base">{t('Registrar número na Cloud API', 'Register number on the Cloud API')}</h3>
-            <p className="text-[#8a8a9e] text-xs leading-relaxed">
+          <form onSubmit={handleRegister} className="bg-card border border-white/[0.08] rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-ink font-semibold text-base">{t('Registrar número na Cloud API', 'Register number on the Cloud API')}</h3>
+            <p className="text-ink-3 text-xs leading-relaxed">
               {t(
                 'Necessário uma vez para o número enviar mensagens pela API (sem isso a Meta retorna o erro 133010). Escolha um PIN de 6 dígitos: ele vira o PIN da verificação em duas etapas do número. Se o número já tiver um PIN, use o mesmo. Guarde esse PIN.',
                 'Required once so the number can send messages through the API (without it Meta returns error 133010). Choose a 6-digit PIN: it becomes the number\'s two-step verification PIN. If the number already has a PIN, use the same one. Keep this PIN safe.',
@@ -550,13 +550,13 @@ export default function ConexaoMeta() {
               inputMode="numeric"
               autoFocus
               placeholder="000000"
-              className="w-full px-3 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-center tracking-[0.4em] text-lg rounded-lg focus:border-indigo-500 focus:outline-none"
+              className="w-full px-3 py-2.5 bg-field border border-white/[0.08] text-ink text-center tracking-[0.4em] text-lg rounded-lg focus:border-indigo-500 focus:outline-none"
             />
             {registerMsg && (
               <p className={`text-xs ${registerMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{registerMsg.text}</p>
             )}
             <div className="flex gap-2">
-              <button type="button" onClick={() => setShowRegister(false)} className="flex-1 py-2.5 border border-white/[0.08] text-[#8a8a9e] hover:text-white text-sm rounded-lg">
+              <button type="button" onClick={() => setShowRegister(false)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-3 hover:text-white text-sm rounded-lg">
                 {registerMsg?.ok ? t('Fechar', 'Close') : t('Cancelar', 'Cancel')}
               </button>
               {!registerMsg?.ok && (
@@ -583,7 +583,7 @@ export default function ConexaoMeta() {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-sm mx-4 overflow-hidden shadow-2xl">
+            <div className="bg-card border border-white/[0.08] rounded-2xl w-full max-w-sm mx-4 overflow-hidden shadow-2xl">
               <div className={`h-1.5 bg-gradient-to-r ${gradientBar}`} />
 
               <div className="p-8 flex flex-col items-center text-center">
@@ -592,8 +592,8 @@ export default function ConexaoMeta() {
                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg`}>
                       <span className="text-3xl">{icon}</span>
                     </div>
-                    <h3 className="text-[#e2e2e8] font-semibold text-base mb-2">{t('Conectando', 'Connecting')} {label}</h3>
-                    <p className="text-[#555] text-sm mb-6">
+                    <h3 className="text-ink font-semibold text-base mb-2">{t('Conectando', 'Connecting')} {label}</h3>
+                    <p className="text-ink-4 text-sm mb-6">
                       {isWa
                         ? t('Complete o cadastro na janela do Facebook que abriu. Aguardando...', 'Complete the signup in the Facebook window that opened. Waiting...')
                         : t(`Autorize o acesso na janela do ${label} que abriu. Aguardando...`, `Authorize access in the ${label} window that opened. Waiting...`)}
@@ -609,7 +609,7 @@ export default function ConexaoMeta() {
                     </div>
                     <button
                       onClick={closeModal}
-                      className="text-[#444] text-xs hover:text-[#666] transition-colors"
+                      className="text-ink-5 text-xs hover:text-ink-4 transition-colors"
                     >
                       {t('Cancelar', 'Cancel')}
                     </button>
@@ -619,16 +619,16 @@ export default function ConexaoMeta() {
                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg`}>
                       <span className="text-3xl">{icon}</span>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center -mt-10 ml-10 mb-3 border-2 border-[#170e2c]">
+                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center -mt-10 ml-10 mb-3 border-2 border-card">
                       <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h3 className="text-[#e2e2e8] font-semibold text-base mb-1">{label} {t('conectado!', 'connected!')}</h3>
+                    <h3 className="text-ink font-semibold text-base mb-1">{label} {t('conectado!', 'connected!')}</h3>
                     {modal.username && (
                       <p className="text-indigo-400 text-sm font-medium mb-1">@{modal.username}</p>
                     )}
-                    <p className="text-[#555] text-xs mb-6">
+                    <p className="text-ink-4 text-xs mb-6">
                       {isWa
                         ? t('Seu número está pronto para enviar e receber mensagens.', 'Your number is ready to send and receive messages.')
                         : modal.provider === 'ads'

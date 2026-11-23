@@ -40,6 +40,11 @@ export default function CompletarCadastro() {
       localStorage.setItem('tenant_id', data.tenant_id)
       navigate('/app')
     } catch (err: any) {
+      // Senha salva, mas a conta ainda espera a liberação do super admin.
+      if (err?.response?.data?.detail?.code === 'pending_approval') {
+        navigate('/login?status=pending_approval')
+        return
+      }
       setError(apiError(err, t('Erro ao completar cadastro', 'Failed to complete sign-up')))
     } finally {
       setLoading(false)
@@ -47,7 +52,7 @@ export default function CompletarCadastro() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0618] flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-canvas flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-14 h-14 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#d946ef]/30">
@@ -55,39 +60,39 @@ export default function CompletarCadastro() {
           </div>
           <h1 className="text-2xl font-bold text-white">{t('Bem-vindo ao', 'Welcome to')} {BRANDING.name}</h1>
           <p className="text-xs text-violet-400 font-medium mb-1">{t(BRANDING.developedBy, 'Developed by Destrava')}</p>
-          <p className="text-[#94a3b8] text-sm mt-1">{t('Seu pagamento foi confirmado! Agora defina sua senha.', 'Your payment is confirmed! Now set your password.')}</p>
+          <p className="text-ink-3 text-sm mt-1">{t('Seu pagamento foi confirmado! Agora defina sua senha.', 'Your payment is confirmed! Now set your password.')}</p>
         </div>
-        <form onSubmit={handleSubmit} className="bg-[#170e2c] rounded-2xl border border-[#a78bfa]/15 p-8 space-y-5 shadow-xl shadow-violet-950/30">
+        <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-[#a78bfa]/15 p-8 space-y-5 shadow-xl shadow-violet-950/30">
           {error && (
             <div className="bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3 text-center">{error}</div>
           )}
           <div>
-            <label className="block text-sm font-medium text-[#94a3b8] mb-2">{t('E-mail', 'Email')}</label>
+            <label className="block text-sm font-medium text-ink-3 mb-2">{t('E-mail', 'Email')}</label>
             <input
               type="email"
               value={email}
               disabled
-              className="w-full px-4 py-2.5 bg-[#0c0618] border border-white/[0.08] text-[#94a3b8] rounded-lg opacity-60 cursor-not-allowed"
+              className="w-full px-4 py-2.5 bg-canvas border border-white/[0.08] text-ink-3 rounded-lg opacity-60 cursor-not-allowed"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#94a3b8] mb-2">{t('Senha', 'Password')}</label>
+            <label className="block text-sm font-medium text-ink-3 mb-2">{t('Senha', 'Password')}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
-              className="w-full px-4 py-2.5 bg-[#0c0618] border border-white/[0.08] text-[#f8fafc] rounded-lg focus:ring-1 focus:ring-violet-400 focus:border-violet-400 focus:outline-none placeholder-[#475569]"
+              className="w-full px-4 py-2.5 bg-canvas border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-violet-400 focus:border-violet-400 focus:outline-none placeholder-ink-5"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#94a3b8] mb-2">{t('Confirmar senha', 'Confirm password')}</label>
+            <label className="block text-sm font-medium text-ink-3 mb-2">{t('Confirmar senha', 'Confirm password')}</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder={t('Repita a senha', 'Repeat the password')}
-              className="w-full px-4 py-2.5 bg-[#0c0618] border border-white/[0.08] text-[#f8fafc] rounded-lg focus:ring-1 focus:ring-violet-400 focus:border-violet-400 focus:outline-none placeholder-[#475569]"
+              className="w-full px-4 py-2.5 bg-canvas border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-violet-400 focus:border-violet-400 focus:outline-none placeholder-ink-5"
             />
           </div>
           <button

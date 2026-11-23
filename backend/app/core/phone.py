@@ -36,6 +36,23 @@ def normalize_phone(raw: str | None) -> str | None:
     return None
 
 
+def phone_variants(phone: str | None) -> list[str]:
+    """
+    O mesmo celular brasileiro com e sem o nono dígito.
+
+    A Meta às vezes entrega o wa_id sem o 9 (`558391361019`) enquanto o cadastro
+    ou o CSV tem `5583991361019`. Os dois são a mesma pessoa.
+    """
+    if not phone:
+        return []
+    variants = [phone]
+    if phone.startswith("55") and len(phone) == 13 and phone[4] == "9" and phone[5] in "6789":
+        variants.append(phone[:4] + phone[5:])
+    elif phone.startswith("55") and len(phone) == 12 and phone[4] in "6789":
+        variants.append(phone[:4] + "9" + phone[4:])
+    return variants
+
+
 def format_phone_display(normalized: str | None) -> str | None:
     """`5583999998888` -> `+55 (83) 99999-8888` (apenas para exibição)."""
     if not normalized or not normalized.startswith("55") or len(normalized) not in (12, 13):

@@ -88,10 +88,10 @@ export default function IgCommentsModal({ mediaId, caption, onClose }: { mediaId
     return (
       <div className={`flex items-start gap-3 ${isReply ? 'ml-8 mt-2' : ''} ${c.hidden ? 'opacity-50' : ''}`}>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] text-[#e2e2e8] break-words">
+          <p className="text-[13px] text-ink break-words">
             <span className="font-semibold text-violet-300">@{c.username || '—'}</span> {c.text}
           </p>
-          <p className="text-[10px] text-[#555] mt-0.5">
+          <p className="text-[10px] text-ink-4 mt-0.5">
             {fmt(c.timestamp)}
             {c.hidden && <span className="ml-2 text-amber-400">{t('Oculto', 'Hidden')}</span>}
           </p>
@@ -99,17 +99,17 @@ export default function IgCommentsModal({ mediaId, caption, onClose }: { mediaId
         <div className="flex items-center gap-1 shrink-0">
           {!isReply && (
             <button onClick={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyText('') }} disabled={busy}
-              title={t('Responder', 'Reply')} className="p-1.5 rounded-md text-[#8a8a9e] hover:text-white hover:bg-white/[0.06] disabled:opacity-40">
+              title={t('Responder', 'Reply')} className="p-1.5 rounded-md text-ink-3 hover:text-white hover:bg-white/[0.06] disabled:opacity-40">
               <Reply size={14} />
             </button>
           )}
           <button onClick={() => toggleHidden(c)} disabled={busy}
             title={c.hidden ? t('Reexibir', 'Unhide') : t('Ocultar', 'Hide')}
-            className="p-1.5 rounded-md text-[#8a8a9e] hover:text-amber-300 hover:bg-white/[0.06] disabled:opacity-40">
+            className="p-1.5 rounded-md text-ink-3 hover:text-amber-300 hover:bg-white/[0.06] disabled:opacity-40">
             {c.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
           </button>
           <button onClick={() => remove(c)} disabled={busy}
-            title={t('Excluir', 'Delete')} className="p-1.5 rounded-md text-[#8a8a9e] hover:text-red-400 hover:bg-white/[0.06] disabled:opacity-40">
+            title={t('Excluir', 'Delete')} className="p-1.5 rounded-md text-ink-3 hover:text-red-400 hover:bg-white/[0.06] disabled:opacity-40">
             <Trash2 size={14} />
           </button>
         </div>
@@ -119,21 +119,21 @@ export default function IgCommentsModal({ mediaId, caption, onClose }: { mediaId
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4 py-8">
-      <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl w-full max-w-lg max-h-full flex flex-col">
+      <div className="bg-card border border-white/[0.08] rounded-2xl w-full max-w-lg max-h-full flex flex-col">
         <div className="flex items-start justify-between gap-3 p-5 border-b border-white/[0.06]">
           <div className="min-w-0">
             <h3 className="text-white font-semibold text-base">{t('Comentários do post', 'Post comments')}</h3>
-            <p className="text-[#666] text-xs truncate">{caption || t('Sem legenda', 'No caption')}</p>
+            <p className="text-ink-4 text-xs truncate">{caption || t('Sem legenda', 'No caption')}</p>
           </div>
-          <button onClick={onClose} className="text-[#555] hover:text-white"><X size={18} /></button>
+          <button onClick={onClose} className="text-ink-4 hover:text-white"><X size={18} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {error && <p className="text-red-400 text-xs">{error}</p>}
           {loading ? (
-            <p className="text-[#555] text-sm">{t('Carregando…', 'Loading…')}</p>
+            <p className="text-ink-4 text-sm">{t('Carregando…', 'Loading…')}</p>
           ) : comments.length === 0 ? (
-            <p className="text-[#555] text-sm">{t('Nenhum comentário ainda.', 'No comments yet.')}</p>
+            <p className="text-ink-4 text-sm">{t('Nenhum comentário ainda.', 'No comments yet.')}</p>
           ) : (
             comments.map((c) => (
               <div key={c.id} className="pb-3 border-b border-white/[0.04] last:border-0">
@@ -143,7 +143,7 @@ export default function IgCommentsModal({ mediaId, caption, onClose }: { mediaId
                   <form onSubmit={(e) => sendReply(e, c.id)} className="ml-8 mt-2 flex gap-2">
                     <input value={replyText} onChange={(e) => setReplyText(e.target.value)} autoFocus
                       placeholder={t(`Responder @${c.username || ''}`, `Reply to @${c.username || ''}`)}
-                      className="flex-1 px-3 py-1.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-xs rounded-lg focus:border-indigo-500 focus:outline-none" />
+                      className="flex-1 px-3 py-1.5 bg-field border border-white/[0.08] text-ink text-xs rounded-lg focus:border-indigo-500 focus:outline-none" />
                     <button type="submit" disabled={busyId === c.id || !replyText.trim()}
                       className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg">
                       {t('Responder', 'Reply')}
@@ -158,7 +158,7 @@ export default function IgCommentsModal({ mediaId, caption, onClose }: { mediaId
         <form onSubmit={postComment} className="p-4 border-t border-white/[0.06] flex gap-2">
           <input value={newComment} onChange={(e) => setNewComment(e.target.value)}
             placeholder={t('Escreva um comentário no post…', 'Write a comment on the post…')}
-            className="flex-1 px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none" />
+            className="flex-1 px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none" />
           <button type="submit" disabled={busyId === 'new' || !newComment.trim()}
             className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
             <Send size={14} /> {t('Comentar', 'Comment')}

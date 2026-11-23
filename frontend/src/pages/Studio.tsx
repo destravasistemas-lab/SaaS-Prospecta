@@ -213,8 +213,8 @@ export default function Studio() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#e2e2e8] mb-1">Studio de Criação</h1>
-        <p className="text-[#555] text-sm">Crie vídeos publicitários incríveis com IA em minutos</p>
+        <h1 className="text-2xl font-bold text-ink mb-1">Studio de Criação</h1>
+        <p className="text-ink-4 text-sm">Crie vídeos publicitários incríveis com IA em minutos</p>
       </div>
 
       {/* Step Indicator */}
@@ -225,12 +225,12 @@ export default function Studio() {
               className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                 stepOrder.indexOf(currentStep) >= i
                   ? 'bg-indigo-600 text-white'
-                  : 'bg-white/[0.04] text-[#555]'
+                  : 'bg-white/[0.04] text-ink-4'
               }`}
             >
               {i + 1}
             </div>
-            <p className="text-[10px] mt-1.5 text-center text-[#555]">
+            <p className="text-[10px] mt-1.5 text-center text-ink-4">
               {stepLabels[i]}
             </p>
           </div>
@@ -238,7 +238,7 @@ export default function Studio() {
       </div>
 
       {/* Content */}
-      <div className="bg-[#170e2c] rounded-2xl border border-white/[0.06] p-8">
+      <div className="bg-card rounded-2xl border border-white/[0.06] p-8">
         {error && (
           <div className="mb-6 bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">
             {error}
@@ -255,19 +255,19 @@ export default function Studio() {
             >
               <span className="text-4xl block mb-4">📤</span>
               <h3 className="text-xl font-semibold text-white mb-2">Arraste sua imagem aqui</h3>
-              <p className="text-[#555] mb-4">ou</p>
+              <p className="text-ink-4 mb-4">ou</p>
               <label>
                 <span className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-colors cursor-pointer">
                   Selecionar Arquivo
                 </span>
                 <input type="file" accept="image/*" onChange={handleFileInput} className="hidden" />
               </label>
-              <p className="text-xs text-[#444] mt-4">JPG, PNG ou WebP até 10MB</p>
+              <p className="text-xs text-ink-5 mt-4">JPG, PNG ou WebP até 10MB</p>
             </div>
 
             {uploadedImage && (
               <div>
-                <p className="text-sm font-medium text-[#666] mb-3">Preview da Imagem</p>
+                <p className="text-sm font-medium text-ink-4 mb-3">Preview da Imagem</p>
                 <img src={uploadedImage} alt="Preview" className="w-full max-w-xs rounded-lg border border-white/[0.06]" />
                 <button
                   onClick={handleAnalyzeImage}
@@ -285,24 +285,24 @@ export default function Studio() {
         {currentStep === 'prompt' && (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-[#666] mb-2">Descrição do Vídeo</label>
+              <label className="block text-sm font-medium text-ink-4 mb-2">Descrição do Vídeo</label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Ex: produto flutuando em fundo clean, câmera zoom-in suave, cores vibrantes"
-                className="w-full px-4 py-3 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] min-h-32"
+                className="w-full px-4 py-3 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5 min-h-32"
               />
             </div>
 
             {suggestedPrompts.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-[#666] mb-2">Sugestões Inteligentes</p>
+                <p className="text-sm font-medium text-ink-4 mb-2">Sugestões Inteligentes</p>
                 <div className="space-y-2">
                   {suggestedPrompts.map((suggestion, i) => (
                     <button
                       key={i}
                       onClick={() => selectSuggestedPrompt(suggestion)}
-                      className="w-full text-left p-3 bg-indigo-600/10 border border-indigo-500/30 rounded-lg text-sm text-[#e2e2e8] hover:bg-indigo-600/20 transition-colors"
+                      className="w-full text-left p-3 bg-indigo-600/10 border border-indigo-500/30 rounded-lg text-sm text-ink hover:bg-indigo-600/20 transition-colors"
                     >
                       {suggestion}
                     </button>
@@ -314,7 +314,7 @@ export default function Studio() {
             <div className="flex gap-3">
               <button
                 onClick={() => setCurrentStep('upload')}
-                className="flex-1 px-6 py-2 border border-white/[0.06] text-[#666] font-semibold rounded-lg transition-colors hover:border-white/[0.12] hover:text-[#e2e2e8]"
+                className="flex-1 px-6 py-2 border border-white/[0.06] text-ink-4 font-semibold rounded-lg transition-colors hover:border-white/[0.12] hover:text-ink"
               >
                 Voltar
               </button>
@@ -333,11 +333,11 @@ export default function Studio() {
           <div className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[#666] mb-2">Duração</label>
+                <label className="block text-sm font-medium text-ink-4 mb-2">Duração</label>
                 <select
                   value={config.duration}
                   onChange={(e) => setConfig({ ...config, duration: e.target.value as any })}
-                  className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="5">5 segundos</option>
                   <option value="10">10 segundos</option>
@@ -347,11 +347,11 @@ export default function Studio() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#666] mb-2">Formato</label>
+                <label className="block text-sm font-medium text-ink-4 mb-2">Formato</label>
                 <select
                   value={config.format}
                   onChange={(e) => setConfig({ ...config, format: e.target.value as any })}
-                  className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="9:16">9:16 (Stories/Reels)</option>
                   <option value="1:1">1:1 (Feed)</option>
@@ -360,11 +360,11 @@ export default function Studio() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#666] mb-2">Estilo</label>
+                <label className="block text-sm font-medium text-ink-4 mb-2">Estilo</label>
                 <select
                   value={config.style}
                   onChange={(e) => setConfig({ ...config, style: e.target.value as any })}
-                  className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-2 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none"
                 >
                   <option value="cinematographic">Cinematográfico</option>
                   <option value="dynamic">Dinâmico</option>
@@ -377,7 +377,7 @@ export default function Studio() {
             <div className="flex gap-3">
               <button
                 onClick={() => setCurrentStep('prompt')}
-                className="flex-1 px-6 py-2 border border-white/[0.06] text-[#666] font-semibold rounded-lg transition-colors hover:border-white/[0.12] hover:text-[#e2e2e8]"
+                className="flex-1 px-6 py-2 border border-white/[0.06] text-ink-4 font-semibold rounded-lg transition-colors hover:border-white/[0.12] hover:text-ink"
               >
                 Voltar
               </button>
@@ -401,7 +401,7 @@ export default function Studio() {
             </div>
             <div>
               <h3 className="text-xl font-semibold text-white mb-2">{generation.status}</h3>
-              <p className="text-[#555]">Tempo estimado: ~{generation.estimatedTime}s</p>
+              <p className="text-ink-4">Tempo estimado: ~{generation.estimatedTime}s</p>
             </div>
             <div className="w-full bg-white/[0.06] rounded-full h-3 overflow-hidden">
               <div
@@ -415,20 +415,20 @@ export default function Studio() {
         {/* Etapa 5: Resultado */}
         {currentStep === 'result' && generatedVideoUrl && (
           <div className="space-y-6">
-            <div className="bg-[#0f0820] rounded-xl overflow-hidden">
+            <div className="bg-field rounded-xl overflow-hidden">
               <video src={generatedVideoUrl} controls className="w-full" />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <button
                 onClick={handleDownload}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-[#e2e2e8] font-semibold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-ink font-semibold rounded-lg transition-colors"
               >
                 <span>💾</span>
                 <span className="hidden sm:inline">Baixar</span>
               </button>
               <button
                 onClick={handleRefineVideo}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-[#e2e2e8] font-semibold rounded-lg transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] text-ink font-semibold rounded-lg transition-colors"
               >
                 <span>🔄</span>
                 <span className="hidden sm:inline">Refinar</span>
@@ -448,7 +448,7 @@ export default function Studio() {
         {currentStep === 'publish' && (
           <div className="space-y-6 max-w-2xl">
             <div>
-              <label className="block text-sm font-medium text-[#666] mb-2">Tipo de Publicação</label>
+              <label className="block text-sm font-medium text-ink-4 mb-2">Tipo de Publicação</label>
               <div className="grid grid-cols-3 gap-3">
                 {['feed', 'reels', 'stories'].map((type) => (
                   <button
@@ -457,7 +457,7 @@ export default function Studio() {
                     className={`py-2 px-4 rounded-lg font-semibold transition-colors ${
                       publishData.type === type
                         ? 'bg-indigo-600 text-white'
-                        : 'bg-white/[0.04] text-[#666] hover:bg-white/[0.08]'
+                        : 'bg-white/[0.04] text-ink-4 hover:bg-white/[0.08]'
                     }`}
                   >
                     {type === 'feed' && 'Feed'}
@@ -469,31 +469,31 @@ export default function Studio() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#666] mb-2">Legenda</label>
+              <label className="block text-sm font-medium text-ink-4 mb-2">Legenda</label>
               <textarea
                 value={publishData.caption}
                 onChange={(e) => setPublishData({ ...publishData, caption: e.target.value })}
                 placeholder="Escreva a legenda do seu vídeo..."
-                className="w-full px-4 py-3 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] min-h-24"
+                className="w-full px-4 py-3 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5 min-h-24"
               />
-              <p className="text-xs text-[#444] mt-1">{publishData.caption.length} caracteres</p>
+              <p className="text-xs text-ink-5 mt-1">{publishData.caption.length} caracteres</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#666] mb-2">Hashtags (sugestões)</label>
+              <label className="block text-sm font-medium text-ink-4 mb-2">Hashtags (sugestões)</label>
               <input
                 type="text"
                 value={publishData.hashtags}
                 onChange={(e) => setPublishData({ ...publishData, hashtags: e.target.value })}
                 placeholder="#prospecta #marketing #automacao"
-                className="w-full px-4 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                className="w-full px-4 py-2 bg-field border border-white/[0.08] text-ink rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5"
               />
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setCurrentStep('result')}
-                className="flex-1 px-6 py-2 border border-white/[0.06] text-[#666] font-semibold rounded-lg transition-colors hover:border-white/[0.12] hover:text-[#e2e2e8]"
+                className="flex-1 px-6 py-2 border border-white/[0.06] text-ink-4 font-semibold rounded-lg transition-colors hover:border-white/[0.12] hover:text-ink"
               >
                 Voltar
               </button>

@@ -1,8 +1,78 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Camera, Check, ChevronRight, Megaphone, MessageSquare, Sparkles } from 'lucide-react'
 import api from '../services/api'
 import HelpLink from '../components/HelpLink'
+import { useMe } from '../components/MeContext'
 import type { DashboardData } from '../types'
 import { useI18n } from '../i18n'
+
+type Connection = { provider: string; status: string }
+
+/** Primeiros passos: some quando tudo estiver feito. */
+function SetupChecklist({ connected, automations }: { connected: Set<string>; automations: number }) {
+  const { t } = useI18n()
+  const steps = [
+    { done: connected.has('instagram'), icon: Camera, to: '/app/conexao',
+      title: t('Conectar o Instagram', 'Connect Instagram'),
+      text: t('Para responder o Direct e ligar a automação de comentários.', 'To answer Direct messages and turn on comment automation.') },
+    { done: connected.has('whatsapp'), icon: MessageSquare, to: '/app/conexao',
+      title: t('Conectar o WhatsApp', 'Connect WhatsApp'),
+      text: t('Para atender, disparar templates e receber os leads dos anúncios.', 'To answer, send templates and receive leads from ads.') },
+    { done: connected.has('ads'), icon: Megaphone, to: '/app/conexao',
+      title: t('Conectar a conta de anúncios', 'Connect your ad account'),
+      text: t('Para ver investimento, resultados e criar campanhas.', 'To see spend and results and create campaigns.') },
+    { done: automations > 0, icon: Sparkles, to: '/app/publicar',
+      title: t('Criar a primeira automação', 'Create your first automation'),
+      text: t('Quem comentar a palavra-chave recebe sua mensagem no Direct.', 'Whoever comments the keyword gets your message in Direct.') },
+  ]
+  const done = steps.filter((s) => s.done).length
+  if (done === steps.length) return null
+  const next = steps.findIndex((s) => !s.done)
+
+  return (
+    <section className="mb-8 rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-600/[0.08] to-transparent p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+        <div>
+          <h2 className="text-base font-semibold text-white">{t('Comece por aqui', 'Start here')}</h2>
+          <p className="text-sm text-ink-3 mt-0.5">{t('Quatro passos para o Prospecta começar a trabalhar por você.', 'Four steps to get Prospecta working for you.')}</p>
+        </div>
+        <span className="text-xs font-medium text-violet-200">{done} {t('de', 'of')} {steps.length}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-white/[0.06] mb-5 overflow-hidden">
+        <div className="h-full rounded-full bg-violet-400 transition-all" style={{ width: `${(done / steps.length) * 100}%` }} />
+      </div>
+      <ol className="grid gap-2 sm:grid-cols-2">
+        {steps.map((s, i) => {
+          const Icon = s.icon
+          return (
+            <li key={s.title}>
+              <Link
+                to={s.to}
+                className={`flex items-start gap-3 rounded-xl border p-3.5 transition-colors ${
+                  s.done ? 'border-line bg-white/[0.02]'
+                    : i === next ? 'border-violet-400/40 bg-violet-500/10 hover:bg-violet-500/15'
+                    : 'border-line bg-card hover:border-white/[0.14]'
+                }`}
+              >
+                <span className={`w-8 h-8 shrink-0 rounded-lg flex items-center justify-center ${
+                  s.done ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/[0.06] text-ink-2'
+                }`}>
+                  {s.done ? <Check size={16} /> : <Icon size={16} />}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className={`block text-sm font-medium ${s.done ? 'text-ink-4 line-through' : 'text-ink'}`}>{s.title}</span>
+                  {!s.done && <span className="block text-xs text-ink-4 mt-0.5">{s.text}</span>}
+                </span>
+                {!s.done && <ChevronRight size={16} className="text-ink-4 mt-1.5 shrink-0" />}
+              </Link>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
+  )
+}
 
 const palette = {
   green: { bg: 'rgba(35,134,54,0.15)', text: '#3fb950' },
@@ -53,17 +123,17 @@ function MetricCard({ icon, iconColor = 'blue', value, label, sub, trend }: {
     arrowDown: 'M12 5v14M19 12l-7 7-7-7',
   }
   return (
-    <div className="bg-[#170e2c] border border-white/[0.06] rounded-xl p-4 flex flex-col gap-0 hover:border-white/[0.12] transition-colors">
+    <div className="bg-card border border-white/[0.06] rounded-xl p-4 flex flex-col gap-0 hover:border-white/[0.12] transition-colors">
       <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
         style={{ background: col.bg, color: col.text }}>
         <Icon d={icons[icon]} size={17} />
       </div>
-      <div className="text-xl font-semibold text-[#e2e2e8] leading-tight mb-0.5">{value}</div>
-      <div className="text-xs text-[#555]">{label}</div>
-      {sub && <div className="text-[10px] text-[#444] mt-1">{sub}</div>}
+      <div className="text-xl font-semibold text-ink leading-tight mb-0.5">{value}</div>
+      <div className="text-xs text-ink-4">{label}</div>
+      {sub && <div className="text-[10px] text-ink-5 mt-1">{sub}</div>}
       {trend && (
         <div className={`inline-flex items-center gap-1 text-[10px] mt-1.5 px-1.5 py-0.5 rounded self-start ${
-          trend === 'up' ? 'bg-green-900/20 text-green-400' : trend === 'down' ? 'bg-red-900/20 text-red-400' : 'bg-white/[0.04] text-[#555]'
+          trend === 'up' ? 'bg-green-900/20 text-green-400' : trend === 'down' ? 'bg-red-900/20 text-red-400' : 'bg-white/[0.04] text-ink-4'
         }`}>
           <Icon d={trend === 'up' ? icons.arrowUp : trend === 'down' ? icons.arrowDown : icons.minus} size={9} />
           {trend === 'neutral' ? '—' : trend === 'up' ? '+0%' : '-0%'}
@@ -75,7 +145,7 @@ function MetricCard({ icon, iconColor = 'blue', value, label, sub, trend }: {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#555] mb-3">
+    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-ink-4 mb-3">
       {children}
       <div className="flex-1 h-px bg-white/[0.06]" />
     </div>
@@ -111,7 +181,17 @@ export default function Dashboard() {
     breakdown: Record<string, { count: number; unit_cost: number; subtotal: number }>
   } | null>(null)
 
+  const me = useMe()
+  const [connected, setConnected] = useState<Set<string> | null>(null)
+  const [automations, setAutomations] = useState(0)
+
   useEffect(() => {
+    api.get<Connection[]>('/auth/meta/connections')
+      .then(({ data }) => setConnected(new Set(data.filter((c) => c.status === 'active').map((c) => c.provider))))
+      .catch(() => setConnected(new Set()))
+    api.get('/automations')
+      .then(({ data }) => setAutomations(Array.isArray(data) ? data.length : 0))
+      .catch(() => {})
     api.get('/dashboard')
       .then((res) => setData(res.data))
       .catch(() => {})
@@ -122,19 +202,29 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-7">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-[#e2e2e8]">Dashboard</h1>
-          <HelpLink section="primeiros-passos" />
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-7">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-white">
+              {t('Olá', 'Hi')}{me?.full_name ? `, ${me.full_name.split(' ')[0]}` : ''}
+            </h1>
+            <HelpLink section="primeiros-passos" />
+          </div>
+          <p className="text-sm text-ink-4 mt-0.5">{t('Resumo da sua operação neste mês.', 'Your summary for this month.')}</p>
         </div>
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-[#170e2c] border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-[#555]">
+          <div className="flex items-center gap-1.5 bg-card border border-white/[0.06] rounded-lg px-3 py-1.5 text-xs text-ink-4">
             <Icon d="M3 4h18v18H3zM16 2v4M8 2v4M3 10h18" size={13} />
             {monthLabel}
           </div>
         </div>
       </div>
 
+      {connected && <SetupChecklist connected={connected} automations={automations} />}
+
+      {/* Anúncios e Instagram só aparecem com a conta conectada (sem ela seriam só zeros). */}
+      {connected && (<>
+      {connected.has('ads') && (<>
       <SectionLabel>{t('Anúncios (Meta Ads)', 'Ads (Meta Ads)')}</SectionLabel>
       <CardsGrid>
         <MetricCard icon="dollar" iconColor="green" value={money(data.ads_spent)} label={t('Investimento Total', 'Total Spend')} />
@@ -144,7 +234,9 @@ export default function Dashboard() {
         <MetricCard icon="chartLine" iconColor="orange" value={money(data.ads_cpm)} label="CPM" />
         <MetricCard icon="target" iconColor="pink" value={`${data.ads_roas.toFixed(2)}x`} label="ROAS" />
       </CardsGrid>
+      </>)}
 
+      {connected.has('instagram') && (<>
       <SectionLabel>Instagram</SectionLabel>
       <CardsGrid minWidth={140}>
         <MetricCard icon="photo" iconColor="pink" value={data.instagram_posts} label={t('Posts (30 dias)', 'Posts (30 days)')} />
@@ -152,6 +244,7 @@ export default function Dashboard() {
         <MetricCard icon="heart" iconColor="red" value={data.instagram_engagement} label={t('Engajamento Médio', 'Average Engagement')} />
         <MetricCard icon="userPlus" iconColor="orange" value={data.instagram_followers_delta} label={t('Seguidores', 'Followers')} />
       </CardsGrid>
+      </>)}
 
       {waCosts && (
         <>
@@ -185,6 +278,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      </>)}
     </div>
   )
 }

@@ -132,16 +132,16 @@ export default function AccountSwitcher() {
             : <Briefcase size={13} className="text-indigo-300" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-[#5a5a6e] leading-none mb-0.5">
+          <p className="text-[10px] text-ink-4 leading-none mb-0.5">
             {impersonating ? t('Cliente', 'Client') : t('Agência', 'Agency')}
           </p>
-          <p className="text-xs font-medium text-[#e2e2e8] truncate leading-tight">{activeName}</p>
+          <p className="text-xs font-medium text-ink truncate leading-tight">{activeName}</p>
         </div>
-        <ChevronsUpDown size={13} className="text-[#5a5a6e] shrink-0" />
+        <ChevronsUpDown size={13} className="text-ink-4 shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute left-3 right-3 mt-1 z-50 bg-[#170e2c] border border-white/[0.1] rounded-lg shadow-xl shadow-black/40 py-1.5 max-h-80 overflow-y-auto">
+        <div className="absolute left-3 right-3 mt-1 z-50 bg-card border border-white/[0.1] rounded-lg shadow-xl shadow-black/40 py-1.5 max-h-80 overflow-y-auto">
           {/* Agency itself */}
           <button
             onClick={() => { setOpen(false); if (impersonating) switchToAgency() }}
@@ -150,8 +150,8 @@ export default function AccountSwitcher() {
             <div className="w-6 h-6 rounded-md bg-indigo-500/15 flex items-center justify-center shrink-0">
               <Briefcase size={13} className="text-indigo-300" />
             </div>
-            <span className="flex-1 text-xs font-medium text-[#e2e2e8] truncate">{agencyName}</span>
-            <span className="text-[9px] text-[#5a5a6e] uppercase tracking-wide">{t('Agência', 'Agency')}</span>
+            <span className="flex-1 text-xs font-medium text-ink truncate">{agencyName}</span>
+            <span className="text-[9px] text-ink-4 uppercase tracking-wide">{t('Agência', 'Agency')}</span>
             {!impersonating && <Check size={13} className="text-indigo-400 shrink-0" />}
           </button>
 
@@ -165,17 +165,17 @@ export default function AccountSwitcher() {
                 onClick={() => { setOpen(false); if (!active) switchToClient(client) }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-white/[0.04] transition-colors text-left"
               >
-                <div className="w-6 h-6 rounded-md bg-white/[0.05] flex items-center justify-center shrink-0 text-[10px] font-bold text-[#8a8a9e]">
+                <div className="w-6 h-6 rounded-md bg-white/[0.05] flex items-center justify-center shrink-0 text-[10px] font-bold text-ink-3">
                   {client.brand_name.charAt(0).toUpperCase()}
                 </div>
-                <span className="flex-1 text-xs text-[#c0c0d0] truncate">{client.brand_name}</span>
+                <span className="flex-1 text-xs text-ink-2 truncate">{client.brand_name}</span>
                 {active && <Check size={13} className="text-indigo-400 shrink-0" />}
               </button>
             )
           })}
 
           {clients.length === 0 && (
-            <p className="px-3 py-2 text-[11px] text-[#5a5a6e]">{t('Nenhum cliente ainda.', 'No clients yet.')}</p>
+            <p className="px-3 py-2 text-[11px] text-ink-4">{t('Nenhum cliente ainda.', 'No clients yet.')}</p>
           )}
         </div>
       )}

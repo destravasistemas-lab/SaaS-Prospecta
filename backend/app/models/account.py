@@ -6,6 +6,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
+# Cadastro novo espera o super admin liberar; contas antigas e empresas-filhas
+# criadas por uma agência já aprovada nascem liberadas.
+APPROVAL_PENDING = "pending"
+APPROVAL_APPROVED = "approved"
+APPROVAL_REJECTED = "rejected"
+
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -37,6 +43,8 @@ class Account(Base):
     blocked_modules: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     onboarding_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    approval_status: Mapped[str] = mapped_column(String(20), nullable=False, default=APPROVAL_APPROVED)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

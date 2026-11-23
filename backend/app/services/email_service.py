@@ -55,6 +55,40 @@ async def send_verification_email(to: str, token: str, username: str) -> bool:
     return await send_email(to, "Confirme seu email — adStudioAI", html)
 
 
+async def send_new_signup_alert(brand_name: str, email: str) -> None:
+    """Avisa os super admins que há um cadastro esperando aprovação."""
+    from html import escape
+
+    link = f"{settings.app_url}/app/super-admin"
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+      <h2 style="color:#1a1a2e">Novo cadastro para aprovar</h2>
+      <p style="color:#555"><b>{escape(brand_name)}</b> ({escape(email)}) criou uma conta e está esperando liberação.</p>
+      <a href="{link}" style="display:inline-block;padding:12px 32px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;margin:16px 0;font-size:14px">
+        Abrir Super Admin
+      </a>
+    </div>
+    """
+    for admin in {e.strip().lower() for e in settings.super_admin_emails.split(",") if e.strip()}:
+        await send_email(admin, f"Novo cadastro: {brand_name}", html)
+
+
+async def send_account_approved_email(to: str, name: str) -> bool:
+    from html import escape
+
+    link = f"{settings.app_url}/login"
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+      <h2 style="color:#1a1a2e">Seu acesso foi liberado</h2>
+      <p style="color:#555">Olá {escape(name)}, sua conta foi aprovada. Já pode entrar no painel.</p>
+      <a href="{link}" style="display:inline-block;padding:12px 32px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:8px;margin:16px 0;font-size:14px">
+        Entrar
+      </a>
+    </div>
+    """
+    return await send_email(to, "Seu acesso foi liberado", html)
+
+
 async def send_reset_email(to: str, token: str, username: str) -> bool:
     link = f"{settings.app_url}/reset-password?token={token}"
     html = f"""

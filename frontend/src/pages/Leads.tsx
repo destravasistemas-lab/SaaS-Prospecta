@@ -31,6 +31,13 @@ interface Lead {
   whatsapp_opted_out_at?: string | null
 }
 
+/** Telefone (só dígitos) vira +55 (83) 99136-1019; usuário do Instagram ganha o @. */
+function handleLabel(handle: string): string {
+  if (!/^\d{10,15}$/.test(handle)) return `@${handle}`
+  const m = handle.match(/^55(\d{2})(\d{4,5})(\d{4})$/)
+  return m ? `+55 (${m[1]}) ${m[2]}-${m[3]}` : `+${handle}`
+}
+
 const statusConfig: Record<string, { pt: string; en: string; color: string; dot: string }> = {
   new:       { pt: 'Novo',        en: 'New',       color: 'bg-blue-900/30 text-blue-300 border-blue-500/20',    dot: 'bg-blue-400' },
   contacted: { pt: 'Contactado',  en: 'Contacted', color: 'bg-purple-900/30 text-purple-300 border-purple-500/20', dot: 'bg-purple-400' },
@@ -52,7 +59,7 @@ const sourceLabel = (s: string) => (SOURCE_LABELS[s] ? tr(SOURCE_LABELS[s][0], S
 
 function ScoreBadge({ label, score }: { label: string | null; score: number | null }) {
   if (!label || score === null) {
-    return <span className="text-[#444] text-xs">—</span>
+    return <span className="text-ink-5 text-xs">—</span>
   }
   if (label === 'hot' || label === 'converted') {
     return (
@@ -79,7 +86,7 @@ function ScoreBadge({ label, score }: { label: string | null; score: number | nu
 }
 
 function StatusPill({ status }: { status: string }) {
-  const cfg = statusConfig[status] ?? { pt: status, en: status, color: 'bg-white/[0.06] text-[#888] border-white/[0.06]', dot: 'bg-gray-400' }
+  const cfg = statusConfig[status] ?? { pt: status, en: status, color: 'bg-white/[0.06] text-ink-3 border-white/[0.06]', dot: 'bg-gray-400' }
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full border ${cfg.color}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -268,11 +275,11 @@ export default function Leads() {
       {/* Header */}
       <div className="flex flex-wrap lg:flex-nowrap items-start justify-between max-lg:gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-[#e2e2e8] flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-ink flex items-center gap-2">
             <Users size={20} className="text-indigo-400" />
             {t('Leads', 'Leads')}
           </h1>
-          <p className="text-[#555] text-sm mt-0.5">
+          <p className="text-ink-4 text-sm mt-0.5">
             {t(`${leads.length} leads captados`, `${leads.length} leads captured`)}
           </p>
           <HelpLink section="leads" className="mt-1" />
@@ -281,7 +288,7 @@ export default function Leads() {
           <button
             onClick={handleScoreAll}
             disabled={scoring || leads.length === 0}
-            className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.09] disabled:opacity-50 text-[#e2e2e8] text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.09] disabled:opacity-50 text-ink text-sm font-medium rounded-lg transition-colors"
           >
             <RefreshCw size={14} className={scoring ? 'animate-spin' : ''} />
             {scoring ? t('Analisando...', 'Analyzing...') : t('Analisar Leads', 'Score Leads')}
@@ -304,15 +311,15 @@ export default function Leads() {
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
               filterScore === 'hot'
                 ? 'bg-orange-900/30 border-orange-500/30'
-                : 'bg-[#170e2c] border-white/[0.06] hover:border-orange-500/20'
+                : 'bg-card border-white/[0.06] hover:border-orange-500/20'
             }`}
           >
             <div className="w-8 h-8 rounded-lg bg-orange-900/30 flex items-center justify-center">
               <Flame size={15} className="text-orange-400" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{hotCount}</p>
-              <p className="text-[11px] text-[#555] mt-0.5">{t('Quentes', 'Hot')}</p>
+              <p className="text-lg font-semibold text-ink leading-none">{hotCount}</p>
+              <p className="text-[11px] text-ink-4 mt-0.5">{t('Quentes', 'Hot')}</p>
             </div>
           </button>
 
@@ -321,15 +328,15 @@ export default function Leads() {
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
               filterScore === 'warm'
                 ? 'bg-amber-900/30 border-amber-500/30'
-                : 'bg-[#170e2c] border-white/[0.06] hover:border-amber-500/20'
+                : 'bg-card border-white/[0.06] hover:border-amber-500/20'
             }`}
           >
             <div className="w-8 h-8 rounded-lg bg-amber-900/30 flex items-center justify-center">
               <Thermometer size={15} className="text-amber-400" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{warmCount}</p>
-              <p className="text-[11px] text-[#555] mt-0.5">{t('Mornos', 'Warm')}</p>
+              <p className="text-lg font-semibold text-ink leading-none">{warmCount}</p>
+              <p className="text-[11px] text-ink-4 mt-0.5">{t('Mornos', 'Warm')}</p>
             </div>
           </button>
 
@@ -338,29 +345,29 @@ export default function Leads() {
             className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
               filterScore === 'cold'
                 ? 'bg-violet-900/30 border-violet-500/30'
-                : 'bg-[#170e2c] border-white/[0.06] hover:border-violet-500/20'
+                : 'bg-card border-white/[0.06] hover:border-violet-500/20'
             }`}
           >
             <div className="w-8 h-8 rounded-lg bg-violet-900/30 flex items-center justify-center">
               <Snowflake size={15} className="text-violet-400" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-[#e2e2e8] leading-none">{coldCount}</p>
-              <p className="text-[11px] text-[#555] mt-0.5">{t('Frios', 'Cold')}</p>
+              <p className="text-lg font-semibold text-ink leading-none">{coldCount}</p>
+              <p className="text-[11px] text-ink-4 mt-0.5">{t('Frios', 'Cold')}</p>
             </div>
           </button>
 
-          <div className="flex items-center gap-2.5 p-3 rounded-xl border bg-[#170e2c] border-white/[0.06]">
+          <div className="flex items-center gap-2.5 p-3 rounded-xl border bg-card border-white/[0.06]">
             <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
-              <TrendingUp size={15} className="text-[#555]" />
+              <TrendingUp size={15} className="text-ink-4" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-[#e2e2e8] leading-none">
+              <p className="text-lg font-semibold text-ink leading-none">
                 {leads.length > 0
                   ? Math.round(leads.filter((l) => l.score !== null).reduce((acc, l) => acc + (l.score ?? 0), 0) / Math.max(leads.filter((l) => l.score !== null).length, 1))
                   : 0}
               </p>
-              <p className="text-[11px] text-[#555] mt-0.5">{t('Score médio', 'Average score')}</p>
+              <p className="text-[11px] text-ink-4 mt-0.5">{t('Score médio', 'Average score')}</p>
             </div>
           </div>
         </div>
@@ -369,20 +376,20 @@ export default function Leads() {
       {/* Search + filters */}
       <div className="flex flex-wrap sm:flex-nowrap gap-3 mb-4">
         <div className="flex-1 max-sm:basis-full relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#444]" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-5" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('Buscar por nome, @usuário ou e-mail...', 'Search by name, @handle or email...')}
-            className="w-full pl-9 pr-4 py-2.5 bg-[#170e2c] border border-white/[0.06] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
+            className="w-full pl-9 pr-4 py-2.5 bg-card border border-white/[0.06] text-ink text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-ink-5"
           />
         </div>
 
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2.5 bg-[#170e2c] border border-white/[0.06] text-[#888] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
+          className="px-3 py-2.5 bg-card border border-white/[0.06] text-ink-3 text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 appearance-none cursor-pointer"
         >
           <option value="">{t('Todos os status', 'All statuses')}</option>
           <option value="new">{t('Novos', 'New')}</option>
@@ -396,7 +403,7 @@ export default function Leads() {
       {/* Active filters */}
       {(filterScore || filterStatus) && (
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-[11px] text-[#444]">{t('Filtros ativos:', 'Active filters:')}</span>
+          <span className="text-[11px] text-ink-5">{t('Filtros ativos:', 'Active filters:')}</span>
           {filterScore && (
             <button
               onClick={() => setFilterScore('')}
@@ -420,7 +427,7 @@ export default function Leads() {
 
       {/* Table */}
       {loading ? (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-hidden">
+        <div className="bg-card rounded-xl border border-white/[0.06] overflow-hidden">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-5 py-3.5 border-b border-white/[0.04] animate-pulse">
               <div className="w-8 h-8 rounded-full bg-white/[0.04]" />
@@ -435,32 +442,32 @@ export default function Leads() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] p-16 text-center">
+        <div className="bg-card rounded-xl border border-white/[0.06] p-16 text-center">
           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
             <Users size={24} className="text-indigo-400" />
           </div>
-          <h3 className="text-base font-semibold text-[#e2e2e8] mb-1.5">
+          <h3 className="text-base font-semibold text-ink mb-1.5">
             {leads.length === 0 ? t('Nenhum lead captado', 'No leads captured') : t('Nenhum resultado', 'No results')}
           </h3>
-          <p className="text-[#444] text-sm max-w-sm mx-auto">
+          <p className="text-ink-5 text-sm max-w-sm mx-auto">
             {leads.length === 0
               ? t('Conecte suas contas Meta: leads chegam por WhatsApp, Instagram e formulários de anúncios.', 'Connect your Meta accounts: leads arrive from WhatsApp, Instagram and ad forms.')
               : t('Tente ajustar os filtros ou a busca.', 'Try adjusting the filters or search.')}
           </p>
         </div>
       ) : (
-        <div className="bg-[#170e2c] rounded-xl border border-white/[0.06] overflow-x-auto">
+        <div className="bg-card rounded-xl border border-white/[0.06] overflow-x-auto">
           {/* Abaixo de lg cada lead vira um cartão, sem rolagem lateral */}
           <table className="w-full text-sm max-lg:block">
             <thead className="max-lg:hidden">
               <tr className="border-b border-white/[0.05]">
-                <th className="text-left px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Lead</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Origem', 'Source')}</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Score</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">Status</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('WhatsApp', 'WhatsApp')}</th>
-                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Data', 'Date')}</th>
-                <th className="text-right px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-[#444]">{t('Ações', 'Actions')}</th>
+                <th className="text-left px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">Lead</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">{t('Origem', 'Source')}</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">Score</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">Status</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">{t('WhatsApp', 'WhatsApp')}</th>
+                <th className="text-left px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">{t('Data', 'Date')}</th>
+                <th className="text-right px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-ink-5">{t('Ações', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="max-lg:block">
@@ -473,11 +480,11 @@ export default function Leads() {
                         {(lead.name || lead.instagram_handle).charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-[#d0d0e0] font-medium text-[13px] leading-tight">
-                          {lead.name || <span className="text-[#444] italic">{t('sem nome', 'no name')}</span>}
+                        <p className="text-ink font-medium text-[13px] leading-tight">
+                          {lead.name || <span className="text-ink-5 italic">{t('sem nome', 'no name')}</span>}
                         </p>
-                        <p className="text-[#555] text-[11px] mt-0.5">@{lead.instagram_handle}</p>
-                        {lead.email && <p className="text-[#444] text-[10px]">{lead.email}</p>}
+                        <p className="text-ink-4 text-[11px] mt-0.5">{handleLabel(lead.instagram_handle)}</p>
+                        {lead.email && <p className="text-ink-5 text-[10px]">{lead.email}</p>}
                       </div>
                     </div>
                   </td>
@@ -485,7 +492,7 @@ export default function Leads() {
                   {/* Source */}
                   <td className="max-lg:p-0 px-4 py-3.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs text-[#555]">
+                      <span className="text-xs text-ink-4">
                         {sourceLabel(lead.source)}
                       </span>
                       {lead.origin_ad_id && (
@@ -504,7 +511,7 @@ export default function Leads() {
                     <div>
                       <ScoreBadge label={lead.score_label} score={lead.score} />
                       {lead.score_notes && (
-                        <p className="text-[10px] text-[#3a3a4a] mt-0.5 max-w-[120px] truncate" title={lead.score_notes}>
+                        <p className="text-[10px] text-ink-5 mt-0.5 max-w-[120px] truncate" title={lead.score_notes}>
                           {lead.score_notes}
                         </p>
                       )}
@@ -518,16 +525,16 @@ export default function Leads() {
                       className="flex items-center gap-1 group/status"
                     >
                       <StatusPill status={lead.status} />
-                      <ChevronDown size={10} className="text-[#333] group-hover/status:text-[#555] transition-colors" />
+                      <ChevronDown size={10} className="text-ink-5 group-hover/status:text-ink-4 transition-colors" />
                     </button>
                     {editingStatus === lead.id && (
-                      <div className="absolute z-20 left-4 top-full mt-1 bg-[#20153a] border border-white/[0.1] rounded-xl shadow-xl py-1 min-w-[140px]">
+                      <div className="absolute z-20 left-4 top-full mt-1 bg-raised border border-white/[0.1] rounded-xl shadow-xl py-1 min-w-[140px]">
                         {Object.entries(statusConfig).map(([key, cfg]) => (
                           <button
                             key={key}
                             onClick={() => handleStatusChange(lead.id, key)}
                             className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-white/[0.04] transition-colors ${
-                              lead.status === key ? 'text-indigo-300' : 'text-[#888]'
+                              lead.status === key ? 'text-indigo-300' : 'text-ink-3'
                             }`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -553,19 +560,19 @@ export default function Leads() {
                             ? 'bg-red-900/20 text-red-300 border-red-500/20'
                             : lead.whatsapp_opt_in
                               ? 'bg-emerald-900/20 text-emerald-300 border-emerald-500/20'
-                              : 'bg-white/[0.04] text-[#666] border-white/[0.08]'
+                              : 'bg-white/[0.04] text-ink-4 border-white/[0.08]'
                         }`}
                       >
                         {lead.whatsapp_opted_out_at ? 'Opt-out' : lead.whatsapp_opt_in ? 'Opt-in ✓' : t('Sem opt-in', 'No opt-in')}
                       </button>
                     ) : (
-                      <span className="text-[#444] text-xs">—</span>
+                      <span className="text-ink-5 text-xs">—</span>
                     )}
                   </td>
 
                   {/* Date */}
                   <td className="max-lg:p-0 px-4 py-3.5">
-                    <span className="text-[#444] text-xs">
+                    <span className="text-ink-5 text-xs">
                       {new Date(lead.captured_at).toLocaleDateString(locale, { day: '2-digit', month: 'short' })}
                     </span>
                   </td>
@@ -590,7 +597,7 @@ export default function Leads() {
                         <button
                           onClick={() => setCallsLead(lead)}
                           title={t('Histórico de chamadas', 'Call history')}
-                          className="p-1.5 rounded-lg bg-white/[0.04] text-[#8a8a9e] hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
+                          className="p-1.5 rounded-lg bg-white/[0.04] text-ink-3 hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
                         >
                           <Phone size={13} />
                         </button>
@@ -602,7 +609,7 @@ export default function Leads() {
                           setMergeError('')
                         }}
                         title={t('Mesclar com outro lead (mesma pessoa em outro canal)', 'Merge with another lead (same person on another channel)')}
-                        className="p-1.5 rounded-lg bg-white/[0.04] text-[#8a8a9e] hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
+                        className="p-1.5 rounded-lg bg-white/[0.04] text-ink-3 hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
                       >
                         <GitMerge size={13} />
                       </button>
@@ -621,7 +628,7 @@ export default function Leads() {
           </table>
 
           <div className="px-5 py-3 border-t border-white/[0.04] flex items-center justify-between">
-            <p className="text-[11px] text-[#444]">
+            <p className="text-[11px] text-ink-5">
               {t(`${filtered.length} de ${leads.length} leads`, `${filtered.length} of ${leads.length} leads`)}
               {noScore > 0 && t(` · ${noScore} sem score (clique em "Analisar Leads")`, ` · ${noScore} without score (click "Score Leads")`)}
             </p>
@@ -640,12 +647,12 @@ export default function Leads() {
       {/* Novo lead */}
       {showNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
                 <UserPlus size={16} className="text-indigo-400" /> {t('Novo lead', 'New lead')}
               </h3>
-              <button onClick={() => setShowNew(false)} className="text-[#444] hover:text-[#888]"><X size={18} /></button>
+              <button onClick={() => setShowNew(false)} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
             </div>
             <form onSubmit={handleCreateLead} className="space-y-3">
               {newError && <div className="bg-red-900/20 border border-red-500/20 text-red-400 text-xs rounded-lg px-4 py-2.5">{newError}</div>}
@@ -656,38 +663,38 @@ export default function Leads() {
                 { key: 'instagram_username', label: t('@ do Instagram', 'Instagram username'), placeholder: '@maria', type: 'text' },
               ].map((f) => (
                 <div key={f.key}>
-                  <label className="block text-xs font-medium text-[#8a8a9e] mb-1">{f.label}</label>
+                  <label className="block text-xs font-medium text-ink-3 mb-1">{f.label}</label>
                   <input
                     type={f.type}
                     value={(newLead as any)[f.key]}
                     onChange={(e) => setNewLead({ ...newLead, [f.key]: e.target.value })}
                     placeholder={f.placeholder}
-                    className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333]"
+                    className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                   />
                 </div>
               ))}
-              <p className="text-[10px] text-[#555] -mt-1">{t('Informe ao menos telefone, e-mail ou @ do Instagram.', 'Provide at least a phone, email or Instagram username.')}</p>
+              <p className="text-[10px] text-ink-4 -mt-1">{t('Informe ao menos telefone, e-mail ou @ do Instagram.', 'Provide at least a phone, email or Instagram username.')}</p>
               <div>
-                <label className="block text-xs font-medium text-[#8a8a9e] mb-1">Status</label>
+                <label className="block text-xs font-medium text-ink-3 mb-1">Status</label>
                 <select
                   value={newLead.status}
                   onChange={(e) => setNewLead({ ...newLead, status: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
                 >
                   {Object.keys(statusConfig).map((k) => <option key={k} value={k}>{statusLabel(k)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#8a8a9e] mb-1">{t('Observações', 'Notes')}</label>
+                <label className="block text-xs font-medium text-ink-3 mb-1">{t('Observações', 'Notes')}</label>
                 <textarea
                   value={newLead.notes}
                   onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
                   rows={2}
                   placeholder={t('Ex.: conheceu a loja na feira', 'E.g. met us at the fair')}
-                  className="w-full px-3 py-2 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
+                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5 resize-none"
                 />
               </div>
-              <label className={`flex items-start gap-2 text-[11px] leading-relaxed cursor-pointer ${newLead.phone.trim() ? 'text-[#8a8a9e]' : 'text-[#444]'}`}>
+              <label className={`flex items-start gap-2 text-[11px] leading-relaxed cursor-pointer ${newLead.phone.trim() ? 'text-ink-3' : 'text-ink-5'}`}>
                 <input
                   type="checkbox"
                   checked={newLead.whatsapp_opt_in}
@@ -703,7 +710,7 @@ export default function Leads() {
                 </span>
               </label>
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowNew(false)} className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors">
+                <button type="button" onClick={() => setShowNew(false)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors">
                   {t('Cancelar', 'Cancel')}
                 </button>
                 <button type="submit" disabled={creatingLead} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
@@ -718,16 +725,16 @@ export default function Leads() {
       {/* DM Modal */}
       {dmLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <MessageCircle size={16} className="text-indigo-400" />
                   {t('Enviar DM', 'Send DM')}
                 </h3>
-                <p className="text-xs text-[#555] mt-0.5">{t('Para', 'To')} @{dmLead.instagram_handle}</p>
+                <p className="text-xs text-ink-4 mt-0.5">{t('Para', 'To')} {handleLabel(dmLead.instagram_handle)}</p>
               </div>
-              <button onClick={() => setDmLead(null)} className="text-[#444] hover:text-[#888] transition-colors">
+              <button onClick={() => setDmLead(null)} className="text-ink-5 hover:text-ink-3 transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -746,27 +753,27 @@ export default function Leads() {
                     {dmError}
                   </div>
                 )}
-                <p className="text-[11px] text-[#666]">
+                <p className="text-[11px] text-ink-4">
                   {t(
                     'O Instagram só permite enviar mensagens até 24h após a última mensagem do cliente.',
                     "Instagram only allows sending messages within 24 hours of the customer's last message.",
                   )}
                 </p>
                 <div>
-                  <label className="block text-xs font-medium text-[#666] mb-1.5">{t('Mensagem', 'Message')}</label>
+                  <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Mensagem', 'Message')}</label>
                   <textarea
                     value={dmMessage}
                     onChange={(e) => setDmMessage(e.target.value)}
                     placeholder={t('Escreva sua mensagem...', 'Write your message...')}
                     rows={4}
-                    className="w-full px-4 py-3 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-[#333] resize-none"
+                    className="w-full px-4 py-3 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5 resize-none"
                   />
                 </div>
                 <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => setDmLead(null)}
-                    className="flex-1 py-2.5 border border-white/[0.08] text-[#666] hover:text-white text-sm font-medium rounded-lg transition-colors"
+                    className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     {t('Cancelar', 'Cancel')}
                   </button>
@@ -788,22 +795,22 @@ export default function Leads() {
       {/* Merge modal */}
       {mergeSurvivor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#170e2c] border border-white/[0.08] rounded-2xl p-7 w-full max-w-lg">
+          <div className="bg-card border border-white/[0.08] rounded-2xl p-7 w-full max-w-lg">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <GitMerge size={16} className="text-indigo-400" />
                   {t('Mesclar leads', 'Merge leads')}
                 </h3>
-                <p className="text-xs text-[#555] mt-0.5">
+                <p className="text-xs text-ink-4 mt-0.5">
                   {t('Escolha o lead que é a mesma pessoa. Ele será fundido em', 'Pick the lead that is the same person. It will be merged into')}{' '}
-                  <span className="text-[#c0c0d0] font-medium">
+                  <span className="text-ink-2 font-medium">
                     {mergeSurvivor.name || mergeSurvivor.instagram_handle}
                   </span>{' '}
                   {t('e removido.', 'and removed.')}
                 </p>
               </div>
-              <button onClick={() => setMergeSurvivor(null)} className="text-[#444] hover:text-[#888] transition-colors">
+              <button onClick={() => setMergeSurvivor(null)} className="text-ink-5 hover:text-ink-3 transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -823,13 +830,13 @@ export default function Leads() {
             )}
 
             <div className="relative mb-2">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#444]" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-5" />
               <input
                 autoFocus
                 value={mergeSearch}
                 onChange={(e) => setMergeSearch(e.target.value)}
                 placeholder={t('Buscar o lead a mesclar (nome, @usuário, telefone)…', 'Search the lead to merge (name, @handle, phone)…')}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#0f0820] border border-white/[0.08] text-[#e2e2e8] text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-[#333]"
+                className="w-full pl-9 pr-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:outline-none focus:border-indigo-500/50 placeholder-ink-5"
               />
             </div>
 
@@ -853,27 +860,27 @@ export default function Leads() {
                     disabled={merging}
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/[0.03] disabled:opacity-50 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-semibold text-[#8a8a9e] shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-xs font-semibold text-ink-3 shrink-0">
                       {(l.name || l.instagram_handle).charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-[#d0d0e0] font-medium truncate">
+                      <p className="text-[13px] text-ink font-medium truncate">
                         {l.name || l.instagram_handle}
                       </p>
-                      <p className="text-[11px] text-[#555] truncate">
+                      <p className="text-[11px] text-ink-4 truncate">
                         {l.phone ? l.phone : `@${l.instagram_handle}`}
                         {' · '}{sourceLabel(l.source)}
                       </p>
                     </div>
-                    <GitMerge size={13} className="text-[#444] shrink-0" />
+                    <GitMerge size={13} className="text-ink-5 shrink-0" />
                   </button>
                 ))}
               {leads.filter((l) => l.id !== mergeSurvivor.id).length === 0 && (
-                <p className="text-center text-[#555] text-xs py-6">{t('Não há outro lead para mesclar.', 'There is no other lead to merge.')}</p>
+                <p className="text-center text-ink-4 text-xs py-6">{t('Não há outro lead para mesclar.', 'There is no other lead to merge.')}</p>
               )}
             </div>
 
-            {merging && <p className="text-[11px] text-[#555] mt-3 text-center">{t('Mesclando…', 'Merging…')}</p>}
+            {merging && <p className="text-[11px] text-ink-4 mt-3 text-center">{t('Mesclando…', 'Merging…')}</p>}
           </div>
         </div>
       )}

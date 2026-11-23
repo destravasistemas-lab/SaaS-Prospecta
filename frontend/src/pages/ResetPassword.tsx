@@ -34,7 +34,7 @@ export default function ResetPassword() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-[#0c0618] flex items-center justify-center px-5">
+      <div className="min-h-screen bg-canvas flex items-center justify-center px-5">
         <div className="text-center max-w-sm">
           <div className="w-14 h-14 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -52,7 +52,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0618] flex items-center justify-center px-5">
+    <div className="min-h-screen bg-canvas flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <Link to="/" className="inline-flex items-center gap-2 no-underline mb-8">
@@ -65,7 +65,7 @@ export default function ResetPassword() {
             </span>
           </Link>
           <h1 className="text-xl font-semibold text-white mb-1">{t('Redefinir senha', 'Reset password')}</h1>
-          <p className="text-sm text-[#94a3b8]">{t('Escolha uma nova senha para sua conta.', 'Choose a new password for your account.')}</p>
+          <p className="text-sm text-ink-3">{t('Escolha uma nova senha para sua conta.', 'Choose a new password for your account.')}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -75,23 +75,23 @@ export default function ResetPassword() {
             </div>
           )}
           <div className="mb-3">
-            <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">{t('Nova senha', 'New password')}</label>
+            <label className="block text-xs font-medium text-ink-3 mb-1.5">{t('Nova senha', 'New password')}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
-              className="w-full px-3.5 py-2.5 bg-[#170e2c] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-[#475569] focus:border-violet-400 focus:shadow-[0_0_0_3px_rgba(167,139,250,0.15)]"
+              className="w-full px-3.5 py-2.5 bg-card border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-ink-5 focus:border-violet-400 focus:shadow-[0_0_0_3px_rgba(167,139,250,0.15)]"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">{t('Confirmar senha', 'Confirm password')}</label>
+            <label className="block text-xs font-medium text-ink-3 mb-1.5">{t('Confirmar senha', 'Confirm password')}</label>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder={t('Repita a senha', 'Repeat the password')}
-              className="w-full px-3.5 py-2.5 bg-[#170e2c] border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-[#475569] focus:border-violet-400 focus:shadow-[0_0_0_3px_rgba(167,139,250,0.15)]"
+              className="w-full px-3.5 py-2.5 bg-card border border-white/[0.1] text-white text-sm rounded-lg outline-none transition-all placeholder-ink-5 focus:border-violet-400 focus:shadow-[0_0_0_3px_rgba(167,139,250,0.15)]"
             />
           </div>
           <button

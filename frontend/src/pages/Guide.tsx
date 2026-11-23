@@ -185,7 +185,7 @@ function groups(t: T, callingOn: boolean): Group[] {
           icon: Send,
           title: t('Disparos', 'Broadcasts'),
           route: '/app/followups',
-          routeLabel: t('Abrir Follow-ups', 'Open Follow-ups'),
+          routeLabel: t('Abrir Disparos', 'Open Broadcasts'),
           intro: t(
             'Envie um template aprovado para vários contatos de uma vez: campanhas, avisos e reativação de clientes.',
             'Send an approved template to many contacts at once: campaigns, announcements and customer win-back.',
@@ -471,9 +471,9 @@ function Contents({ list }: { list: Group[] }) {
     <div className="space-y-4">
       {list.map((group) => (
         <div key={group.title}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#5a5a6e] mb-1 px-2">{group.title}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-4 mb-1 px-2">{group.title}</p>
           {group.sections.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="block px-2 py-1.5 rounded-lg text-[13px] text-[#8a8a9e] hover:text-white hover:bg-white/[0.04]">
+            <a key={s.id} href={`#${s.id}`} className="block px-2 py-1.5 rounded-lg text-[13px] text-ink-3 hover:text-white hover:bg-white/[0.04]">
               {s.title}
             </a>
           ))}
@@ -505,16 +505,16 @@ export function GuideContent() {
       </nav>
 
       <div className="min-w-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#e2e2e8]">{t('Guia do sistema', 'System guide')}</h1>
-        <p className="text-[#8a8a9e] text-sm mt-2 max-w-2xl">
+        <h1 className="text-2xl sm:text-3xl font-bold text-ink">{t('Guia do sistema', 'System guide')}</h1>
+        <p className="text-ink-3 text-sm mt-2 max-w-2xl">
           {t(
             `Como usar cada parte do ${BRANDING.name}: onde fica, o passo a passo, as regras da Meta e onde saber mais.`,
             `How to use each part of ${BRANDING.name}: where it is, step by step, Meta's rules and where to learn more.`,
           )}
         </p>
 
-        <details className="lg:hidden mt-5 bg-[#170e2c] border border-white/[0.06] rounded-xl p-3">
-          <summary className="text-sm font-medium text-[#e2e2e8] cursor-pointer">{t('Conteúdo', 'Contents')}</summary>
+        <details className="lg:hidden mt-5 bg-card border border-white/[0.06] rounded-xl p-3">
+          <summary className="text-sm font-medium text-ink cursor-pointer">{t('Conteúdo', 'Contents')}</summary>
           <div className="mt-3">
             <Contents list={list} />
           </div>
@@ -522,12 +522,12 @@ export function GuideContent() {
 
         {list.map((group) => (
           <div key={group.title} className="mt-8">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[#8a8a9e] mb-3">{group.title}</h2>
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-ink-3 mb-3">{group.title}</h2>
             <div className="space-y-6">
               {group.sections.map((s) => {
                 const Icon = s.icon
                 return (
-                  <section key={s.id} id={s.id} className="scroll-mt-20 lg:scroll-mt-6 bg-[#170e2c] border border-white/[0.06] rounded-2xl p-5 sm:p-6">
+                  <section key={s.id} id={s.id} className="scroll-mt-20 lg:scroll-mt-6 bg-card border border-white/[0.06] rounded-2xl p-5 sm:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <h3 className="flex items-center gap-2.5 text-lg font-semibold text-white">
                         <span className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 flex items-center justify-center">
@@ -541,14 +541,14 @@ export function GuideContent() {
                         </Link>
                       )}
                     </div>
-                    <p className="mt-3 text-sm text-[#c0c0d0] leading-relaxed">{s.intro}</p>
+                    <p className="mt-3 text-sm text-ink-2 leading-relaxed">{s.intro}</p>
 
                     {s.steps && (
                       <div className="mt-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8a8a9e] mb-2">{t('Passo a passo', 'Step by step')}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-3 mb-2">{t('Passo a passo', 'Step by step')}</p>
                         <ol className="space-y-2">
                           {s.steps.map((step, i) => (
-                            <li key={i} className="flex gap-3 text-sm text-[#d0d0e0]">
+                            <li key={i} className="flex gap-3 text-sm text-ink">
                               <span className="w-5 h-5 rounded-full bg-violet-500/20 text-violet-200 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                               <span className="leading-relaxed">{step}</span>
                             </li>
@@ -562,21 +562,21 @@ export function GuideContent() {
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300/90 mb-2">
                           {s.id === 'problemas' ? t('Mensagens e soluções', 'Messages and fixes') : t('Regras e limites', 'Rules and limits')}
                         </p>
-                        <ul className="space-y-1.5 list-disc list-inside text-sm text-[#d0d0e0]">
+                        <ul className="space-y-1.5 list-disc list-inside text-sm text-ink">
                           {s.rules.map((r, i) => <li key={i} className="leading-relaxed">{r}</li>)}
                         </ul>
                       </div>
                     )}
 
                     {s.tips && (
-                      <ul className="mt-4 space-y-1 text-sm text-[#8a8a9e]">
+                      <ul className="mt-4 space-y-1 text-sm text-ink-3">
                         {s.tips.map((tip, i) => <li key={i}>💡 {tip}</li>)}
                       </ul>
                     )}
 
                     {s.links && (
                       <div className="mt-4 flex flex-col gap-1.5">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8a8a9e]">{t('Saiba mais', 'Learn more')}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-3">{t('Saiba mais', 'Learn more')}</p>
                         {s.links.map((l) => <ExternalOrInternal key={l.url} url={l.url}>{l.label}</ExternalOrInternal>)}
                       </div>
                     )}
@@ -587,7 +587,7 @@ export function GuideContent() {
           </div>
         ))}
 
-        <p className="mt-8 text-xs text-[#5a5a6e]">
+        <p className="mt-8 text-xs text-ink-4">
           {t('Não encontrou o que procurava? Escreva para', "Didn't find what you were looking for? Write to")}{' '}
           <a href={`mailto:${BRANDING.supportEmail}`} className="text-violet-300 hover:text-violet-200">{BRANDING.supportEmail}</a>
         </p>
@@ -605,7 +605,7 @@ export default function Guide() {
 export function PublicGuide() {
   const { t } = useI18n()
   return (
-    <div className="min-h-screen bg-[#0c0618] text-[#e2e8f0]">
+    <div className="min-h-screen bg-canvas text-ink">
       <header className="border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
@@ -622,7 +622,7 @@ export function PublicGuide() {
         <GuideContent />
       </main>
       <footer className="border-t border-white/[0.06]">
-        <LegalEntity className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-[#64748b]" />
+        <LegalEntity className="max-w-6xl mx-auto px-4 sm:px-6 py-6 text-xs text-ink-4" />
       </footer>
     </div>
   )

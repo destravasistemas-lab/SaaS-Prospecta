@@ -12,12 +12,12 @@ from app.core.database import get_db
 from app.core.security import (
     hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token,
-    get_current_user,
+    get_current_user, ensure_approved,
 )
-from app.models.account import Account
+from app.models.account import Account, APPROVAL_PENDING
 from app.models.user import User
 from app.models.subscription import Subscription, SubscriptionPlan, SubscriptionStatus
-from app.services.email_service import send_verification_email
+from app.services.email_service import send_new_signup_alert, send_verification_email
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth-jwt"])
@@ -41,6 +41,11 @@ class LoginRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class RegisterResponse(BaseModel):
+    status: str = APPROVAL_PENDING
+    message: str = "Cadastro recebido. Você recebe acesso assim que ele for aprovado."
 
 
 class TokenResponse(BaseModel):
@@ -77,7 +82,7 @@ class UserOut(BaseModel):
 # Register — cria tenant (Account) + primeiro usuário admin
 # ---------------------------------------------------------------------------
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Verifica se username já existe
     result = await db.execute(select(User).where(User.username == body.username))
@@ -90,6 +95,9 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         brand_name=body.brand_name,
         meta_page_id=None,
         meta_access_token=None,
+        customer_email=body.username,
+        customer_name=body.full_name,
+        approval_status=APPROVAL_PENDING,
     )
     db.add(tenant)
     await db.flush()  # gera tenant.id sem commitar
@@ -125,15 +133,10 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Envia email de verificação (não bloqueante)
     await send_verification_email(body.username, verification_token, body.full_name or body.username)
 
-    logger.info("Novo tenant registrado: %s | user: %s", tenant.id, user.username)
+    await send_new_signup_alert(body.brand_name, body.username)
 
-    return TokenResponse(
-        access_token=create_access_token(user.id, tenant.id, user.role),
-        refresh_token=create_refresh_token(user.id, tenant.id),
-        user_id=user.id,
-        tenant_id=tenant.id,
-        role=user.role,
-    )
+    logger.info("Novo tenant registrado, aguardando aprovação: %s", tenant.id)
+    return RegisterResponse()
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +156,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         )
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Conta desativada.")
+    await ensure_approved(db, user)
 
     # Dono de empresa dependente (criada pela agência) só entra após verificar
     # o email — o link chega pelo Resend na criação da empresa.
@@ -189,6 +193,7 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="Usuário não encontrado.")
+    await ensure_approved(db, user)
 
     return TokenResponse(
         access_token=create_access_token(user.id, user.tenant_id, user.role),
@@ -257,6 +262,7 @@ async def complete_signup(body: CompleteSignupRequest, db: AsyncSession = Depend
     user.password_hash = hash_password(body.password)
     user.is_active = True
     await db.commit()
+    await ensure_approved(db, user)
 
     return TokenResponse(
         access_token=create_access_token(user.id, user.tenant_id, user.role),

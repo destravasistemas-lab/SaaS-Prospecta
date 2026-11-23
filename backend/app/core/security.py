@@ -68,7 +68,32 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado.")
+    await ensure_approved(db, user)
     return user
+
+
+def approval_error(approval_status: str) -> HTTPException:
+    if approval_status == "rejected":
+        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
+            "code": "account_rejected",
+            "message": "Seu cadastro não foi aprovado. Fale com o suporte.",
+        })
+    return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail={
+        "code": "pending_approval",
+        "message": "Seu cadastro está em análise. Você recebe acesso assim que for aprovado.",
+    })
+
+
+async def ensure_approved(db: AsyncSession, user: Any) -> None:
+    """Bloqueia quem ainda não foi liberado pelo super admin."""
+    from app.models.account import Account, APPROVAL_APPROVED
+    from app.core.modules import is_super_admin
+
+    approval = (await db.execute(
+        select(Account.approval_status).where(Account.id == user.tenant_id)
+    )).scalar_one_or_none()
+    if approval not in (None, APPROVAL_APPROVED) and not is_super_admin(user):
+        raise approval_error(approval)
 
 
 async def get_current_account(
@@ -97,4 +122,11 @@ async def get_current_user_ws(token: str, db: AsyncSession) -> Any:
         return None
     user_id: str = payload.get("sub", "")
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
-    return result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
+    if user is None:
+        return None
+    try:
+        await ensure_approved(db, user)
+    except HTTPException:
+        return None
+    return user

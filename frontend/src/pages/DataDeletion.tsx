@@ -54,16 +54,16 @@ export default function DataDeletion() {
       <LegalSection title={t('Como excluir seus dados', 'How to delete your data')}>
         <ol className="list-decimal list-inside space-y-2">
           <li>
-            <strong className="text-[#cbd5e1]">{t('Pelo Facebook ou Instagram', 'From Facebook or Instagram')}:</strong>{' '}
+            <strong className="text-ink-2">{t('Pelo Facebook ou Instagram', 'From Facebook or Instagram')}:</strong>{' '}
             {t('acesse Configurações → Apps e sites (ou Segurança → Apps e sites no Instagram), selecione', 'go to Settings → Apps and websites (or Security → Apps and websites on Instagram), select')}{' '}
             {BRANDING.name} {t('e clique em Remover. A Meta nos envia o pedido e excluímos automaticamente seus tokens, identificadores e dados associados. Você recebe um código de confirmação para acompanhar aqui.', 'and click Remove. Meta sends us the request and we automatically delete your tokens, identifiers and associated data. You get a confirmation code to track it here.')}
           </li>
           <li>
-            <strong className="text-[#cbd5e1]">{t('Pelo app', 'In the app')}:</strong>{' '}
+            <strong className="text-ink-2">{t('Pelo app', 'In the app')}:</strong>{' '}
             {t('em Conexões Meta, clique em Desconectar em cada integração. O acesso é revogado na Meta e o token é apagado.', 'in Meta Connections, click Disconnect on each integration. Access is revoked at Meta and the token is deleted.')}
           </li>
           <li>
-            <strong className="text-[#cbd5e1]">{t('Por e-mail', 'By email')}:</strong>{' '}
+            <strong className="text-ink-2">{t('Por e-mail', 'By email')}:</strong>{' '}
             {t('envie um pedido para', 'send a request to')}{' '}
             <a href={`mailto:${BRANDING.supportEmail}`} className="text-violet-400 underline">{BRANDING.supportEmail}</a>{' '}
             {t('a partir do e-mail da conta. Concluímos em até 30 dias.', 'from your account email. We complete it within 30 days.')}
@@ -77,7 +77,7 @@ export default function DataDeletion() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder={t('Código de confirmação', 'Confirmation code')}
-            className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-[#475569] focus:outline-none focus:border-violet-500/50"
+            className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-ink-5 focus:outline-none focus:border-violet-500/50"
           />
           <button
             type="submit"
@@ -90,16 +90,16 @@ export default function DataDeletion() {
         {error && <p className="text-red-400">{error}</p>}
         {status && (
           <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-1">
-            <p><span className="text-[#64748b]">{t('Código', 'Code')}:</span> <span className="font-mono text-white">{status.confirmation_code}</span></p>
+            <p><span className="text-ink-4">{t('Código', 'Code')}:</span> <span className="font-mono text-white">{status.confirmation_code}</span></p>
             <p>
-              <span className="text-[#64748b]">Status:</span>{' '}
+              <span className="text-ink-4">Status:</span>{' '}
               <span className={status.status === 'completed' ? 'text-emerald-400' : 'text-amber-400'}>
                 {status.status === 'completed' ? t('Concluído', 'Completed') : t('Recebido', 'Received')}
               </span>
             </p>
-            <p><span className="text-[#64748b]">{t('Solicitado em', 'Requested at')}:</span> {fmt(status.requested_at)}</p>
-            <p><span className="text-[#64748b]">{t('Concluído em', 'Completed at')}:</span> {fmt(status.completed_at)}</p>
-            <p className="text-[#cbd5e1] pt-1">{status.message}</p>
+            <p><span className="text-ink-4">{t('Solicitado em', 'Requested at')}:</span> {fmt(status.requested_at)}</p>
+            <p><span className="text-ink-4">{t('Concluído em', 'Completed at')}:</span> {fmt(status.completed_at)}</p>
+            <p className="text-ink-2 pt-1">{status.message}</p>
           </div>
         )}
       </LegalSection>
