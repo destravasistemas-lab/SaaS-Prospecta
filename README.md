@@ -147,7 +147,7 @@ Regras do código:
 - O SDP fica criptografado só enquanto a chamada toca e nunca vai para logs, eventos ou `Message.payload`.
 - A Meta pode repetir eventos ou mandar `terminate` antes de `connect`, então cada evento é idempotente sobre `(tenant_id, wa_call_id)`.
 
-Para ativar, ligue `WHATSAPP_CALLING_ENABLED` e assine o campo `calls` no app da Meta. A Meta só libera ligações em contas com limite de 2.000 destinatários por dia ou mais; números de teste públicos são isentos. As chamadas feitas pela empresa ainda não existem.
+Para ativar, ligue `WHATSAPP_CALLING_ENABLED` e assine o campo `calls` no app da Meta. A Meta só libera ligações em contas com limite de 2.000 destinatários por dia ou mais; números de teste públicos são isentos. Ligar para o cliente (`POST /whatsapp/calls/outbound`) exige opt-in de WhatsApp no lead e a permissão do cliente na Meta. O painel consulta `call_permissions` e, sem permissão, manda o pedido como mensagem livre (só com a janela de 24h aberta). O navegador gera o offer; a answer chega no webhook `connect` (`BUSINESS_INITIATED`), fica criptografada e é entregue uma única vez a quem ligou por `GET /calls/{id}/remote-sdp`. Os status `RINGING`, `ACCEPTED` e `REJECTED` chegam em `value.statuses`.
 
 ## Deploy
 

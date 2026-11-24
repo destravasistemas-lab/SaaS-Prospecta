@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 CALL_RINGING = "ringing"
+CALL_DIALING = "dialing"  # ligação feita pela empresa: chamando o cliente
 CALL_CLAIMED = "claimed"  # um atendente assumiu; o áudio ainda está conectando
 CALL_CONNECTED = "connected"
 CALL_COMPLETED = "completed"
@@ -16,6 +17,7 @@ CALL_FAILED = "failed"
 CALL_ENDED = (CALL_COMPLETED, CALL_MISSED, CALL_REJECTED, CALL_FAILED)
 
 DIRECTION_INBOUND = "inbound"
+DIRECTION_OUTBOUND = "outbound"
 
 
 class WhatsAppCall(Base):
@@ -40,7 +42,8 @@ class WhatsAppCall(Base):
     # Telefone do contato, ou o BSUID quando a Meta não informa o número
     contact_wa_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     contact_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    # Offer da Meta: criptografado e guardado só enquanto a chamada toca
+    # SDP da Meta (offer na recebida, answer na feita): criptografado e guardado
+    # só até o navegador buscar
     sdp_offer_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     answered_by_user_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True

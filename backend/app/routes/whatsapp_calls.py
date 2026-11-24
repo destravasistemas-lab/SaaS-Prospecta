@@ -1,15 +1,18 @@
 """
-Chamadas de voz do WhatsApp: configurações do número e atender, recusar e encerrar.
+Chamadas de voz do WhatsApp: configurações do número; atender, recusar e encerrar as
+recebidas; e ligar para o cliente (com a permissão dele na Meta e opt-in no Prospecta).
 
 Tudo aqui exige o módulo WhatsApp (ver main.py) e WHATSAPP_CALLING_ENABLED ligado.
 """
 import logging
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -19,12 +22,13 @@ from app.core.modules import users_with_module
 from app.core.security import get_current_user
 from app.models.conversation import Conversation
 from app.models.lead import Lead
+from app.models.message import Message
 from app.models.meta_connection import MetaConnection
 from app.models.user import User
-from app.routes.whatsapp import _find_conn
+from app.routes.whatsapp import _find_conn, _get_or_create_conv_for_lead, _save_outbound
 from app.models.whatsapp_call import (
-    CALL_CLAIMED, CALL_COMPLETED, CALL_CONNECTED, CALL_ENDED, CALL_MISSED, CALL_REJECTED, CALL_RINGING,
-    WhatsAppCall,
+    CALL_CLAIMED, CALL_COMPLETED, CALL_CONNECTED, CALL_DIALING, CALL_ENDED, CALL_FAILED, CALL_MISSED,
+    CALL_REJECTED, CALL_RINGING, DIRECTION_OUTBOUND, WhatsAppCall,
 )
 from app.services import messaging_policy, whatsapp_calling, whatsapp_service
 from app.services.meta_token_service import decrypt_token, safe_decrypt_token
@@ -81,6 +85,14 @@ class CallingSettingsOut(BaseModel):
 
 class SdpIn(BaseModel):
     sdp: str = Field(..., min_length=10, max_length=20000)
+
+
+class OutboundCallIn(SdpIn):
+    lead_id: str = Field(..., min_length=1, max_length=36)
+
+
+class PermissionRequestIn(BaseModel):
+    text: str | None = Field(None, max_length=1024)
 
 
 # ---------------------------------------------------------------------------
@@ -372,11 +384,15 @@ async def terminate_call(
         raise _not_yours()
     if call.status in CALL_ENDED:
         return {"success": True}
-    if call.status not in (CALL_CLAIMED, CALL_CONNECTED):
+    if call.status not in (CALL_CLAIMED, CALL_CONNECTED, CALL_DIALING):
         raise _unavailable()
 
     connected = call.status == CALL_CONNECTED
-    await _send_action(call, "terminate" if connected else "reject", db)
+    # Sem o ID da Meta ainda, não há o que encerrar lá.
+    if not call.wa_call_id.startswith("pending:"):
+        # Ligação feita pela empresa não tem "reject": desistir é "terminate".
+        outbound = call.direction == DIRECTION_OUTBOUND
+        await _send_action(call, "terminate" if connected or outbound else "reject", db)
 
     now = datetime.now(timezone.utc)
     duration = None
@@ -391,6 +407,250 @@ async def terminate_call(
         call.tenant_id, await users_with_module(db, call.tenant_id, "whatsapp"), events,
     )
     return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# Ligar para o cliente
+# ---------------------------------------------------------------------------
+
+def _consent_block(lead: Lead) -> tuple[str, str] | None:
+    """Por que não dá para ligar para este lead (independe da permissão na Meta)."""
+    if not lead.phone:
+        return "no_phone", t("Este lead não tem telefone de WhatsApp.", "This lead has no WhatsApp number.")
+    if lead.whatsapp_opted_out_at is not None:
+        return "opted_out", t(
+            "O contato pediu para não ser contatado pelo WhatsApp (opt-out).",
+            "The contact opted out of WhatsApp contact.",
+        )
+    if not lead.whatsapp_opt_in:
+        return "no_opt_in", t(
+            "Sem opt-in de WhatsApp: registre o consentimento do contato em Leads antes de ligar.",
+            "No WhatsApp opt-in: record the contact's consent in Leads before calling.",
+        )
+    return None
+
+
+async def _lead_or_404(lead_id: str, tenant_id: str, db: AsyncSession) -> Lead:
+    lead = (await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.account_id == tenant_id)
+    )).scalar_one_or_none()
+    if not lead:
+        raise HTTPException(404, t("Lead não encontrado.", "Lead not found."))
+    return lead
+
+
+def _require_consent(lead: Lead) -> None:
+    block = _consent_block(lead)
+    if block:
+        raise HTTPException(409, detail={"code": block[0], "message": block[1]})
+
+
+def _action(data: dict, name: str) -> dict:
+    return next((a for a in data.get("actions") or [] if a.get("action_name") == name), {})
+
+
+@router.get("/leads/{lead_id}/call-permission")
+async def call_permission(
+    lead_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Se dá para ligar agora e, se não der, se dá para pedir a permissão."""
+    lead = await _lead_or_404(lead_id, current_user.tenant_id, db)
+    block = _consent_block(lead)
+    if block:
+        return {"can_call": False, "can_request": False, "reason": block[0], "message": block[1]}
+
+    conn = await _conn_or_404(current_user.tenant_id, db)
+    data = await whatsapp_service.get_call_permission(_token(conn), conn.phone_number_id, lead.phone)
+    if data.get("error"):
+        raise messaging_policy.meta_send_error(data)
+
+    permission = data.get("permission") or {}
+    start = _action(data, "start_call")
+    request = _action(data, "send_call_permission_request")
+    conv = await _get_or_create_conv_for_lead(current_user.tenant_id, lead.id, db)
+    window_open = await messaging_policy.is_within_window(db, current_user.tenant_id, conv_id=conv.id)
+    await db.commit()
+
+    has_permission = permission.get("status") in ("temporary", "permanent")
+    can_call = has_permission and start.get("can_perform_action", True)
+    if can_call:
+        reason, message = None, None
+    elif has_permission:
+        reason, message = "call_limit", t(
+            "Limite de ligações para este contato atingido. Tente de novo mais tarde.",
+            "Call limit for this contact reached. Try again later.",
+        )
+    else:
+        reason, message = "no_permission", t(
+            "O contato ainda não permitiu ligações. Peça a permissão: ele responde no próprio WhatsApp.",
+            "The contact hasn't allowed calls yet. Ask for permission: they answer right in WhatsApp.",
+        )
+    return {
+        "can_call": can_call,
+        "permission": permission.get("status") or "no_permission",
+        "expires_at": permission.get("expiration_time"),
+        "can_request": not has_permission and request.get("can_perform_action", True),
+        "window_open": window_open,
+        "reason": reason,
+        "message": message,
+        "ice_servers": whatsapp_calling.ice_servers(),
+    }
+
+
+@router.post("/leads/{lead_id}/call-permission-request")
+async def request_call_permission(
+    lead_id: str,
+    body: PermissionRequestIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manda o pedido de permissão (mensagem livre, então só com a janela de 24h aberta)."""
+    lead = await _lead_or_404(lead_id, current_user.tenant_id, db)
+    _require_consent(lead)
+    conn = await _conn_or_404(current_user.tenant_id, db)
+    conv = await _get_or_create_conv_for_lead(current_user.tenant_id, lead.id, db)
+    if not await messaging_policy.is_within_window(db, current_user.tenant_id, conv_id=conv.id):
+        raise HTTPException(422, detail={
+            "code": "outside_24h_window",
+            "message": t(
+                "O cliente não fala com você há mais de 24 horas. Nesse caso a Meta só aceita o pedido "
+                "dentro de um template aprovado com o botão de ligação.",
+                "The customer hasn't messaged you in over 24 hours. In that case Meta only accepts the "
+                "request inside an approved template with the call button.",
+            ),
+        })
+
+    text = (body.text or "").strip() or t(
+        "Podemos te ligar pelo WhatsApp para continuar o atendimento?",
+        "Can we call you on WhatsApp to continue helping you?",
+    )
+    result = await whatsapp_service.send_call_permission_request(_token(conn), conn.phone_number_id, lead.phone, text)
+    if result.get("error"):
+        raise messaging_policy.meta_send_error(result)
+    wamid = ((result.get("messages") or [{}])[0]).get("id")
+    await _save_outbound(
+        tenant_id=current_user.tenant_id, conv_id=conv.id,
+        sender=current_user.full_name or current_user.username, wa_to=lead.phone, text=text,
+        wamid=wamid, payload={"call_permission_request": True}, db=db,
+    )
+    await db.commit()
+    return {"success": True}
+
+
+async def _notify_all(call: WhatsAppCall, events: list, db: AsyncSession) -> None:
+    await whatsapp_calling.notify(call.tenant_id, await users_with_module(db, call.tenant_id, "whatsapp"), events)
+
+
+@router.post("/calls/outbound")
+async def start_outbound_call(
+    body: OutboundCallIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Liga para o cliente. O navegador manda o offer; a answer chega pelo webhook."""
+    lead = await _lead_or_404(body.lead_id, current_user.tenant_id, db)
+    _require_consent(lead)
+    conn = await _conn_or_404(current_user.tenant_id, db)
+    token = _token(conn)
+
+    now = datetime.now(timezone.utc)
+    busy = (await db.execute(
+        select(WhatsAppCall.id).where(
+            WhatsAppCall.tenant_id == current_user.tenant_id,
+            WhatsAppCall.answered_by_user_id == current_user.id,
+            or_(
+                WhatsAppCall.status == CALL_CONNECTED,
+                # Chamando ou atendendo só conta enquanto não passou do tempo de toque.
+                WhatsAppCall.status.in_((CALL_DIALING, CALL_CLAIMED)) & (WhatsAppCall.ring_expires_at > now),
+            ),
+            WhatsAppCall.created_at > now - timedelta(hours=2),
+        ).limit(1)
+    )).first()
+    if busy:
+        raise HTTPException(409, detail={
+            "code": "already_in_call",
+            "message": t("Você já está em uma chamada.", "You are already on a call."),
+        })
+
+    conv = await _get_or_create_conv_for_lead(current_user.tenant_id, lead.id, db)
+    call = WhatsAppCall(
+        tenant_id=current_user.tenant_id,
+        conversation_id=conv.id,
+        lead_id=lead.id,
+        wa_call_id=f"pending:{uuid.uuid4()}",
+        direction=DIRECTION_OUTBOUND,
+        status=CALL_DIALING,
+        contact_wa_id=lead.phone,
+        contact_name=lead.name,
+        answered_by_user_id=current_user.id,
+        answered_by_name=current_user.full_name or current_user.username,
+        created_at=now,
+        ring_expires_at=now + timedelta(seconds=whatsapp_calling.OUTBOUND_RING_SECONDS),
+    )
+    db.add(call)
+    await db.flush()
+    msg = Message(
+        tenant_id=call.tenant_id, conversation_id=conv.id, sender=call.answered_by_name,
+        text=None, direction="outbound", wa_id=lead.phone, status="sent",
+        media_type=whatsapp_calling.CALL_MEDIA_TYPE, payload={"call": whatsapp_calling.call_view(call)},
+        is_within_24h_window=False, created_at=now,
+    )
+    db.add(msg)
+    conv.last_updated = now
+    await db.flush()
+    await db.refresh(msg)
+    call.message_db_id = msg.id
+    await db.commit()
+    await _notify_all(call, [whatsapp_calling.new_message_event(msg), whatsapp_calling.conversation_event(conv)], db)
+
+    try:
+        result = await whatsapp_service.start_call(token, conn.phone_number_id, lead.phone, body.sdp, call.id)
+    except Exception as exc:
+        logger.warning("Falha de rede ao ligar: %s", type(exc).__name__)
+        result = {"error": {"message": "network"}}
+
+    wa_call_id = ((result.get("calls") or [{}])[0]).get("id")
+    if result.get("error") or not wa_call_id:
+        code = (result.get("error") or {}).get("code")
+        events = await whatsapp_calling.finish_call(
+            call, CALL_FAILED, db, error_code=code if isinstance(code, int) else None,
+        )
+        await db.commit()
+        await _notify_all(call, events, db)
+        raise messaging_policy.meta_send_error(result)
+
+    call.wa_call_id = wa_call_id
+    try:
+        await db.commit()
+    except IntegrityError:
+        # ID repetido: não dá para acompanhar esta chamada, então não deixa o atendente preso nela.
+        await db.rollback()
+        call = await _call_or_404(call.id, call.tenant_id, db)
+        events = await whatsapp_calling.finish_call(call, CALL_FAILED, db)
+        await db.commit()
+        await _notify_all(call, events, db)
+        raise HTTPException(502, t("A Meta devolveu uma chamada inválida. Tente de novo.", "Meta returned an invalid call. Please try again."))
+    logger.info("Ligação feita pelo painel (tenant %s, chamada %s)", call.tenant_id, call.id)
+    return {"id": call.id, "conversation_id": conv.id, "contact_name": lead.name or lead.phone}
+
+
+@router.get("/calls/{call_id}/remote-sdp")
+async def outbound_remote_sdp(
+    call_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Answer do cliente para quem ligou. Sai do banco na primeira leitura."""
+    call = await _call_or_404(call_id, current_user.tenant_id, db)
+    if call.direction != DIRECTION_OUTBOUND or call.answered_by_user_id != current_user.id:
+        raise _not_yours()
+    sdp = safe_decrypt_token(call.sdp_offer_encrypted) if call.sdp_offer_encrypted else None
+    if sdp:
+        call.sdp_offer_encrypted = None
+        await db.commit()
+    return {"sdp": sdp, "status": whatsapp_calling.display_status(call)}
 
 
 @router.get("/leads/{lead_id}/calls")

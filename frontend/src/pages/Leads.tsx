@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Users, Search, Flame, Thermometer, Snowflake,
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
-  TrendingUp, GitMerge, UserPlus, Phone,
+  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -97,7 +97,7 @@ function StatusPill({ status }: { status: string }) {
 
 export default function Leads() {
   const { t, locale } = useI18n()
-  const { enabled: callingOn } = useCalls()
+  const { enabled: callingOn, callLead } = useCalls()
   const [callsLead, setCallsLead] = useState<Lead | null>(null)
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
@@ -594,13 +594,23 @@ export default function Leads() {
                         <MessageCircle size={13} />
                       </button>
                       {callingOn && (
-                        <button
-                          onClick={() => setCallsLead(lead)}
-                          title={t('Histórico de chamadas', 'Call history')}
-                          className="p-1.5 rounded-lg bg-white/[0.04] text-ink-3 hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
-                        >
-                          <Phone size={13} />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => callLead({ leadId: lead.id, name: lead.name || handleLabel(lead.instagram_handle) })}
+                            disabled={!lead.phone}
+                            title={lead.phone ? t('Ligar pelo WhatsApp', 'Call on WhatsApp') : t('Sem telefone', 'No phone number')}
+                            className="p-1.5 rounded-lg bg-emerald-600/15 text-emerald-300 hover:bg-emerald-600/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <PhoneCall size={13} />
+                          </button>
+                          <button
+                            onClick={() => setCallsLead(lead)}
+                            title={t('Histórico de chamadas', 'Call history')}
+                            className="p-1.5 rounded-lg bg-white/[0.04] text-ink-3 hover:bg-indigo-600/30 hover:text-indigo-300 transition-colors"
+                          >
+                            <Phone size={13} />
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => {

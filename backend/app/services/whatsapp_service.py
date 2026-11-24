@@ -374,6 +374,60 @@ async def call_action(
     return data
 
 
+async def start_call(
+    token: str, phone_number_id: str, to: str, sdp_offer: str, tracking: str,
+) -> dict:
+    """Liga para o cliente. Sem retry (cada tentativa conta no limite) e sem logar o corpo (SDP)."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            f"{settings.meta_graph_url}/{phone_number_id}/calls",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "messaging_product": "whatsapp",
+                "to": to,
+                "action": "connect",
+                "session": {"sdp_type": "offer", "sdp": sdp_offer},
+                "biz_opaque_callback_data": tracking,
+            },
+        )
+    data = resp.json()
+    if resp.status_code >= 400:
+        logger.warning(
+            "Meta recusou a ligação: http=%s code=%s",
+            resp.status_code, (data.get("error") or {}).get("code"),
+        )
+    return data
+
+
+async def get_call_permission(token: str, phone_number_id: str, wa_id: str) -> dict:
+    return await _request(
+        "GET",
+        f"{settings.meta_graph_url}/{phone_number_id}/call_permissions",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"user_wa_id": wa_id},
+    )
+
+
+async def send_call_permission_request(token: str, phone_number_id: str, to: str, body: str) -> dict:
+    """Pedido de permissão para ligar (mensagem livre: só dentro da janela de 24h)."""
+    return await _request(
+        "POST",
+        f"{settings.meta_graph_url}/{phone_number_id}/messages",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": to,
+            "type": "interactive",
+            "interactive": {
+                "type": "call_permission_request",
+                "action": {"name": "call_permission_request"},
+                "body": {"text": body},
+            },
+        },
+    )
+
+
 # ---------------------------------------------------------------------------
 # Upload / download de mídia
 # ---------------------------------------------------------------------------

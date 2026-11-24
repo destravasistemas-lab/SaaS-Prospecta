@@ -2,12 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Bot, Clock, UserCheck, Send, Power, MessageSquare, Check, CheckCheck,
-  FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2, ArrowLeft,
+  FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2, ArrowLeft, PhoneCall,
 } from 'lucide-react'
 import api, { WS_BASE, apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
-import { CallBanner } from '../components/CallProvider'
+import { CallBanner, useCalls } from '../components/CallProvider'
 import { CallLogLine } from '../components/CallLog'
 
 interface Conversation {
@@ -163,6 +163,7 @@ export default function WhatsApp() {
   const { t } = useI18n()
   const myId = localStorage.getItem('user_id') || ''
   const [searchParams] = useSearchParams()
+  const { enabled: callingOn, callLead } = useCalls()
 
   const [convs, setConvs] = useState<Conversation[]>([])
   const [queue, setQueue] = useState<Queue>('espera')
@@ -652,6 +653,19 @@ export default function WhatsApp() {
                 </p>
               </div>
 
+              {/* Ligar para o cliente */}
+              {callingOn && selected.customer_id && (
+                <button
+                  onClick={() => callLead({ leadId: selected.customer_id!, name: getConvName() })}
+                  title={t('Ligar pelo WhatsApp', 'Call on WhatsApp')}
+                  aria-label={t('Ligar pelo WhatsApp', 'Call on WhatsApp')}
+                  className="shrink-0 flex items-center gap-1.5 max-sm:h-9 px-3 py-1.5 rounded-lg bg-emerald-600/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/25 text-xs font-semibold transition-colors"
+                >
+                  <PhoneCall size={13} />
+                  <span className="max-sm:hidden">{t('Ligar', 'Call')}</span>
+                </button>
+              )}
+
               {/* Assumir */}
               {selected.atendente_id !== myId && (
                 <button
@@ -692,6 +706,7 @@ export default function WhatsApp() {
                   const out = m.direction === 'outbound'
                   const reactions = [m.payload?.customer_reaction, m.payload?.agent_reaction].filter(Boolean) as string[]
                   const isCall = m.media_type === 'call'
+                  const isPermission = m.media_type === 'call_permission'
                   return (
                     <div key={m.id} className={`flex ${out ? 'justify-end' : 'justify-start'}`}>
                       <div className={`group relative max-w-[70%] ${reactions.length ? 'mb-3' : ''}`}>
@@ -752,7 +767,7 @@ export default function WhatsApp() {
                           )}
 
                           {isCall && <CallLogLine call={m.payload?.call} createdAt={m.created_at} />}
-                          {m.media_type && !isCall && <div className="mb-1"><MediaContent m={m} /></div>}
+                          {m.media_type && !isCall && !isPermission && <div className="mb-1"><MediaContent m={m} /></div>}
                           {m.text && (
                             <p className="text-[13px] whitespace-pre-wrap break-words">{m.text}</p>
                           )}

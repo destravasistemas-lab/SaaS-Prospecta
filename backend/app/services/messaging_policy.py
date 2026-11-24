@@ -185,6 +185,14 @@ _META_ERROR_HINTS: dict[int, tuple[str, str]] = {
         "Este número usa SIP, então as ligações não funcionam pela API.",
         "This number uses SIP, so calls don't work through the API.",
     ),
+    138006: (
+        "O contato ainda não permitiu ligações deste número. Peça a permissão pelo WhatsApp antes de ligar.",
+        "This contact hasn't allowed calls from this number yet. Ask for permission on WhatsApp before calling.",
+    ),
+    138037: (
+        "O número atingiu o limite diário de ligações da Meta. Tente de novo mais tarde.",
+        "This number reached Meta's daily call limit. Try again later.",
+    ),
     138000: (
         "As ligações não estão ativas neste número. Ative em Conexões Meta → WhatsApp.",
         "Calling is not enabled on this number. Turn it on in Meta Connections → WhatsApp.",

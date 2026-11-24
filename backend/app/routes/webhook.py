@@ -742,9 +742,15 @@ async def handle_whatsapp_message(
             logger.warning("Mensagem %s sem from nem from_user_id: ignorada", wamid)
             continue
 
-        # A resposta ao pedido de ligação vem como mensagem, mas não é conversa do cliente.
+        # Resposta ao pedido de ligação: entra no histórico, mas não aciona bot nem automação.
         if msg_type == "interactive" and msg_data.get("interactive", {}).get("type") == "call_permission_reply":
+            from app.services import whatsapp_calling
+
+            reply_msg = await whatsapp_calling.record_permission_reply(tenant_id, wa_from, msg_data, db)
             logger.info("Resposta de permissão de chamada recebida (tenant %s)", tenant_id)
+            if reply_msg:
+                await db.commit()
+                await ws_manager.broadcast(tenant_id, *whatsapp_calling.new_message_event(reply_msg))
             continue
 
         # ---- Reação do cliente: atualiza a mensagem original, não cria nova ----

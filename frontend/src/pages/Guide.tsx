@@ -119,18 +119,21 @@ function groups(t: T, callingOn: boolean): Group[] {
           route: '/app/conexao',
           routeLabel: t('Abrir Conexões Meta', 'Open Meta Connections'),
           intro: t(
-            'O cliente liga pelo WhatsApp e você atende no navegador, com o microfone do computador ou do celular. O áudio não é gravado.',
-            'The customer calls on WhatsApp and you answer in the browser, with your computer or phone microphone. The audio is not recorded.',
+            'O cliente liga pelo WhatsApp e você atende no navegador, ou você liga para ele, com o microfone do computador ou do celular. O áudio não é gravado.',
+            'The customer calls on WhatsApp and you answer in the browser, or you call them, with your computer or phone microphone. The audio is not recorded.',
           ),
           steps: [
             t('Um admin liga "Receber ligações" em Conexões Meta → WhatsApp. O horário de atendimento é opcional.', 'An admin turns on "Receive calls" in Meta Connections → WhatsApp. Call hours are optional.'),
             t('Quando alguém liga, toca para quem tem acesso ao WhatsApp, em qualquer tela do painel. Se a conversa tem atendente online, toca nele primeiro e nos demais depois de alguns segundos.', 'When someone calls, it rings for everyone with WhatsApp access, on any panel screen. If the conversation has an agent online, it rings them first and the others a few seconds later.'),
             t('Clique em Atender e permita o microfone. Quem atende primeiro leva a chamada, e a conversa vai para Minhas com o bot desligado.', 'Click Answer and allow the microphone. Whoever answers first gets the call, and the conversation moves to Mine with the bot off.'),
             t('Durante a chamada, use Mudo e Encerrar no cartão no canto da tela. Você pode navegar pelo painel sem derrubar a ligação.', 'During the call, use Mute and Hang up on the card in the corner of the screen. You can move around the panel without dropping the call.'),
+            t('Para ligar, clique em Ligar na conversa do WhatsApp ou em Leads. Se o contato ainda não permitiu ligações, peça a permissão ali mesmo: ele responde no WhatsApp e a resposta aparece na conversa.', 'To call, click Call in the WhatsApp conversation or in Leads. If the contact hasn’t allowed calls yet, ask right there: they answer in WhatsApp and the reply shows up in the chat.'),
             t('Cada chamada fica na conversa e em Leads (ícone de telefone), com status, duração e quem atendeu.', 'Each call stays in the conversation and in Leads (phone icon), with status, duration and who answered.'),
           ],
           rules: [
             t('A Meta só ativa ligações em contas com limite de 2.000 destinatários por dia ou mais.', 'Meta only enables calling on accounts with a limit of 2,000 recipients per day or more.'),
+            t('Só dá para ligar para contatos com opt-in de WhatsApp e que permitiram ligações. A permissão vale 7 dias ou para sempre, como o cliente escolher, e ele pode tirá-la quando quiser.', 'You can only call contacts with WhatsApp opt-in who allowed calls. Permission lasts 7 days or forever, as the customer chooses, and they can revoke it anytime.'),
+            t('O pedido de permissão só sai com a conversa aberta nas últimas 24h, no máximo 1 por dia e 2 por semana por contato. 4 ligações seguidas sem resposta fazem a Meta cancelar a permissão.', 'The permission request only goes out with the conversation open in the last 24h, at most 1 per day and 2 per week per contact. 4 unanswered calls in a row make Meta revoke the permission.'),
             t('Recusar encerra a chamada para todos, não só para você.', 'Declining ends the call for everyone, not just for you.'),
             t('Recarregar ou fechar a aba durante a chamada encerra a ligação.', 'Reloading or closing the tab during a call ends it.'),
             t('Muitas chamadas sem resposta fazem a Meta esconder o botão de ligar. Use o horário de atendimento para evitar isso.', 'Too many unanswered calls make Meta hide the call button. Use call hours to avoid this.'),

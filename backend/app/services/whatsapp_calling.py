@@ -9,6 +9,7 @@ A Meta não garante ordem nem entrega única: o `terminate` pode chegar antes do
 `connect` e os dois podem repetir. Cada evento é aplicado sobre a linha única de
 (tenant_id, wa_call_id), então repetir um evento não muda o resultado.
 """
+import asyncio
 import json
 import logging
 from datetime import datetime, timedelta, timezone
@@ -25,8 +26,8 @@ from app.models.lead import LeadSource
 from app.models.message import Message
 from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS_ACTIVE
 from app.models.whatsapp_call import (
-    CALL_CLAIMED, CALL_COMPLETED, CALL_ENDED, CALL_FAILED, CALL_MISSED, CALL_REJECTED, CALL_RINGING,
-    DIRECTION_INBOUND, WhatsAppCall,
+    CALL_CLAIMED, CALL_COMPLETED, CALL_CONNECTED, CALL_DIALING, CALL_ENDED, CALL_FAILED, CALL_MISSED,
+    CALL_REJECTED, CALL_RINGING, DIRECTION_INBOUND, DIRECTION_OUTBOUND, WhatsAppCall,
 )
 from app.services.lead_identity import resolve_or_create_lead
 from app.services.meta_token_service import encrypt_token
@@ -35,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 CALL_MEDIA_TYPE = "call"
 USER_INITIATED = "USER_INITIATED"
+BUSINESS_INITIATED = "BUSINESS_INITIATED"
+# Quanto tempo a ligação feita pela empresa pode ficar chamando sem resposta da Meta
+OUTBOUND_RING_SECONDS = 90
 
 Notification = tuple[str, dict]
 
@@ -74,7 +78,7 @@ def is_ringing(call: WhatsAppCall, now: datetime | None = None) -> bool:
 
 def display_status(call: WhatsAppCall) -> str:
     """Se o terminate se perder, a chamada não pode ficar "tocando" para sempre."""
-    if call.status in (CALL_RINGING, CALL_CLAIMED) and _aware(call.ring_expires_at) <= datetime.now(timezone.utc):
+    if call.status in (CALL_RINGING, CALL_CLAIMED, CALL_DIALING) and _aware(call.ring_expires_at) <= datetime.now(timezone.utc):
         return CALL_MISSED
     return call.status
 
@@ -192,14 +196,14 @@ async def _create_call(
     return call, conv, msg
 
 
-def _new_message_event(msg: Message) -> Notification:
+def new_message_event(msg: Message) -> Notification:
     return "new_message", {
         "id": msg.id,
         "conversation_id": msg.conversation_id,
         "wa_id": msg.wa_id,
         "sender": msg.sender,
-        "text": None,
-        "media_type": CALL_MEDIA_TYPE,
+        "text": msg.text,
+        "media_type": msg.media_type,
         "payload": msg.payload,
         "direction": msg.direction,
         "status": msg.status,
@@ -256,7 +260,7 @@ async def finish_call(
     await sync_history(call, db)
 
     events = [call_updated_event(call)]
-    if was_open and status in (CALL_MISSED, CALL_FAILED):
+    if was_open and status in (CALL_MISSED, CALL_FAILED) and call.direction == DIRECTION_INBOUND:
         conv = await db.get(Conversation, call.conversation_id)
         if conv:
             conv.unread_count = (conv.unread_count or 0) + 1
@@ -311,7 +315,7 @@ async def _apply_event(
     created = call is None
     if created:
         call, conv, msg = await _create_call(event, names, tenant_id, db)
-        events += [_new_message_event(msg), conversation_event(conv)]
+        events += [new_message_event(msg), conversation_event(conv)]
 
     if kind == "terminate":
         return events + await _apply_terminate(call, event, value, db), None
@@ -340,8 +344,80 @@ async def _ring(call: WhatsAppCall, conv: Conversation, user_ids: list[str]) -> 
         await ws_manager.send_to_users(call.tenant_id, [user_id], "call_incoming", incoming_view(call, delay))
 
 
+async def _outbound_call(tenant_id: str, wa_call_id: str, db: AsyncSession) -> WhatsAppCall | None:
+    """
+    Ligação feita pelo painel. O webhook pode chegar antes de gravarmos o ID que a
+    Meta devolveu, então espera um pouco antes de desistir.
+    """
+    for attempt in range(6):
+        call = (await db.execute(
+            select(WhatsAppCall).where(
+                WhatsAppCall.tenant_id == tenant_id,
+                WhatsAppCall.wa_call_id == wa_call_id,
+                WhatsAppCall.direction == DIRECTION_OUTBOUND,
+            ).execution_options(populate_existing=True)
+        )).scalar_one_or_none()
+        if call or attempt == 5:
+            return call
+        # READ COMMITTED: a próxima consulta já enxerga o commit da rota que ligou.
+        await asyncio.sleep(0.5)
+    return None
+
+
+async def _apply_outbound_event(call: WhatsAppCall, event: dict, value: dict, db: AsyncSession) -> list[Notification]:
+    kind = event.get("event")
+    if kind == "terminate":
+        return await _apply_terminate(call, event, value, db)
+    if kind == "connect" and call.status == CALL_DIALING:
+        sdp = (event.get("session") or {}).get("sdp")
+        if sdp and not call.sdp_offer_encrypted:
+            # Answer do cliente: o navegador de quem ligou busca em /remote-sdp.
+            call.sdp_offer_encrypted = encrypt_token(sdp)
+            await db.flush()
+    return []
+
+
+async def _apply_outbound_status(call: WhatsAppCall, status: dict, db: AsyncSession) -> list[Notification]:
+    """RINGING, ACCEPTED ou REJECTED da ligação feita pela empresa."""
+    kind = (status.get("status") or "").upper()
+    if call.status in CALL_ENDED:
+        return []
+    if kind == "ACCEPTED" and call.status == CALL_DIALING:
+        call.status = CALL_CONNECTED
+        call.started_at = _timestamp(status.get("timestamp")) or datetime.now(timezone.utc)
+        await sync_history(call, db)
+        await db.flush()
+        return [call_updated_event(call)]
+    if kind == "REJECTED":
+        return await finish_call(call, CALL_REJECTED, db, ended_at=_timestamp(status.get("timestamp")))
+    return []
+
+
+async def _handle_outbound(value: dict, tenant_id: str, db: AsyncSession) -> list[Notification]:
+    events: list[Notification] = []
+    items = [(e, None) for e in value.get("calls") or []
+             if (e.get("direction") or "").upper() == BUSINESS_INITIATED]
+    items += [(None, s) for s in value.get("statuses") or [] if (s.get("type") or "call") == "call"]
+    for event, status in items:
+        wa_call_id = (event or status).get("id")
+        if not wa_call_id:
+            continue
+        call = await _outbound_call(tenant_id, wa_call_id, db)
+        if not call:
+            continue
+        try:
+            async with db.begin_nested():
+                if event:
+                    events += await _apply_outbound_event(call, event, value, db)
+                else:
+                    events += await _apply_outbound_status(call, status, db)
+        except Exception as exc:
+            logger.warning("Falha ao processar evento de ligação feita: %s", type(exc).__name__)
+    return events
+
+
 async def handle_calls_webhook(value: dict, db: AsyncSession) -> None:
-    """Campo `calls` do webhook. Só chamadas recebidas (USER_INITIATED)."""
+    """Campo `calls` do webhook: chamadas recebidas e ligações feitas pelo painel."""
     if not settings.whatsapp_calling_enabled:
         logger.debug("Webhook de chamada ignorado: WHATSAPP_CALLING_ENABLED desligado")
         return
@@ -353,7 +429,7 @@ async def handle_calls_webhook(value: dict, db: AsyncSession) -> None:
 
     tenant_id = conn.account_id
     names = _contact_names(value)
-    events: list[Notification] = []
+    events: list[Notification] = await _handle_outbound(value, tenant_id, db)
     to_ring: list[tuple[WhatsAppCall, Conversation]] = []
 
     for event in value.get("calls") or []:
@@ -385,3 +461,55 @@ async def handle_calls_webhook(value: dict, db: AsyncSession) -> None:
     await notify(tenant_id, user_ids, events)
     for call, conv in to_ring:
         await _ring(call, conv, user_ids)
+
+
+PERMISSION_MEDIA_TYPE = "call_permission"
+
+
+def permission_reply_text(reply: dict) -> str:
+    from app.core.i18n import t
+
+    if reply.get("response") != "accept":
+        return t("O contato não permitiu ligações.", "The contact did not allow calls.")
+    if reply.get("is_permanent"):
+        return t("O contato permitiu ligações.", "The contact allowed calls.")
+    return t("O contato permitiu ligações por 7 dias.", "The contact allowed calls for 7 days.")
+
+
+async def record_permission_reply(tenant_id: str, wa_from: str, msg_data: dict, db: AsyncSession) -> Message | None:
+    """Resposta do cliente ao pedido de ligação: vira uma linha no histórico da conversa."""
+    from app.routes.webhook import _find_lead, _get_or_create_conversation
+
+    wamid = msg_data.get("id")
+    if wamid and (await db.execute(
+        select(Message.id).where(Message.tenant_id == tenant_id, Message.message_id == wamid)
+    )).first():
+        return None
+    lead = await _find_lead(tenant_id, wa_from, db)
+    if not lead:
+        return None
+    reply = (msg_data.get("interactive") or {}).get("call_permission_reply") or {}
+    conv = await _get_or_create_conversation(tenant_id, lead.id, "whatsapp", db)
+    msg = Message(
+        tenant_id=tenant_id,
+        conversation_id=conv.id,
+        sender=wa_from,
+        text=permission_reply_text(reply),
+        direction="inbound",
+        wa_id=wa_from,
+        status="delivered",
+        message_id=wamid,
+        media_type=PERMISSION_MEDIA_TYPE,
+        payload={"call_permission": {
+            "response": reply.get("response"),
+            "is_permanent": bool(reply.get("is_permanent")),
+            "expiration_timestamp": reply.get("expiration_timestamp"),
+        }},
+        is_within_24h_window=True,
+    )
+    db.add(msg)
+    conv.last_updated = datetime.now(timezone.utc)
+    conv.unread_count = (conv.unread_count or 0) + 1
+    await db.flush()
+    await db.refresh(msg)
+    return msg

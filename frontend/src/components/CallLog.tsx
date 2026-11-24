@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Phone, PhoneIncoming, PhoneMissed, X } from 'lucide-react'
+import { Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, X } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 
 export interface CallInfo {
   status: string
+  direction?: string
   duration_seconds?: number | null
   answered_by?: string | null
   rejected_by?: string | null
@@ -17,8 +18,31 @@ function formatDuration(seconds: number): string {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 }
 
+function describeOutbound(call: CallInfo, stale: boolean): { label: string; missed: boolean } {
+  const person = call.answered_by ? tr(` por ${call.answered_by}`, ` by ${call.answered_by}`) : ''
+  switch (call.status) {
+    case 'dialing':
+      return stale
+        ? { label: tr('Ligação não atendida', 'Call not answered'), missed: true }
+        : { label: tr(`Ligando${person}…`, `Calling${person}…`), missed: false }
+    case 'connected':
+      return { label: tr(`Em chamada${person}`, `On a call${person}`), missed: false }
+    case 'completed': {
+      const duration = call.duration_seconds != null ? ` · ${formatDuration(call.duration_seconds)}` : ''
+      return { label: tr(`Ligação feita${person}${duration}`, `Call made${person}${duration}`), missed: false }
+    }
+    case 'rejected':
+      return { label: tr('O contato recusou a ligação', 'The contact declined the call'), missed: true }
+    case 'failed':
+      return { label: tr('A ligação não completou', 'The call did not go through'), missed: true }
+    default:
+      return { label: tr('Ligação não atendida', 'Call not answered'), missed: true }
+  }
+}
+
 function describe(call: CallInfo, createdAt: string): { label: string; missed: boolean } {
   const stale = Date.now() - new Date(createdAt).getTime() > STALE_AFTER_MS
+  if (call.direction === 'outbound') return describeOutbound(call, stale)
   const person = call.answered_by ? tr(` por ${call.answered_by}`, ` by ${call.answered_by}`) : ''
   switch (call.status) {
     case 'ringing':
@@ -47,10 +71,12 @@ function describe(call: CallInfo, createdAt: string): { label: string; missed: b
 export function CallLogLine({ call, createdAt }: { call: CallInfo | undefined; createdAt: string }) {
   if (!call) return null
   const { label, missed } = describe(call, createdAt)
-  const Icon = missed ? PhoneMissed : PhoneIncoming
+  const Icon = missed ? PhoneMissed : call.direction === 'outbound' ? PhoneOutgoing : PhoneIncoming
   return (
-    <p className={`flex items-center gap-1.5 text-[13px] ${missed ? 'text-red-300' : 'text-emerald-300'}`}>
-      <Icon size={14} className="shrink-0" />
+    <p className={`flex items-center gap-1.5 text-[13px] ${
+      call.direction === 'outbound' ? 'text-white' : missed ? 'text-red-300' : 'text-emerald-300'
+    }`}>
+      <Icon size={14} className={`shrink-0 ${call.direction === 'outbound' && missed ? 'text-red-200' : ''}`} />
       {label}
     </p>
   )
