@@ -6,6 +6,7 @@ import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import ConexaoMeta from './pages/ConexaoMeta'
 import Leads from './pages/Leads'
+import Prospeccao from './pages/Prospeccao'
 import Configuracoes from './pages/Configuracoes'
 import PublicarInstagram from './pages/PublicarInstagram'
 import AIConfig from './pages/AIConfig'
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/app/equipe" element={<Equipe />} />
           <Route path="/app/followups" element={<FollowUps />} />
           <Route path="/app/leads" element={<Leads />} />
+          <Route path="/app/prospeccao" element={<Prospeccao />} />
           <Route path="/app/configuracoes" element={<Configuracoes />} />
           <Route path="/app/guia" element={<Guide />} />
           <Route path="/app/planos" element={<Pricing embedded />} />

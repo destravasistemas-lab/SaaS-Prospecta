@@ -31,6 +31,8 @@ from app.schemas.subscription import (
     CheckoutResponse,
 )
 from app.services.asaas_service import asaas_service
+from app.models.prospect import ORDER_CANCELED, ORDER_PENDING, ProspectOrder
+from app.routes.prospect import mark_order_paid
 
 logger = logging.getLogger(__name__)
 
@@ -351,6 +353,19 @@ async def handle_asaas_webhook(
             logger.warning("Webhook sem payment_id, ignorando")
             return {"status": "ok"}
         
+        # Lista de prospecção paga por Pix
+        order = (await db.execute(
+            select(ProspectOrder).where(ProspectOrder.asaas_payment_id == payment_id)
+        )).scalar_one_or_none()
+        if order is not None:
+            if event in ("PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"):
+                await mark_order_paid(db, order)
+                logger.info(f"Lista de prospecção paga: {order.id}")
+            elif event == "PAYMENT_DELETED" and order.status == ORDER_PENDING:
+                order.status = ORDER_CANCELED
+            await db.commit()
+            return {"status": "ok"}
+
         # Find subscription by payment ID (IMPORTANTE: sem validação de account aqui)
         # Porque o webhook é público
         stmt = select(Subscription).where(

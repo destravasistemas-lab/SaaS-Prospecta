@@ -131,6 +131,17 @@ class AsaasService:
             logger.error(f"Error listing payments from Asaas: {e}")
             raise
     
+    async def get_pix_qr(self, payment_id: str) -> dict:
+        """QR Code do Pix da cobrança: {encodedImage, payload, expirationDate}."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/payments/{payment_id}/pixQrCode",
+                headers=self.headers,
+                timeout=10.0
+            )
+            response.raise_for_status()
+            return response.json()
+
     def calculate_due_date(self, days_ahead: int = 7) -> str:
         """Calculate due date (days from now)"""
         due_date = datetime.now(timezone.utc) + timedelta(days=days_ahead)

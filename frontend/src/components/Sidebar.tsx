@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Home, Users, Link2, Send, Megaphone, MessageSquare, FileText, Zap, Shield,
   BookOpen, CreditCard, Building2, LogOut, Settings, UserCog, Camera, Sparkles,
-  X, type LucideIcon,
+  X, Radar, type LucideIcon,
 } from 'lucide-react'
 import api from '../services/api'
 import AccountSwitcher from './AccountSwitcher'
@@ -93,6 +93,7 @@ export default function Sidebar({ menuOpen, onClose }: { menuOpen: boolean; onCl
       label: t('Clientes', 'Customers'),
       items: [
         { to: '/app/leads', label: 'Leads', icon: Users },
+        { to: '/app/prospeccao', label: t('Prospecção', 'Prospecting'), icon: Radar },
         ...(ia ? [{ to: '/app/ia', label: t('IA e conhecimento', 'AI & knowledge'), icon: Zap }] : []),
       ],
     },

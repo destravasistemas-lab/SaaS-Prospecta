@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Rocket, Link2, MessageSquare, FileText, UserCheck, Send, Repeat, Bot, Camera, Zap,
-  Inbox, Users, Megaphone, Building2, Shield, LifeBuoy, ExternalLink, ArrowRight, Phone, Smartphone,
+  Inbox, Users, Megaphone, Building2, Shield, LifeBuoy, ExternalLink, ArrowRight, Phone, Smartphone, Radar,
   type LucideIcon,
 } from 'lucide-react'
 import { BRANDING } from '../config/branding'
@@ -206,6 +206,27 @@ function groups(t: T, callingOn: boolean): Group[] {
           rules: [
             t('Só contatos com opt-in aparecem na lista, e quem fez opt-out nunca recebe.', 'Only opted-in contacts appear in the list, and anyone who opted out never receives it.'),
             t('Telefones do CSV são padronizados para 55DDDNÚMERO. Duplicados e inválidos são ignorados.', 'CSV phones are normalized to country code + area code + number. Duplicates and invalid ones are skipped.'),
+          ],
+        },
+        {
+          id: 'prospeccao',
+          icon: Radar,
+          title: t('Prospecção', 'Prospecting'),
+          route: '/app/prospeccao',
+          routeLabel: t('Abrir Prospecção', 'Open Prospecting'),
+          intro: t(
+            'Encontre empresas do seu nicho na sua cidade. A lista por CNPJ vem dos dados abertos da Receita Federal e é paga por Pix; o Google Maps serve para consultar dentro do app.',
+            'Find businesses in your niche and city. The CNPJ list comes from Brazilian Federal Revenue open data and is paid via Pix; Google Maps is for in-app lookups.',
+          ),
+          steps: [
+            t('Em Lista por CNPJ, escolha o nicho e a cidade, e se quiser o bairro e a quantidade.', 'In CNPJ list, pick the niche and city, and optionally the neighborhood and quantity.'),
+            t('Clique em Ver quantas empresas para ver o total, o preço e uma prévia.', 'Click See how many companies to see the total, price and a preview.'),
+            t('Pague o Pix. A tela confirma sozinha e libera o CSV e o botão Puxar para Leads.', 'Pay the Pix. The screen confirms by itself and unlocks the CSV and the Add to Leads button.'),
+          ],
+          rules: [
+            t('Uma empresa que você já comprou nunca volta nas suas próximas buscas. As que estão num Pix em aberto ficam reservadas por 24h.', "A company you already bought never comes back in your next searches. Companies in an open Pix stay reserved for 24h."),
+            t('Só empresas ativas. Os leads importados entram sem opt-in.', 'Active companies only. Imported leads come in without opt-in.'),
+            t('Os resultados do Google Maps não podem ser salvos nem exportados (regra do Google).', "Google Maps results can't be saved or exported (Google's rule)."),
           ],
         },
         {
