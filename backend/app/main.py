@@ -118,6 +118,25 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NOT NULL DEFAULT 'approved'",
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ",
     "ALTER TABLE followup_rules ADD COLUMN IF NOT EXISTS include_without_opt_in BOOLEAN NOT NULL DEFAULT FALSE",
+
+    # Prospecção foi removida: apaga as tabelas que ela criou, só se estiverem vazias
+    """
+    DO $$
+    DECLARE
+        t TEXT;
+        empty BOOLEAN;
+    BEGIN
+        FOREACH t IN ARRAY ARRAY['prospect_delivered', 'prospect_orders', 'places_search_log',
+                                 'cnpj_import_info', 'cnpj_companies', 'cnpj_cnaes', 'cnpj_municipios'] LOOP
+            IF to_regclass(t) IS NOT NULL THEN
+                EXECUTE format('SELECT NOT EXISTS (SELECT 1 FROM %I)', t) INTO empty;
+                IF empty THEN
+                    EXECUTE format('DROP TABLE %I', t);
+                END IF;
+            END IF;
+        END LOOP;
+    END $$
+    """,
 ]
 
 
