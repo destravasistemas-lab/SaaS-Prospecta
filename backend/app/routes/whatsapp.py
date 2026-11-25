@@ -89,6 +89,10 @@ class SendTemplateRequest(BaseModel):
         default=False,
         description="Agent confirms the contact gave WhatsApp opt-in (recorded on the lead).",
     )
+    accept_no_opt_in_risk: bool = Field(
+        default=False,
+        description="Send even without opt-in; the business accepts Meta's quality/ban risk.",
+    )
 
 
 class BroadcastRequest(BaseModel):
@@ -99,6 +103,10 @@ class BroadcastRequest(BaseModel):
     lead_ids: list[str] | None = Field(
         default=None,
         description="Se informado, dispara só para esses leads. Senão, todos com telefone.",
+    )
+    include_without_opt_in: bool = Field(
+        default=False,
+        description="Also send to contacts without opt-in; the business accepts Meta's quality/ban risk.",
     )
 
 
@@ -653,7 +661,7 @@ async def send_template(
     lead = await _lead_for_recipient(current_user.tenant_id, body.to, body.conversation_id, db)
     if body.opt_in_confirmed and lead and lead.whatsapp_opted_out_at is None and not lead.whatsapp_opt_in:
         messaging_policy.mark_opt_in(lead, "manual")
-    messaging_policy.require_template_consent(lead)
+    no_opt_in = messaging_policy.require_template_consent(lead, accept_risk=body.accept_no_opt_in_risk)
     token = decrypt_token(conn.access_token_encrypted)
 
     components = []
@@ -681,8 +689,11 @@ async def send_template(
         template_name=body.template_name,
         template_vars={"variables": body.variables},
         is_within_24h_window=False,
+        payload=dict(messaging_policy.NO_OPT_IN_PAYLOAD) if no_opt_in else None,
         db=db,
     )
+    if no_opt_in:
+        logger.info("Template enviado sem opt-in (risco aceito) tenant=%s user=%s", current_user.tenant_id, current_user.id)
     return {"status": "sent", "wamid": wamid}
 
 
@@ -919,6 +930,7 @@ class FollowUpRuleIn(BaseModel):
     variables: list[str] = Field(default_factory=list)
     send_hour_start: int = Field(9, ge=0, le=23)
     send_hour_end: int = Field(20, ge=1, le=24)
+    include_without_opt_in: bool = False
 
 
 def _serialize_rule(rule: FollowUpRule, stats: dict[str, dict]) -> dict:
@@ -934,6 +946,7 @@ def _serialize_rule(rule: FollowUpRule, stats: dict[str, dict]) -> dict:
         "variables": rule.variables or [],
         "send_hour_start": rule.send_hour_start,
         "send_hour_end": rule.send_hour_end,
+        "include_without_opt_in": rule.include_without_opt_in,
         "sent_count": st.get("sent", 0),
         "skipped_count": st.get("skipped", 0),
         "failed_count": st.get("failed", 0),
@@ -996,7 +1009,7 @@ async def create_followup_rule(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Cria uma regra: após N dias sem resposta, envia um template aprovado (só contatos com opt-in)."""
+    """Cria uma regra: após N dias sem resposta, envia um template aprovado (com opt-in, ou sem se a regra aceitar o risco)."""
     if current_user.role != "admin":
         raise HTTPException(403, "Acesso negado")
     conn = await _get_conn_or_404(current_user.tenant_id, db)
@@ -1079,7 +1092,14 @@ async def broadcast_audience(
     eligible = (await db.execute(select(func.count(Lead.id)).where(
         *base, Lead.whatsapp_opt_in.is_(True), Lead.whatsapp_opted_out_at.is_(None),
     ))).scalar() or 0
-    return {"count": eligible, "with_phone": with_phone, "without_opt_in": with_phone - eligible}
+    opted_out = (await db.execute(select(func.count(Lead.id)).where(
+        *base, Lead.whatsapp_opted_out_at.isnot(None),
+    ))).scalar() or 0
+    return {
+        "count": eligible, "with_phone": with_phone,
+        "without_opt_in": with_phone - eligible - opted_out, "opted_out": opted_out,
+        "risk_message": messaging_policy.no_opt_in_risks(),
+    }
 
 
 # Erros que valem para toda a lista (número não registrado, token, template, PIN)
@@ -1092,7 +1112,11 @@ async def broadcast_template(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Dispara um template para os leads com telefone e opt-in ativo (opt-outs são sempre excluídos)."""
+    """
+    Dispara um template para os leads com telefone. Por padrão só quem tem opt-in;
+    com include_without_opt_in a empresa aceita o risco e inclui os demais.
+    Opt-outs são sempre excluídos.
+    """
     if current_user.role != "admin":
         raise HTTPException(403, "Apenas admins podem disparar em massa.")
     conn = await _get_conn_or_404(current_user.tenant_id, db)
@@ -1104,9 +1128,10 @@ async def broadcast_template(
     q = select(Lead).where(
         Lead.account_id == current_user.tenant_id,
         Lead.phone.isnot(None),
-        Lead.whatsapp_opt_in.is_(True),
         Lead.whatsapp_opted_out_at.is_(None),
     )
+    if not body.include_without_opt_in:
+        q = q.where(Lead.whatsapp_opt_in.is_(True))
     if body.lead_ids:
         q = q.where(Lead.id.in_(body.lead_ids))
     leads = (await db.execute(q)).scalars().all()
@@ -1149,6 +1174,7 @@ async def broadcast_template(
                 template_name=body.template_name,
                 template_vars={"variables": body.variables},
                 is_within_24h_window=False,
+                payload=None if lead.whatsapp_opt_in else dict(messaging_policy.NO_OPT_IN_PAYLOAD),
                 db=db,
             )
             sent += 1
@@ -1159,6 +1185,9 @@ async def broadcast_template(
             logger.warning("Broadcast falhou para %s: %s", to, exc)
 
     result = {"total": len(leads), "sent": sent, "failed": failed}
+    if body.include_without_opt_in:
+        logger.info("Disparo com contatos sem opt-in (risco aceito) tenant=%s user=%s total=%d",
+                    current_user.tenant_id, current_user.id, len(leads))
     if first_error:
         result["error"] = first_error
     return result

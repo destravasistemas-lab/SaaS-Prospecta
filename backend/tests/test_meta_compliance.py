@@ -68,7 +68,9 @@ async def test_broadcast_only_reaches_opted_in_leads(client, db_session):
     await db_session.flush()
 
     aud = await client.get("/api/v1/whatsapp/broadcast/audience", headers=headers)
-    assert aud.json() == {"count": 1, "with_phone": 3, "without_opt_in": 2}
+    data = aud.json()
+    assert (data["count"], data["with_phone"], data["without_opt_in"], data["opted_out"]) == (1, 3, 1, 1)
+    assert "Meta" in data["risk_message"]
 
     with patch("app.services.whatsapp_service.send_template", new_callable=AsyncMock,
                return_value={"messages": [{"id": "wamid.BC"}]}) as mock_tpl:

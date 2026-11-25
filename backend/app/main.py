@@ -117,6 +117,7 @@ _MIGRATIONS = [
     # Aprovação de cadastro pelo super admin (contas existentes ficam aprovadas)
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approval_status VARCHAR(20) NOT NULL DEFAULT 'approved'",
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ",
+    "ALTER TABLE followup_rules ADD COLUMN IF NOT EXISTS include_without_opt_in BOOLEAN NOT NULL DEFAULT FALSE",
 ]
 
 

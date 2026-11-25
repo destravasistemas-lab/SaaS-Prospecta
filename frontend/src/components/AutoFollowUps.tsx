@@ -3,6 +3,7 @@ import { Plus, Repeat, Trash2, Pencil, X, Info } from 'lucide-react'
 import api from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from './HelpLink'
+import OptInRisk from './OptInRisk'
 
 interface Tpl {
   name: string
@@ -22,6 +23,7 @@ interface Rule {
   variables: string[]
   send_hour_start: number
   send_hour_end: number
+  include_without_opt_in: boolean
   sent_count: number
   skipped_count: number
   failed_count: number
@@ -40,6 +42,7 @@ const EMPTY: Form = {
   variables: [],
   send_hour_start: 9,
   send_hour_end: 20,
+  include_without_opt_in: false,
 }
 
 const bodyOf = (tpl?: Tpl) => tpl?.components?.find((c) => c.type === 'BODY')?.text || ''
@@ -151,8 +154,8 @@ export default function AutoFollowUps() {
         <Info size={16} className="text-violet-400 shrink-0 mt-0.5" />
         <p className="text-[12px] text-violet-200/80 leading-relaxed">
           {t(
-            'O follow-up automático funciona no WhatsApp: se o cliente não responder a um template em X dias, o sistema envia outro template aprovado — só para contatos com opt-in e no máximo uma vez por envio. No Instagram não é possível: a Meta só permite mensagens até 24h depois da última mensagem do cliente.',
-            "Automatic follow-up works on WhatsApp: if the customer doesn't reply to a template within X days, the system sends another approved template — only to opted-in contacts and at most once per message. It isn't possible on Instagram: Meta only allows messages within 24 hours of the customer's last message.",
+            'O follow-up automático funciona no WhatsApp: se o cliente não responder a um template em X dias, o sistema envia outro template aprovado, no máximo uma vez por envio. Por padrão só vai para contatos com opt-in; cada regra pode incluir os demais, por sua conta e risco. No Instagram não é possível: a Meta só permite mensagens até 24h depois da última mensagem do cliente.',
+            "Automatic follow-up works on WhatsApp: if the customer doesn't reply to a template within X days, the system sends another approved template, at most once per message. By default only opted-in contacts get it; each rule can include the others at your own risk. It isn't possible on Instagram: Meta only allows messages within 24 hours of the customer's last message.",
           )}
         </p>
         <HelpLink section="follow-up" className="shrink-0 whitespace-nowrap" />
@@ -202,6 +205,7 @@ export default function AutoFollowUps() {
                     {t(`Entre ${r.send_hour_start}h e ${r.send_hour_end}h (Brasília)`, `Between ${r.send_hour_start}:00 and ${r.send_hour_end}:00 (Brasília time)`)}
                     {' · '}{t('enviados', 'sent')}: <span className="text-emerald-400">{r.sent_count}</span>
                     {' · '}{t('pulados (sem opt-in)', 'skipped (no opt-in)')}: {r.skipped_count}
+                    {r.include_without_opt_in && <> · <span className="text-amber-400">{t('inclui sem opt-in', 'includes no opt-in')}</span></>}
                     {r.failed_count > 0 && <> · <span className="text-red-400">{t('falhas', 'failures')}: {r.failed_count}</span></>}
                     {r.last_sent_at && <> · {t('último', 'last')}: {new Date(r.last_sent_at).toLocaleString(locale)}</>}
                   </p>
@@ -294,6 +298,13 @@ export default function AutoFollowUps() {
                 </div>
               </div>
               <p className="text-[10px] text-ink-4">{t('Horário de Brasília. Fora dessa janela os envios esperam o próximo dia.', 'Brasília time. Outside this window, messages wait for the next day.')}</p>
+
+              <OptInRisk
+                title={t('Contatos sem opt-in', 'Contacts without opt-in')}
+                checked={form.include_without_opt_in}
+                onChange={(v) => setForm({ ...form, include_without_opt_in: v })}
+                label={t('Enviar o follow-up também para quem não tem opt-in. Entendo os riscos.', 'Also send the follow-up to contacts without opt-in. I understand the risks.')}
+              />
 
               <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
                 <input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} className="accent-indigo-500" />

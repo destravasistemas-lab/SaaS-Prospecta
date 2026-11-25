@@ -68,6 +68,7 @@ class StartConversationRequest(BaseModel):
     template_language: str = "pt_BR"
     template_variables: list[str] = []
     opt_in_confirmed: bool = False
+    accept_no_opt_in_risk: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +110,7 @@ async def start_conversation_with_template(
     # Template = mensagem iniciada pela empresa → exige opt-in registrado.
     if body.opt_in_confirmed and lead.whatsapp_opted_out_at is None and not lead.whatsapp_opt_in:
         messaging_policy.mark_opt_in(lead, "manual")
-    messaging_policy.require_template_consent(lead)
+    no_opt_in = messaging_policy.require_template_consent(lead, accept_risk=body.accept_no_opt_in_risk)
 
     # Create conversation
     conv = Conversation(
@@ -169,6 +170,7 @@ async def start_conversation_with_template(
         template_name=body.template_name,
         template_vars={"variables": body.template_variables},
         is_within_24h_window=False,
+        payload=dict(messaging_policy.NO_OPT_IN_PAYLOAD) if no_opt_in else None,
     )
     db.add(msg)
     await db.flush()

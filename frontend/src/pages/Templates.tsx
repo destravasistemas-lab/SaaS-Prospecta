@@ -3,6 +3,7 @@ import { FileText, Plus, RefreshCw, Trash2, X, Link2, AlertCircle, Send, Users }
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import OptInRisk from '../components/OptInRisk'
 
 interface Template {
   name: string
@@ -63,6 +64,8 @@ export default function Templates() {
   const [bcVars, setBcVars] = useState<string[]>([])
   const [audience, setAudience] = useState<number | null>(null)
   const [noOptIn, setNoOptIn] = useState(0)
+  const [includeNoOptIn, setIncludeNoOptIn] = useState(false)
+  const [riskMsg, setRiskMsg] = useState('')
   const [broadcasting, setBroadcasting] = useState(false)
   const [bcResult, setBcResult] = useState('')
 
@@ -145,10 +148,12 @@ export default function Templates() {
     const nums = [...bodyOf(tpl).matchAll(/\{\{(\d+)\}\}/g)].map((m) => parseInt(m[1]))
     setBcVars(Array(nums.length ? Math.max(...nums) : 0).fill(''))
     setAudience(null)
+    setIncludeNoOptIn(false)
     try {
       const { data } = await api.get('/whatsapp/broadcast/audience')
       setAudience(data.count)
       setNoOptIn(data.without_opt_in ?? 0)
+      setRiskMsg(data.risk_message || '')
     } catch { setAudience(0) }
   }
 
@@ -161,6 +166,7 @@ export default function Templates() {
         template_name: bcTpl.name,
         language: bcTpl.language || 'pt_BR',
         variables: bcVars,
+        include_without_opt_in: includeNoOptIn,
       })
       setBcResult(t(
         `Disparo concluído: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`,
@@ -447,7 +453,9 @@ export default function Templates() {
               <Users size={15} className="text-indigo-400" />
               {audience === null
                 ? t('Calculando público…', 'Calculating audience…')
-                : <span><b className="text-white">{audience}</b> {t('contatos com opt-in vão receber', 'opted-in contacts will receive it')}</span>}
+                : includeNoOptIn
+                  ? <span><b className="text-white">{audience + noOptIn}</b> {t(`contatos vão receber (${noOptIn} sem opt-in)`, `contacts will receive it (${noOptIn} without opt-in)`)}</span>
+                  : <span><b className="text-white">{audience}</b> {t('contatos com opt-in vão receber', 'opted-in contacts will receive it')}</span>}
             </div>
 
             {bcVars.length > 0 && (
@@ -466,18 +474,23 @@ export default function Templates() {
               </div>
             )}
 
+            {!bcResult && noOptIn > 0 && (
+              <OptInRisk
+                title={t(`${noOptIn} contato(s) sem opt-in`, `${noOptIn} contact(s) without opt-in`)}
+                message={riskMsg}
+                checked={includeNoOptIn}
+                onChange={setIncludeNoOptIn}
+                label={t(`Incluir também esses ${noOptIn} contatos. Entendo os riscos.`, `Also include these ${noOptIn} contacts. I understand the risks.`)}
+              />
+            )}
+
             {bcResult ? (
               <div className="bg-white/[0.04] border border-white/[0.08] text-ink-2 text-xs rounded-lg px-4 py-3 mb-4">{bcResult}</div>
             ) : (
               <div className="bg-amber-900/15 border border-amber-500/20 text-amber-400/90 text-[11px] rounded-lg px-3 py-2 mb-4">
                 {t(
-                  'Envia o template somente para contatos com opt-in registrado para WhatsApp. Quem pediu para sair (opt-out) nunca recebe. Cada envio é cobrado pela Meta conforme a categoria.',
-                  'Sends the template only to contacts with a recorded WhatsApp opt-in. Contacts who opted out never receive it. Each message is billed by Meta according to its category.',
-                )}
-                {noOptIn > 0 && (
-                  <span className="block mt-1">
-                    {t(`${noOptIn} contato(s) com telefone sem opt-in foram excluídos.`, `${noOptIn} contact(s) with a phone number but no opt-in were excluded.`)}
-                  </span>
+                  'Quem pediu para sair (opt-out) nunca recebe. Cada envio é cobrado pela Meta conforme a categoria.',
+                  'Contacts who opted out never receive it. Each message is billed by Meta according to its category.',
                 )}
               </div>
             )}
@@ -489,10 +502,10 @@ export default function Templates() {
               {!bcResult && (
                 <button
                   onClick={runBroadcast}
-                  disabled={broadcasting || !audience}
+                  disabled={broadcasting || !(audience || (includeNoOptIn && noOptIn))}
                   className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
-                  {broadcasting ? t('Disparando…', 'Sending…') : t(`Disparar para ${audience ?? 0}`, `Send to ${audience ?? 0}`)}
+                  {broadcasting ? t('Disparando…', 'Sending…') : t(`Disparar para ${(audience ?? 0) + (includeNoOptIn ? noOptIn : 0)}`, `Send to ${(audience ?? 0) + (includeNoOptIn ? noOptIn : 0)}`)}
                 </button>
               )}
             </div>

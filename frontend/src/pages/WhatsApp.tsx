@@ -10,6 +10,7 @@ import HelpLink from '../components/HelpLink'
 import { CallBanner, useCalls } from '../components/CallProvider'
 import { CallLogLine } from '../components/CallLog'
 import SaleDialog from '../components/SaleDialog'
+import OptInRisk from '../components/OptInRisk'
 
 interface Conversation {
   id: string
@@ -191,6 +192,8 @@ export default function WhatsApp() {
   const [tplVars, setTplVars] = useState<string[]>([])
   const [sendingTpl, setSendingTpl] = useState(false)
   const [tplOptIn, setTplOptIn] = useState(false)
+  const [tplRisk, setTplRisk] = useState<string | null>(null)
+  const [tplRiskOk, setTplRiskOk] = useState(false)
 
   // Mensagem interativa (botões / lista)
   const [showInt, setShowInt] = useState(false)
@@ -474,12 +477,19 @@ export default function WhatsApp() {
         variables: tplVars,
         conversation_id: selected.id,
         opt_in_confirmed: tplOptIn,
+        accept_no_opt_in_risk: tplRiskOk,
       })
       setShowTpl(false)
       setPickedTpl(null)
+      setTplRisk(null)
+      setTplRiskOk(false)
       loadMessages(selected.id)
     } catch (err: any) {
       const detail = err?.response?.data?.detail
+      if (detail?.can_accept_risk) {
+        setTplRisk(detail.message)
+        return
+      }
       alert(detail?.message || (typeof detail === 'string' ? detail : t('Erro ao enviar template.', 'Failed to send template.')))
     } finally {
       setSendingTpl(false)
@@ -972,9 +982,18 @@ export default function WhatsApp() {
                     )}
                   </span>
                 </label>
+                {tplRisk && !tplOptIn && (
+                  <OptInRisk
+                    title={t('Este contato não tem opt-in', 'This contact has no opt-in')}
+                    message={tplRisk}
+                    checked={tplRiskOk}
+                    onChange={setTplRiskOk}
+                    label={t('Entendo os riscos e quero enviar mesmo assim.', 'I understand the risks and want to send anyway.')}
+                  />
+                )}
                 <div className="flex gap-2">
-                  <button onClick={() => setPickedTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm rounded-lg transition-colors">{t('Voltar', 'Back')}</button>
-                  <button onClick={sendTemplate} disabled={sendingTpl} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+                  <button onClick={() => { setPickedTpl(null); setTplRisk(null); setTplRiskOk(false) }} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm rounded-lg transition-colors">{t('Voltar', 'Back')}</button>
+                  <button onClick={sendTemplate} disabled={sendingTpl || (!!tplRisk && !tplOptIn && !tplRiskOk)} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
                     {sendingTpl ? t('Enviando…', 'Sending…') : t('Enviar', 'Send')}
                   </button>
                 </div>

@@ -30,6 +30,8 @@ class FollowUpRule(Base):
     template_name: Mapped[str] = mapped_column(String(512), nullable=False)
     template_language: Mapped[str] = mapped_column(String(20), nullable=False, default="pt_BR")
     variables: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # A empresa aceitou o risco de enviar também para quem não tem opt-in
+    include_without_opt_in: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # Janela de envio no horário local da empresa (hora inicial inclusiva, final exclusiva)
     send_hour_start: Mapped[int] = mapped_column(Integer, nullable=False, default=9)
     send_hour_end: Mapped[int] = mapped_column(Integer, nullable=False, default=20)

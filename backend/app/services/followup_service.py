@@ -8,7 +8,7 @@ mensagens iniciadas pela empresa fora da janela de 24h.
 Garantias:
   - no máximo um follow-up por mensagem original (constraint única);
   - nunca segue um follow-up (sem cadeia infinita);
-  - só contatos com opt-in e sem opt-out;
+  - só contatos com opt-in (ou sem, se a regra aceitar o risco) e nunca com opt-out;
   - nunca para venda fechada/perdida nem conversa com atendente;
   - só dentro da janela de horário da regra (horário local da empresa);
   - envios até 14 dias depois do original.
@@ -26,7 +26,7 @@ from app.models.followup import FollowUpDispatch, FollowUpRule
 from app.models.lead import Lead, LeadStatus
 from app.models.message import Message
 from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS_ACTIVE
-from app.services import whatsapp_service
+from app.services import messaging_policy, whatsapp_service
 from app.services.meta_token_service import decrypt_token
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,8 @@ async def _run_rule(db: AsyncSession, rule: FollowUpRule, now: datetime) -> int:
         await db.flush()  # constraint única: um follow-up por mensagem original
         handled.add(original.id)
 
-        if lead is None or not lead.can_receive_whatsapp_templates:
+        no_opt_in = lead is not None and not lead.whatsapp_opt_in and lead.whatsapp_opted_out_at is None
+        if lead is None or not (lead.can_receive_whatsapp_templates or (no_opt_in and rule.include_without_opt_in)):
             dispatch.status = "skipped"
             dispatch.detail = "opted_out" if lead is not None and lead.whatsapp_opted_out_at else "no_opt_in"
             await db.flush()
@@ -172,7 +173,8 @@ async def _run_rule(db: AsyncSession, rule: FollowUpRule, now: datetime) -> int:
             text=f"[template:{rule.template_name}] {' | '.join(variables)}".strip(),
             direction="outbound", wa_id=original.wa_id, status="sent", message_id=wamid,
             template_name=rule.template_name, template_vars={"variables": variables},
-            is_within_24h_window=False, payload={"followup_rule_id": rule.id},
+            is_within_24h_window=False,
+            payload={"followup_rule_id": rule.id, **(messaging_policy.NO_OPT_IN_PAYLOAD if no_opt_in else {})},
         )
         db.add(msg)
         await db.flush()

@@ -172,14 +172,18 @@ function groups(t: T, callingOn: boolean): Group[] {
           route: '/app/leads',
           routeLabel: t('Abrir Leads', 'Open Leads'),
           intro: t(
-            'A Meta exige que mensagens iniciadas pela empresa (templates, disparos e follow-ups) só vão para quem aceitou recebê-las. O sistema registra e respeita esse consentimento.',
-            'Meta requires business-initiated messages (templates, broadcasts and follow-ups) to go only to people who agreed to receive them. The system records and respects that consent.',
+            'A Meta exige que mensagens iniciadas pela empresa (templates, disparos e follow-ups) só vão para quem aceitou recebê-las. O sistema registra esse consentimento e avisa antes de enviar para quem não tem.',
+            'Meta requires business-initiated messages (templates, broadcasts and follow-ups) to go only to people who agreed to receive them. The system records that consent and warns you before sending to anyone without it.',
           ),
           steps: [
             t('Em Leads, clique em "Sem opt-in" para registrar o consentimento. A data e a origem ficam salvas.', 'In Leads, click "No opt-in" to record consent. The date and source are saved.'),
             t('Na importação por CSV, inclua a coluna opt_in com sim ou não.', 'When importing a CSV, include an opt_in column with yes or no.'),
             t('Ao enviar um template no chat, marque a confirmação de opt-in.', 'When sending a template in the chat, tick the opt-in confirmation.'),
             t('Se o cliente enviar SAIR, PARAR ou STOP, o opt-out é automático e ele recebe uma confirmação. VOLTAR ou START reativa.', 'If the customer sends STOP (or SAIR/PARAR), opt-out is automatic and they get a confirmation. START (or VOLTAR) reactivates.'),
+          ],
+          rules: [
+            t('Para contatos sem opt-in, o sistema avisa os riscos (bloqueios, queda de qualidade, número restrito ou banido pela Meta, responsabilidade pela LGPD) e só envia se você marcar que entende os riscos. O envio fica marcado na mensagem.', 'For contacts without opt-in, the system shows the risks (blocks, lower quality, the number restricted or banned by Meta, data protection liability) and only sends if you tick that you understand them. The message is flagged.'),
+            t('Quem pediu para sair (opt-out) nunca recebe, nem aceitando o risco.', 'Contacts who opted out never receive messages, even if you accept the risk.'),
           ],
           links: [{ label: t('Como obter opt-in (Meta)', 'Getting opt-in (Meta)'), url: 'https://developers.facebook.com/docs/whatsapp/overview/getting-opt-in' }],
         },

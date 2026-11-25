@@ -116,8 +116,25 @@ async def require_instagram_window(
         })
 
 
-def require_template_consent(lead: Lead | None) -> None:
-    """Templates (business-initiated) require opt-in and no opt-out."""
+def no_opt_in_risks() -> str:
+    return t(
+        "A Meta exige opt-in para mensagens iniciadas pela empresa. Sem ele, quem recebe tende a bloquear "
+        "ou denunciar: a qualidade do número cai, o limite diário de envios diminui e a Meta pode restringir "
+        "ou banir o número (às vezes a conta do WhatsApp Business inteira). Pela LGPD, a responsabilidade "
+        "pelo contato sem consentimento é da empresa que envia.",
+        "Meta requires opt-in for business-initiated messages. Without it, recipients tend to block or "
+        "report you: the number's quality drops, its daily sending limit shrinks and Meta may restrict or "
+        "ban the number (sometimes the whole WhatsApp Business account). Under data protection law, the "
+        "sending business is responsible for contacting people without consent.",
+    )
+
+
+def require_template_consent(lead: Lead | None, *, accept_risk: bool = False) -> bool:
+    """
+    Templates (mensagens iniciadas pela empresa): opt-out bloqueia sempre.
+    Sem opt-in, só envia se a empresa aceitar o risco explicitamente.
+    Retorna True quando o envio vai sem opt-in (para registrar na mensagem).
+    """
     if lead is not None and lead.whatsapp_opted_out_at is not None:
         raise HTTPException(409, detail={
             "code": "opted_out",
@@ -126,14 +143,21 @@ def require_template_consent(lead: Lead | None) -> None:
                 "This contact asked not to receive messages (opted out).",
             ),
         })
-    if lead is None or not lead.whatsapp_opt_in:
-        raise HTTPException(422, detail={
-            "code": "opt_in_required",
-            "message": t(
-                "Este contato não tem opt-in registrado para WhatsApp. Registre o consentimento antes de enviar um template.",
-                "This contact has no WhatsApp opt-in on record. Record their consent before sending a template.",
-            ),
-        })
+    if lead is not None and lead.whatsapp_opt_in:
+        return False
+    if accept_risk:
+        return True
+    raise HTTPException(422, detail={
+        "code": "opt_in_required",
+        "can_accept_risk": True,
+        "message": t(
+            "Este contato não tem opt-in registrado para WhatsApp. ",
+            "This contact has no WhatsApp opt-in on record. ",
+        ) + no_opt_in_risks(),
+    })
+
+
+NO_OPT_IN_PAYLOAD = {"sent_without_opt_in": True}
 
 
 def mark_opt_in(lead: Lead, source: str) -> None:
