@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Shield, Building2, Save, Check, X, Clock } from 'lucide-react'
 import api, { apiError } from '../services/api'
+import HelpLink from '../components/HelpLink'
 import { useI18n, tr } from '../i18n'
 
 interface Tenant {
@@ -115,6 +116,7 @@ export default function SuperAdmin() {
             'New sign-ups only get in after you approve them. You also choose each account’s modules here; client businesses inherit the parent’s block and approval.',
           )}
         </p>
+        <HelpLink section="super-admin" className="mt-2" />
       </div>
 
       {error && <div className="mb-5 bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>}

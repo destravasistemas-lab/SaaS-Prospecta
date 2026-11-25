@@ -35,7 +35,7 @@ backend/tests/   pytest
 frontend/src/
   pages/      uma tela por arquivo
   components/ Layout, Sidebar, CallProvider e painéis
-  i18n/       t('português', 'english') em componentes; tr() fora deles
+  i18n/       t('português', 'english') em componentes; tr() fora deles. Espanhol em i18n/es.ts, indexado pelo texto em português
 docs/         roteiro e guia de submissão do App Review da Meta
 infra/        manifestos Kubernetes e Terraform (a produção atual usa o Render)
 ```

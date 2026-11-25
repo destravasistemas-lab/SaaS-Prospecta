@@ -51,7 +51,7 @@ export default function Templates() {
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('UTILITY')
-  const [tplLang, setTplLang] = useState(lang === 'en' ? 'en_US' : 'pt_BR')
+  const [tplLang, setTplLang] = useState(lang === 'en' ? 'en_US' : lang === 'es' ? 'es' : 'pt_BR')
   const [headerText, setHeaderText] = useState('')
   const [bodyText, setBodyText] = useState('')
   const [footerText, setFooterText] = useState('')

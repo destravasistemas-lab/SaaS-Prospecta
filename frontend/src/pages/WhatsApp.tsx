@@ -555,14 +555,17 @@ export default function WhatsApp() {
             <MessageSquare size={16} className="text-emerald-400" />
             WhatsApp
           </h1>
-          <Link
-            to="/app/templates"
-            className="flex items-center gap-1.5 text-[11px] text-ink-4 hover:text-ink-2 transition-colors no-underline"
-            title={t('Templates de WhatsApp', 'WhatsApp templates')}
-          >
-            <FileText size={13} />
-            Templates
-          </Link>
+          <div className="flex items-center gap-3">
+            <HelpLink section="whatsapp" className="lg:hidden" />
+            <Link
+              to="/app/templates"
+              className="flex items-center gap-1.5 text-[11px] text-ink-4 hover:text-ink-2 transition-colors no-underline"
+              title={t('Templates de WhatsApp', 'WhatsApp templates')}
+            >
+              <FileText size={13} />
+              {t('Templates', 'Templates')}
+            </Link>
+          </div>
         </div>
 
         {/* Filas */}
@@ -937,7 +940,7 @@ export default function WhatsApp() {
               tpls.length === 0 ? (
                 <p className="text-ink-4 text-sm text-center py-6">
                   {t('Nenhum template. Crie na página', 'No templates. Create one on the')}{' '}
-                  <Link to="/app/templates" className="text-indigo-400">Templates</Link>{t('.', ' page.')}
+                  <Link to="/app/templates" className="text-indigo-400">{t('Templates', 'Templates')}</Link>{t('.', ' page.')}
                 </p>
               ) : (
                 <div className="space-y-1.5">

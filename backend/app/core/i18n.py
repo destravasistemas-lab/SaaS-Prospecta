@@ -1,17 +1,39 @@
 """
-Bilingual (pt-BR / en) support for API messages.
+API messages in pt-BR, English and Spanish.
 
-The frontend sends `X-Lang: en|pt` (or the browser `Accept-Language`). A
+The frontend sends `X-Lang: pt|en|es` (or the browser `Accept-Language`). A
 middleware stores the language in a ContextVar and the HTTPException handler
-translates `detail` strings written in Portuguese to English when needed.
+translates `detail` strings written in Portuguese when needed.
 
-New code can call `t(pt, en)` directly.
+New code can call `t(pt, en)` directly; Spanish comes from i18n_es.ES, keyed
+by the Portuguese text (falls back to Portuguese when missing).
 """
 import re
 from contextvars import ContextVar
 
+from app.core.i18n_es import ES
+
 DEFAULT_LANG = "pt"
-SUPPORTED = ("pt", "en")
+SUPPORTED = ("pt", "en", "es")
+
+_ES_PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile("^" + "".join(
+        "(.*?)" if re.fullmatch(r"\{\d+\}", part) else re.escape(part)
+        for part in re.split(r"(\{\d+\})", pt)
+    ) + "$", re.S), es)
+    for pt, es in ES.items() if re.search(r"\{\d+\}", pt)
+]
+
+
+def to_spanish(text: str) -> str:
+    if text in ES:
+        return ES[text]
+    for pattern, template in _ES_PATTERNS:
+        m = pattern.match(text)
+        if m:
+            return re.sub(r"\{(\d+)\}", lambda g: m.group(int(g.group(1)) + 1) or "", template)
+    return text
+
 
 _lang: ContextVar[str] = ContextVar("lang", default=DEFAULT_LANG)
 
@@ -35,7 +57,12 @@ def get_lang() -> str:
 
 
 def t(pt: str, en: str) -> str:
-    return en if get_lang() == "en" else pt
+    lang = get_lang()
+    if lang == "en":
+        return en
+    if lang == "es":
+        return to_spanish(pt)
+    return pt
 
 
 _EXACT: dict[str, str] = {
@@ -207,7 +234,12 @@ _PATTERNS: list[tuple[re.Pattern, str]] = [
 
 
 def translate(text: str, lang: str | None = None) -> str:
-    if (lang or get_lang()) != "en" or not isinstance(text, str):
+    lang = lang or get_lang()
+    if not isinstance(text, str):
+        return text
+    if lang == "es":
+        return to_spanish(text)
+    if lang != "en":
         return text
     if text in _EXACT:
         return _EXACT[text]

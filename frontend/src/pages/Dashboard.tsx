@@ -208,7 +208,7 @@ export default function Dashboard() {
             <h1 className="text-xl font-semibold text-white">
               {t('Olá', 'Hi')}{me?.full_name ? `, ${me.full_name.split(' ')[0]}` : ''}
             </h1>
-            <HelpLink section="primeiros-passos" />
+            <HelpLink section="inicio" />
           </div>
           <p className="text-sm text-ink-4 mt-0.5">{t('Resumo da sua operação neste mês.', 'Your summary for this month.')}</p>
         </div>

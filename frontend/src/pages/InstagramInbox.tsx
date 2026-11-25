@@ -239,11 +239,12 @@ export default function InstagramInbox() {
     <div className="flex gap-4 h-[calc(100dvh-5.5rem)] sm:h-[calc(100dvh-6.5rem)] lg:h-[calc(100vh-4rem)]">
       {/* ---------- Coluna esquerda: filas + lista (no celular, some com a conversa aberta) ---------- */}
       <div className={`w-full lg:w-80 shrink-0 flex flex-col bg-card border border-white/[0.06] rounded-xl overflow-hidden ${selected ? 'max-lg:hidden' : ''}`}>
-        <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
+        <div className="px-4 pt-4 pb-3 border-b border-white/[0.06] flex items-center justify-between">
           <h1 className="text-sm font-semibold text-ink flex items-center gap-2">
             <InstagramIcon size={16} className="text-pink-400" />
             Instagram Direct
           </h1>
+          <HelpLink section="instagram-direct" className="lg:hidden" />
         </div>
 
         {/* Filas */}

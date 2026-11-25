@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useI18n, LanguageToggle } from '../i18n';
+import HelpLink from '../components/HelpLink'
 import LegalEntity from '../components/LegalEntity';
 
 interface Plan {
@@ -28,6 +29,21 @@ const PLAN_EN: Record<string, { name: string; description: string; features: str
   },
 }
 
+const PLAN_ES: Record<string, { name: string; description: string; features: string[] }> = {
+  free: { name: 'Gratis', description: 'Perfecto para empezar', features: ['Hasta 5 campañas', 'Chat básico', 'Panel'] },
+  starter: { name: 'Inicial', description: 'Para pequeños negocios', features: ['Hasta 50 campañas', 'Soporte por correo', 'Automatizaciones básicas'] },
+  pro: {
+    name: 'Profesional',
+    description: 'Para agencias y empresas en crecimiento',
+    features: ['Campañas ilimitadas', 'Soporte prioritario', 'Automatizaciones avanzadas', 'APIs', 'Administra hasta 10 clientes', 'Accede a las cuentas de los clientes'],
+  },
+  premium: {
+    name: 'Premium',
+    description: 'Para grandes operaciones',
+    features: ['Todo ilimitado', 'Soporte 24/7', 'Análisis avanzados', 'Gerente dedicado', 'Clientes ilimitados'],
+  },
+}
+
 interface Subscription {
   id: string;
   plan: string;
@@ -44,7 +60,9 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { t, lang } = useI18n();
   const localized = (plan: Plan): Plan =>
-    lang === 'en' && PLAN_EN[plan.id] ? { ...plan, ...PLAN_EN[plan.id] } : plan;
+    lang === 'en' && PLAN_EN[plan.id] ? { ...plan, ...PLAN_EN[plan.id] }
+      : lang === 'es' && PLAN_ES[plan.id] ? { ...plan, ...PLAN_ES[plan.id] }
+      : plan;
 
   useEffect(() => {
     fetchPlans();
@@ -125,6 +143,7 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
           <p className="text-ink-4">
             {t('Escolha o plano perfeito para suas necessidades', 'Choose the right plan for your needs')}
           </p>
+          {embedded && <HelpLink section="planos" className="mt-2" />}
         </div>
 
         {currentSubscription && (

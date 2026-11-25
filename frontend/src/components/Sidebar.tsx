@@ -84,7 +84,7 @@ export default function Sidebar({ menuOpen, onClose }: { menuOpen: boolean; onCl
         ...(ig ? [{ to: '/app/publicar', label: t('Posts e automações', 'Posts & automations'), icon: Sparkles }] : []),
         ...(wa ? [
           { to: '/app/followups', label: t('Disparos', 'Broadcasts'), icon: Send },
-          { to: '/app/templates', label: 'Templates', icon: FileText },
+          { to: '/app/templates', label: t('Templates', 'Templates'), icon: FileText },
         ] : []),
         ...(ads ? [{ to: '/app/marketing', label: t('Anúncios', 'Ads'), icon: Megaphone }] : []),
       ],

@@ -184,7 +184,7 @@ management: shared inbox, automations, AI assistant, post scheduling and ad camp
 2. Copy the `access_token` and click **Authorize** (top right) — paste the token only.
 
 ### Language
-Error messages follow the `X-Lang` header (`en` or `pt`). If absent, `Accept-Language` is used.
+Error messages follow the `X-Lang` header (`pt`, `en` or `es`). If absent, `Accept-Language` is used.
 
 ### Meta platform compliance
 - WhatsApp: free-form messages only inside the 24-hour customer service window; outside it,

@@ -38,7 +38,7 @@ export default function Configuracoes() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-ink mb-6">{t('Configurações', 'Settings')}</h2>
-      <HelpLink section="privacidade" className="mb-4 block" />
+      <HelpLink section="configuracoes" className="mb-4 block" />
       <div className="max-w-lg space-y-6">
         <form onSubmit={saveBrand} className="bg-card rounded-xl border border-white/[0.06] p-6 space-y-4">
           <h3 className="text-sm font-semibold text-ink">{t('Empresa', 'Business')}</h3>
@@ -62,6 +62,7 @@ export default function Configuracoes() {
           <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} className={input}>
             <option value="pt">Português (Brasil)</option>
             <option value="en">English (US)</option>
+            <option value="es">Español</option>
           </select>
         </div>
 

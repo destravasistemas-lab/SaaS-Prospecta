@@ -3,12 +3,14 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Rocket, Link2, MessageSquare, FileText, UserCheck, Send, Repeat, Bot, Camera, Zap,
   Inbox, Users, Megaphone, Building2, Shield, LifeBuoy, ExternalLink, ArrowRight, Phone, Smartphone,
+  LayoutDashboard, Settings, CreditCard,
   type LucideIcon,
 } from 'lucide-react'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
 import LegalEntity from '../components/LegalEntity'
 import { useCalls } from '../components/CallProvider'
+import { useMe } from '../components/MeContext'
 
 type T = (pt: string, en: string) => string
 
@@ -30,7 +32,7 @@ interface Group {
   sections: Section[]
 }
 
-function groups(t: T, callingOn: boolean): Group[] {
+function groups(t: T, callingOn: boolean, superAdmin: boolean): Group[] {
   return [
     {
       title: t('Comece aqui', 'Start here'),
@@ -52,7 +54,29 @@ function groups(t: T, callingOn: boolean): Group[] {
             t('Em Equipe, adicione as pessoas e defina o que cada uma acessa.', 'In Team, add people and set what each one can access.'),
             t('Ligue o que quiser automatizar: palavra-chave no Instagram, assistente de IA e follow-up.', 'Turn on what you want to automate: Instagram keywords, the AI assistant and follow-ups.'),
           ],
-          tips: [t('Troque o idioma (PT/EN) no rodapé do menu ou em Configurações.', 'Switch the language (PT/EN) at the bottom of the menu or in Settings.')],
+          tips: [t('Troque o idioma (PT/EN/ES) no rodapé do menu ou em Configurações.', 'Switch the language (PT/EN/ES) at the bottom of the menu or in Settings.')],
+        },
+        {
+          id: 'inicio',
+          icon: LayoutDashboard,
+          title: t('Tela Início', 'Home screen'),
+          route: '/app',
+          routeLabel: t('Abrir Início', 'Open Home'),
+          intro: t(
+            'O Início resume a sua operação do mês. Cada bloco só mostra números depois que a conexão correspondente estiver ativa.',
+            'Home summarizes your month. Each block only shows numbers once the matching connection is active.',
+          ),
+          steps: [
+            t('Comece por aqui: os quatro passos para começar (Instagram, WhatsApp, conta de anúncios e primeira automação). Cada passo feito fica riscado e o quadro some quando tudo estiver pronto.', 'Start here: the four steps to get going (Instagram, WhatsApp, ad account and first automation). Each finished step is crossed out and the box disappears once everything is done.'),
+            t('Anúncios: investimento, impressões, cliques, CTR, CPM e ROAS da conta de anúncios conectada.', 'Ads: spend, impressions, clicks, CTR, CPM and ROAS of the connected ad account.'),
+            t('Instagram: posts dos últimos 30 dias, alcance, engajamento médio e variação de seguidores.', 'Instagram: posts from the last 30 days, reach, average engagement and follower change.'),
+            t('WhatsApp: custo estimado do mês por categoria de template (marketing, utilidade e autenticação). São valores de referência; quem cobra é a Meta.', 'WhatsApp: estimated cost this month by template category (marketing, utility and authentication). These are reference values; Meta does the billing.'),
+            t('Clientes: total de clientes, novos nos últimos 30 dias, leads captados e taxa de conversão (clientes ÷ leads).', 'Customers: total customers, new in the last 30 days, captured leads and conversion rate (customers ÷ leads).'),
+            t('Faturamento: total, últimos 30 dias, ticket médio e receita projetada (últimos 30 dias × 12). Os valores vêm do botão "Fechou venda".', 'Revenue: total, last 30 days, average ticket and projected revenue (last 30 days × 12). The values come from the "Closed sale" button.'),
+          ],
+          tips: [
+            t('Lead vira cliente quando você registra uma venda nele, na conversa do WhatsApp ou em Leads.', 'A lead becomes a customer when you record a sale on it, in the WhatsApp conversation or in Leads.'),
+          ],
         },
         {
           id: 'conexoes',
@@ -413,6 +437,58 @@ function groups(t: T, callingOn: boolean): Group[] {
           ],
         },
         {
+          id: 'configuracoes',
+          icon: Settings,
+          title: t('Configurações', 'Settings'),
+          route: '/app/configuracoes',
+          routeLabel: t('Abrir Configurações', 'Open Settings'),
+          intro: t(
+            'Dados da empresa, idioma do painel e os atalhos de privacidade.',
+            'Business details, panel language and privacy shortcuts.',
+          ),
+          steps: [
+            t('Empresa: o nome da marca aparece no menu e nos e-mails do sistema. Altere e clique em Salvar.', 'Business: the brand name shows in the menu and in system emails. Change it and click Save.'),
+            t('Idioma da interface: português, inglês ou espanhol. Vale só para o seu navegador e muda na hora.', 'Interface language: Portuguese, English or Spanish. It applies to your browser only and changes right away.'),
+            t('Privacidade e dados: atalhos para Conexões Meta (desconectar contas), Exclusão de Dados, Política de Privacidade e Termos de Serviço.', 'Privacy and data: shortcuts to Meta Connections (disconnect accounts), Data Deletion, Privacy Policy and Terms of Service.'),
+          ],
+        },
+        {
+          id: 'planos',
+          icon: CreditCard,
+          title: t('Planos', 'Plans'),
+          route: '/app/planos',
+          routeLabel: t('Abrir Planos', 'Open Plans'),
+          intro: t(
+            'Mostra o seu plano atual e os planos disponíveis, com preço e o que cada um inclui.',
+            'Shows your current plan and the available plans, with price and what each one includes.',
+          ),
+          steps: [
+            t('O plano em uso aparece marcado como Atual.', 'The plan in use is marked as Current.'),
+            t('Clique em Escolher no plano desejado para trocar de plano.', 'Click Choose on the plan you want to switch plans.'),
+            t('As dúvidas comuns (trocar de plano, teste e cancelamento) ficam no fim da página.', 'Common questions (changing plans, trial and cancellation) are at the bottom of the page.'),
+          ],
+        },
+        ...(superAdmin ? [{
+          id: 'super-admin',
+          icon: Shield,
+          title: 'Super Admin',
+          route: '/app/super-admin',
+          routeLabel: t('Abrir Super Admin', 'Open Super Admin'),
+          intro: t(
+            'Só para os e-mails em SUPER_ADMIN_EMAILS. Aqui você libera quem pode entrar no sistema e escolhe os módulos de cada conta.',
+            'Only for the emails in SUPER_ADMIN_EMAILS. Here you let people into the system and choose each account’s modules.',
+          ),
+          steps: [
+            t('Aguardando: cadastros novos que ainda não entram no painel. O número aparece no menu, ao lado de Super Admin, e você recebe um e-mail a cada cadastro.', 'Waiting: new sign-ups that can’t get in yet. The count shows in the menu next to Super Admin, and you get an email for each sign-up.'),
+            t('Aprovar acesso libera a conta e manda um e-mail avisando o cliente. Recusar bloqueia a entrada.', 'Approve access unlocks the account and emails the customer. Reject blocks sign-in.'),
+            t('Aprovadas e Recusadas listam as demais contas. Use a busca por nome ou e-mail.', 'Approved and Rejected list the other accounts. Use the search by name or email.'),
+            t('Em cada conta, marque os módulos liberados (WhatsApp, Instagram, Meta Ads e IA) e clique em Salvar módulos.', 'On each account, tick the enabled modules (WhatsApp, Instagram, Meta Ads and AI) and click Save modules.'),
+          ],
+          rules: [
+            t('Empresas-filhas de uma agência herdam a aprovação e os bloqueios da conta-mãe.', 'An agency’s client businesses inherit the parent account’s approval and blocks.'),
+          ],
+        }] : []),
+        {
           id: 'celular',
           icon: Smartphone,
           title: t('Usar no celular', 'Using it on a phone'),
@@ -495,8 +571,9 @@ function Contents({ list }: { list: Group[] }) {
 export function GuideContent() {
   const { t } = useI18n()
   const { enabled: callingOn } = useCalls()
+  const me = useMe()
   const location = useLocation()
-  const list = groups(t, callingOn)
+  const list = groups(t, callingOn, !!me?.is_super_admin)
 
   useEffect(() => {
     const id = location.hash.replace('#', '')
