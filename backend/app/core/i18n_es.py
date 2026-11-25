@@ -397,4 +397,6 @@ ES: dict[str, str] = {
         "Desglose inválido. Usa: {0}",
     "Mídia indisponível: {0}":
         "Archivo no disponible: {0}",
+    "Período inválido. Use: {0}":
+        "Período inválido. Usa: {0}",
 }

@@ -1,5 +1,6 @@
+import asyncio
 import logging
-from datetime import datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
@@ -111,6 +112,8 @@ class CampaignOut(BaseModel):
     id: str
     name: str
     status: str
+    effective_status: str | None = None
+    issues: list[str] = []
     objective: str
     daily_budget: str | None = None
     lifetime_budget: str | None = None
@@ -150,6 +153,8 @@ class AdSetOut(BaseModel):
     id: str
     name: str
     status: str
+    effective_status: str | None = None
+    issues: list[str] = []
     daily_budget: str | None = None
     lifetime_budget: str | None = None
     bid_amount: str | None = None
@@ -206,6 +211,9 @@ class AdOut(BaseModel):
     id: str
     name: str
     status: str
+    effective_status: str | None = None
+    issues: list[str] = []
+    review_feedback: list[str] = []
     creative_id: str | None = None
     creative_name: str | None = None
     thumbnail_url: str | None = None
@@ -257,6 +265,47 @@ class InsightsPoint(BaseModel):
     spend: float = 0.0
     impressions: int = 0
     clicks: int = 0
+    results: float = 0.0
+
+
+class PeriodOut(BaseModel):
+    days: int
+    since: str
+    until: str
+    previous_since: str
+    previous_until: str
+
+
+class ComparedInsightsOut(BaseModel):
+    current: AdInsightsOut
+    previous: AdInsightsOut
+
+
+class CampaignSummaryOut(ComparedInsightsOut):
+    currency: str | None = None
+
+
+class ProblemAdOut(BaseModel):
+    id: str
+    name: str | None = None
+    campaign_id: str | None = None
+    adset_id: str | None = None
+    effective_status: str
+    reasons: list[str] = []
+
+
+class AccountHealthOut(BaseModel):
+    account_status: int | None = None
+    disable_reason: int | None = None
+    currency: str | None = None
+
+
+class AdsOverviewOut(BaseModel):
+    period: PeriodOut
+    account: AccountHealthOut
+    totals: ComparedInsightsOut
+    campaigns: dict[str, ComparedInsightsOut] = {}
+    problems: list[ProblemAdOut] = []
 
 
 class TargetingOptionOut(BaseModel):
@@ -303,6 +352,49 @@ def _meta_error(result: dict, default: str) -> str:
     err = (result or {}).get("error", {}) or {}
     logger.warning("%s: code=%s error_subcode=%s", default, err.get("code"), err.get("error_subcode"))
     return err.get("error_user_msg") or err.get("error_user_title") or err.get("message") or default
+
+
+def _issues(item: dict) -> list[str]:
+    """Mensagens de issues_info (problemas de entrega) da Graph."""
+    out = []
+    for issue in item.get("issues_info") or []:
+        msg = issue.get("error_summary") or issue.get("error_message")
+        if msg and msg not in out:
+            out.append(msg)
+    return out
+
+
+def _review_feedback(item: dict) -> list[str]:
+    """Motivos de reprovação (ad_review_feedback.global e por posicionamento)."""
+    feedback = item.get("ad_review_feedback") or {}
+    out: list[str] = []
+    for value in (feedback.get("global") or {}).values():
+        if value and value not in out:
+            out.append(str(value))
+    for per_placement in (feedback.get("placement_specific") or {}).values():
+        for value in (per_placement or {}).values():
+            if value and value not in out:
+                out.append(str(value))
+    return out
+
+
+ALLOWED_DAYS = (7, 14, 30, 90)
+
+
+def _period(days: int, today: date | None = None) -> PeriodOut:
+    """Últimos N dias completos (sem hoje, como os presets da Meta) e os N dias anteriores."""
+    if days not in ALLOWED_DAYS:
+        raise HTTPException(status_code=422, detail=f"Período inválido. Use: {', '.join(map(str, ALLOWED_DAYS))}")
+    today = today or datetime.now(timezone.utc).date()
+    until = today - timedelta(days=1)
+    since = until - timedelta(days=days - 1)
+    prev_until = since - timedelta(days=1)
+    prev_since = prev_until - timedelta(days=days - 1)
+    return PeriodOut(days=days, since=since.isoformat(), until=until.isoformat(),
+                     previous_since=prev_since.isoformat(), previous_until=prev_until.isoformat())
+
+
+_CAMPAIGN_LEVEL_FIELDS = "campaign_id,campaign_name," + "spend,impressions,reach,frequency,clicks,ctr,cpc,cpm,actions,action_values,purchase_roas"
 
 
 def _build_targeting(t: TargetingSpec) -> dict:
@@ -613,6 +705,8 @@ async def api_list_campaigns(
             id=c.get("id", ""),
             name=c.get("name", ""),
             status=c.get("status", ""),
+            effective_status=c.get("effective_status"),
+            issues=_issues(c),
             objective=c.get("objective", ""),
             daily_budget=c.get("daily_budget"),
             lifetime_budget=c.get("lifetime_budget"),
@@ -705,7 +799,7 @@ async def api_campaign_insights(
     _, token = await _get_ads_connection(current_user, db)
     data = await ads_service.get_insights(
         token, campaign_id, date_preset=date_preset, since=since, until=until,
-        time_increment=1, fields="spend,impressions,clicks,date_start",
+        time_increment=1, fields="spend,impressions,clicks,actions,date_start", limit=100,
     )
     return [
         InsightsPoint(
@@ -713,9 +807,33 @@ async def api_campaign_insights(
             spend=float(item.get("spend", 0) or 0),
             impressions=int(item.get("impressions", 0) or 0),
             clicks=int(item.get("clicks", 0) or 0),
+            results=_pick_result(item.get("actions"))[0],
         )
         for item in data
     ]
+
+
+@router.get("/campaigns/{campaign_id}/summary", response_model=CampaignSummaryOut)
+async def api_campaign_summary(
+    campaign_id: str,
+    days: int = Query(30),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Totais da campanha no período e no período anterior de mesmo tamanho."""
+    period = _period(days)
+    _, token = await _get_ads_connection(current_user, db)
+    cur, prev = await asyncio.gather(
+        ads_service.get_insights(token, campaign_id, since=period.since, until=period.until,
+                                 fields=ads_service.INSIGHTS_FIELDS_RICH + ",account_currency"),
+        ads_service.get_insights(token, campaign_id, since=period.previous_since, until=period.previous_until,
+                                 fields=ads_service.INSIGHTS_FIELDS_RICH + ",account_currency"),
+    )
+    return CampaignSummaryOut(
+        current=_insights_row(cur[0]) if cur else AdInsightsOut(),
+        previous=_insights_row(prev[0]) if prev else AdInsightsOut(),
+        currency=((cur or prev or [{}])[0]).get("account_currency"),
+    )
 
 
 @router.get("/campaigns/{campaign_id}/ad-sets", response_model=list[AdSetOut])
@@ -731,6 +849,8 @@ async def api_list_ad_sets(
             id=a.get("id", ""),
             name=a.get("name", ""),
             status=a.get("status", ""),
+            effective_status=a.get("effective_status"),
+            issues=_issues(a),
             daily_budget=a.get("daily_budget"),
             lifetime_budget=a.get("lifetime_budget"),
             bid_amount=a.get("bid_amount"),
@@ -833,6 +953,9 @@ async def api_list_ads(
             id=a.get("id", ""),
             name=a.get("name", ""),
             status=a.get("status", ""),
+            effective_status=a.get("effective_status"),
+            issues=_issues(a),
+            review_feedback=_review_feedback(a),
             creative_id=creative.get("id"),
             creative_name=creative.get("name"),
             thumbnail_url=creative.get("thumbnail_url"),
@@ -1057,6 +1180,81 @@ async def api_insights(
     if not data:
         return AdInsightsOut()
     return _insights_row(data[0])
+
+
+@router.get("/overview", response_model=AdsOverviewOut)
+async def api_overview(
+    days: int = Query(30),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Tudo que a tela de Anúncios precisa para explicar o que está acontecendo:
+    situação da conta, totais com o período anterior, números de cada campanha
+    e anúncios reprovados/em análise/com problema.
+    """
+    period = _period(days)
+    conn, token = await _get_ads_connection(current_user, db)
+    act = _require_ad_account(conn)
+    node = ads_service._act(act)
+    results = await asyncio.gather(
+        ads_service.get_ad_account(token, act),
+        ads_service.get_insights(token, node, since=period.since, until=period.until,
+                                 fields=ads_service.INSIGHTS_FIELDS_RICH),
+        ads_service.get_insights(token, node, since=period.previous_since, until=period.previous_until,
+                                 fields=ads_service.INSIGHTS_FIELDS_RICH),
+        ads_service.get_insights(token, node, since=period.since, until=period.until,
+                                 fields=_CAMPAIGN_LEVEL_FIELDS, level="campaign", limit=500),
+        ads_service.get_insights(token, node, since=period.previous_since, until=period.previous_until,
+                                 fields=_CAMPAIGN_LEVEL_FIELDS, level="campaign", limit=500),
+        ads_service.list_problem_ads(token, act),
+        return_exceptions=True,
+    )
+    account, cur, prev, cur_c, prev_c, problems = [
+        r if not isinstance(r, Exception) else ({} if i == 0 else []) for i, r in enumerate(results)
+    ]
+    for r in results:
+        if isinstance(r, Exception):
+            logger.warning("Visão geral de anúncios incompleta: %s", r)
+
+    campaigns: dict[str, ComparedInsightsOut] = {}
+    for row in cur_c or []:
+        cid = row.get("campaign_id")
+        if cid:
+            campaigns[cid] = ComparedInsightsOut(current=_insights_row(row), previous=AdInsightsOut())
+    for row in prev_c or []:
+        cid = row.get("campaign_id")
+        if cid:
+            campaigns.setdefault(cid, ComparedInsightsOut(current=AdInsightsOut(), previous=AdInsightsOut()))
+            campaigns[cid].previous = _insights_row(row)
+
+    def _int(v):
+        try:
+            return int(v) if v is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    return AdsOverviewOut(
+        period=period,
+        account=AccountHealthOut(
+            account_status=_int((account or {}).get("account_status")),
+            disable_reason=_int((account or {}).get("disable_reason")),
+            currency=(account or {}).get("currency"),
+        ),
+        totals=ComparedInsightsOut(
+            current=_insights_row(cur[0]) if cur else AdInsightsOut(),
+            previous=_insights_row(prev[0]) if prev else AdInsightsOut(),
+        ),
+        campaigns=campaigns,
+        problems=[
+            ProblemAdOut(
+                id=a.get("id", ""), name=a.get("name"), campaign_id=a.get("campaign_id"),
+                adset_id=a.get("adset_id"), effective_status=a.get("effective_status", ""),
+                reasons=_review_feedback(a) + [m for m in _issues(a) if m not in _review_feedback(a)],
+            )
+            for a in problems or []
+        ],
+    )
 
 
 @router.get("/campaigns/{campaign_id}/insights/by-level", response_model=list[EntityInsightsOut])

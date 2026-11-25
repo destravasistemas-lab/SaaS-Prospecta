@@ -67,7 +67,8 @@ async def list_campaigns(token: str, ad_account_id: str) -> list[dict]:
         f"{settings.meta_graph_url}/{_act(ad_account_id)}/campaigns",
         params={
             "access_token": token,
-            "fields": "id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time",
+            "fields": "id,name,status,effective_status,issues_info,objective,daily_budget,"
+                      "lifetime_budget,start_time,stop_time",
             "limit": "50",
         },
     )
@@ -201,8 +202,8 @@ async def list_ad_sets(token: str, campaign_id: str) -> list[dict]:
         f"{settings.meta_graph_url}/{campaign_id}/adsets",
         params={
             "access_token": token,
-            "fields": "id,name,status,daily_budget,lifetime_budget,bid_amount,"
-                      "billing_event,optimization_goal,targeting,end_time",
+            "fields": "id,name,status,effective_status,issues_info,daily_budget,lifetime_budget,"
+                      "bid_amount,billing_event,optimization_goal,targeting,end_time",
             "limit": "50",
         },
     )
@@ -498,7 +499,8 @@ async def list_ads(token: str, ad_set_id: str) -> list[dict]:
         f"{settings.meta_graph_url}/{ad_set_id}/ads",
         params={
             "access_token": token,
-            "fields": "id,name,status,creative{id,name,thumbnail_url,object_story_spec}",
+            "fields": "id,name,status,effective_status,issues_info,ad_review_feedback,"
+                      "creative{id,name,thumbnail_url,object_story_spec}",
             "limit": "50",
         },
     )
@@ -613,6 +615,7 @@ async def get_insights(
     fields: str = "spend,impressions,clicks,ctr,cpm,actions",
     level: str | None = None,
     breakdowns: str | None = None,
+    limit: int | None = None,
 ) -> list[dict]:
     """
     Busca insights de qualquer nó da Marketing API (conta, campanha, ad set
@@ -635,6 +638,8 @@ async def get_insights(
         params["level"] = level
     if breakdowns:
         params["breakdowns"] = breakdowns
+    if limit:
+        params["limit"] = str(limit)
 
     data = await _request(
         "GET", f"{settings.meta_graph_url}/{node_id}/insights", params=params,
@@ -654,3 +659,34 @@ async def get_account_insights(
     return await get_insights(
         token, _act(ad_account_id), date_preset=date_preset, since=since, until=until, fields=fields,
     )
+
+
+# ---------------------------------------------------------------------------
+# Saúde da conta e anúncios com problema (status real de entrega)
+# ---------------------------------------------------------------------------
+
+PROBLEM_STATUSES = ["DISAPPROVED", "WITH_ISSUES", "PENDING_REVIEW", "IN_PROCESS", "PENDING_BILLING_INFO"]
+
+
+async def get_ad_account(token: str, ad_account_id: str) -> dict:
+    """Situação da conta: account_status (1 = ativa) e disable_reason."""
+    return await _request(
+        "GET",
+        f"{settings.meta_graph_url}/{_act(ad_account_id)}",
+        params={"access_token": token, "fields": "id,name,account_status,disable_reason,currency"},
+    )
+
+
+async def list_problem_ads(token: str, ad_account_id: str) -> list[dict]:
+    """Anúncios reprovados, com problema, em análise ou sem forma de pagamento."""
+    data = await _request(
+        "GET",
+        f"{settings.meta_graph_url}/{_act(ad_account_id)}/ads",
+        params={
+            "access_token": token,
+            "fields": "id,name,campaign_id,adset_id,effective_status,issues_info,ad_review_feedback",
+            "filtering": json.dumps([{"field": "effective_status", "operator": "IN", "value": PROBLEM_STATUSES}]),
+            "limit": "100",
+        },
+    )
+    return data.get("data", [])

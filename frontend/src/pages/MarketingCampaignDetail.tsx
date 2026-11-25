@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Pause, Play, Trash2, ChevronDown, ChevronRight,
@@ -7,11 +7,18 @@ import {
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import {
+  DeliveryBadge, Delta, MetricLabel, PeriodPicker, breakdownLabel, optimizationGoalLabel, resultLabel,
+} from '../components/AdsUi'
+import { makeFormat } from '../utils/format'
+import type { Insights } from './Marketing'
 
 interface Campaign {
   id: string
   name: string
   status: string
+  effective_status: string | null
+  issues: string[]
   objective: string
   daily_budget: string | null
 }
@@ -20,6 +27,8 @@ interface AdSet {
   id: string
   name: string
   status: string
+  effective_status: string | null
+  issues: string[]
   daily_budget: string | null
   bid_amount: string | null
   billing_event: string | null
@@ -30,6 +39,9 @@ interface Ad {
   id: string
   name: string
   status: string
+  effective_status: string | null
+  issues: string[]
+  review_feedback: string[]
   creative_id: string | null
   creative_name: string | null
   thumbnail_url: string | null
@@ -40,6 +52,19 @@ interface InsightsPoint {
   spend: number
   impressions: number
   clicks: number
+  results: number
+}
+
+interface Summary { current: Insights; previous: Insights; currency: string | null }
+
+/** Últimos N dias completos (sem hoje), igual ao backend. */
+function rangeFor(days: number): { since: string; until: string } {
+  const until = new Date()
+  until.setDate(until.getDate() - 1)
+  const since = new Date(until)
+  since.setDate(since.getDate() - (days - 1))
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return { since: iso(since), until: iso(until) }
 }
 
 interface EntityInsights {
@@ -101,11 +126,6 @@ interface CarouselItemForm {
   image_url: string
   link_url: string
   message: string
-}
-
-function centsToBRL(cents: string | null): string {
-  if (!cents) return '—'
-  return `R$ ${(parseInt(cents) / 100).toFixed(2)}`
 }
 
 /** Métrica de desempenho compacta (rótulo em cima, valor embaixo). */
@@ -205,8 +225,13 @@ function TargetingSearch({
 }
 
 export default function MarketingCampaignDetail() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { campaignId } = useParams<{ campaignId: string }>()
+  const [days, setDays] = useState(30)
+  const [summary, setSummary] = useState<Summary | null>(null)
+  const [chartMetric, setChartMetric] = useState<'spend' | 'results'>('spend')
+  const fmt = useMemo(() => makeFormat(locale, summary?.currency || 'BRL'), [locale, summary?.currency])
+  const centsToMoney = (cents: string | null) => (cents ? fmt.money(parseInt(cents) / 100) : '—')
 
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [adSets, setAdSets] = useState<AdSet[]>([])
@@ -288,34 +313,38 @@ export default function MarketingCampaignDetail() {
     if (!campaignId) return
     try {
       const { data } = await api.get<InsightsPoint[]>(`/marketing/campaigns/${campaignId}/insights`, {
-        params: { date_preset: 'last_30d' },
+        params: rangeFor(days),
       })
       setInsights(data)
     } catch { /* ignore */ }
-  }, [campaignId])
+    try {
+      const { data } = await api.get<Summary>(`/marketing/campaigns/${campaignId}/summary`, { params: { days } })
+      setSummary(data)
+    } catch { setSummary(null) }
+  }, [campaignId, days])
 
   const loadEntityInsights = useCallback(async () => {
     if (!campaignId) return
     try {
       const [asRes, adRes] = await Promise.all([
-        api.get<EntityInsights[]>(`/marketing/campaigns/${campaignId}/insights/by-level`, { params: { level: 'adset', date_preset: 'last_30d' } }),
-        api.get<EntityInsights[]>(`/marketing/campaigns/${campaignId}/insights/by-level`, { params: { level: 'ad', date_preset: 'last_30d' } }),
+        api.get<EntityInsights[]>(`/marketing/campaigns/${campaignId}/insights/by-level`, { params: { level: 'adset', ...rangeFor(days) } }),
+        api.get<EntityInsights[]>(`/marketing/campaigns/${campaignId}/insights/by-level`, { params: { level: 'ad', ...rangeFor(days) } }),
       ])
       setAdSetInsights(Object.fromEntries(asRes.data.map((r) => [r.id, r])))
       setAdInsights(Object.fromEntries(adRes.data.map((r) => [r.id, r])))
     } catch { /* insights por entidade é enriquecimento — não bloqueia a tela */ }
-  }, [campaignId])
+  }, [campaignId, days])
 
   const loadBreakdown = useCallback(async (dim: string) => {
     if (!campaignId) return
     setLoadingBreakdown(true)
     try {
       const { data } = await api.get<BreakdownRow[]>(`/marketing/campaigns/${campaignId}/insights/breakdown`, {
-        params: { dimension: dim, date_preset: 'last_30d' },
+        params: { dimension: dim, ...rangeFor(days) },
       })
       setBreakdownRows(data)
     } catch { setBreakdownRows([]) } finally { setLoadingBreakdown(false) }
-  }, [campaignId])
+  }, [campaignId, days])
 
   useEffect(() => { loadCampaign(); loadAdSets(); loadInsights(); loadEntityInsights() }, [loadCampaign, loadAdSets, loadInsights, loadEntityInsights])
   useEffect(() => { loadBreakdown(breakdownDim) }, [breakdownDim, loadBreakdown])
@@ -570,7 +599,10 @@ export default function MarketingCampaignDetail() {
     }
   }
 
-  const maxSpend = Math.max(1, ...insights.map((p) => p.spend))
+  const chartValue = (p: InsightsPoint) => (chartMetric === 'spend' ? p.spend : p.results)
+  const maxChart = Math.max(1, ...insights.map(chartValue))
+  const cur = summary?.current
+  const prev = summary?.previous
 
   return (
     <div>
@@ -582,14 +614,16 @@ export default function MarketingCampaignDetail() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-ink">{campaign?.name || t('Campanha', 'Campaign')}</h2>
-          <HelpLink section="campanhas" className="mt-1" />
           {campaign && (
-            <p className="text-ink-4 text-sm mt-1">
-              {campaign.status === 'ACTIVE' ? t('Ativa', 'Active') : t('Pausada', 'Paused')}
-              {campaign.daily_budget && ` · ${centsToBRL(campaign.daily_budget)}${t('/dia', '/day')}`}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <DeliveryBadge status={campaign.status} effective={campaign.effective_status} reasons={campaign.issues} />
+              {campaign.daily_budget && <span className="text-ink-4 text-sm">{centsToMoney(campaign.daily_budget)}{t('/dia', '/day')}</span>}
+            </div>
           )}
+          <HelpLink section="campanhas" className="mt-1.5" />
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <PeriodPicker value={days} onChange={setDays} />
         <button
           onClick={openAdSetModal}
           className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"
@@ -597,7 +631,26 @@ export default function MarketingCampaignDetail() {
           <Plus size={15} />
           {t('Novo conjunto de anúncios', 'New ad set')}
         </button>
+        </div>
       </div>
+
+      {cur && prev && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          {([
+            ['spend', t('Gasto', 'Spend'), fmt.money(cur.spend), cur.spend, prev.spend, 'none'],
+            ['results', resultLabel(t, cur.result_label), cur.results ? fmt.int(cur.results) : '—', cur.results, prev.results, 'up'],
+            ['cost_per_result', t('Custo por resultado', 'Cost per result'), cur.cost_per_result ? fmt.money(cur.cost_per_result) : '—', cur.cost_per_result, prev.cost_per_result, 'down'],
+            ['ctr', 'CTR', fmt.pct(cur.ctr), cur.ctr, prev.ctr, 'up'],
+            ['frequency', t('Frequência', 'Frequency'), cur.frequency ? fmt.dec(cur.frequency) : '—', cur.frequency, prev.frequency, 'none'],
+          ] as ['spend' | 'results' | 'cost_per_result' | 'ctr' | 'frequency', string, string, number, number, 'up' | 'down' | 'none'][]).map(([metric, label, value, c, p, good]) => (
+            <div key={metric} className="bg-card rounded-xl border border-white/[0.06] p-3">
+              <MetricLabel label={label} metric={metric} className="text-ink-4 text-[11px]" />
+              <p className="text-lg font-bold text-ink mt-0.5">{value}</p>
+              <Delta current={c} previous={p} good={good} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>
@@ -606,14 +659,24 @@ export default function MarketingCampaignDetail() {
       {/* Gráfico de gastos (últimos 30 dias) */}
       {insights.length > 0 && (
         <div className="bg-card rounded-xl border border-white/[0.06] p-5 mb-6">
-          <p className="text-ink-4 text-xs mb-3">{t('Gastos por dia — últimos 30 dias', 'Daily spend — last 30 days')}</p>
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+            <p className="text-ink-4 text-xs">{t(`Por dia — últimos ${days} dias`, `Per day — last ${days} days`)}</p>
+            <div className="flex gap-1 bg-field border border-white/[0.08] rounded-lg p-0.5">
+              {(['spend', 'results'] as const).map((m) => (
+                <button key={m} onClick={() => setChartMetric(m)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium ${chartMetric === m ? 'bg-indigo-600 text-white' : 'text-ink-4 hover:text-ink-2'}`}>
+                  {m === 'spend' ? t('Gasto', 'Spend') : resultLabel(t, cur?.result_label || '')}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-end gap-0.5 h-24">
             {insights.map((p) => (
               <div
                 key={p.date}
-                title={`${p.date}: R$ ${p.spend.toFixed(2)}`}
-                className="flex-1 bg-indigo-500/60 hover:bg-indigo-400 rounded-t transition-colors min-w-[2px]"
-                style={{ height: `${Math.max(2, (p.spend / maxSpend) * 100)}%` }}
+                title={`${new Date(`${p.date}T12:00:00`).toLocaleDateString(locale)}: ${chartMetric === 'spend' ? fmt.money(p.spend) : fmt.int(p.results)}`}
+                className={`flex-1 ${chartMetric === 'spend' ? 'bg-indigo-500/60 hover:bg-indigo-400' : 'bg-emerald-500/60 hover:bg-emerald-400'} rounded-t transition-colors min-w-[2px]`}
+                style={{ height: `${Math.max(2, (chartValue(p) / maxChart) * 100)}%` }}
               />
             ))}
           </div>
@@ -647,7 +710,7 @@ export default function MarketingCampaignDetail() {
                 <tr className="text-ink-4 text-xs text-left">
                   <th className="pb-2 pr-4">{t('Segmento', 'Segment')}</th>
                   <th className="pb-2 pr-4 text-right">{t('Gasto', 'Spend')}</th>
-                  <th className="pb-2 pr-4 text-right">{t('Resultados', 'Results')}</th>
+                  <th className="pb-2 pr-4 text-right">{resultLabel(t, cur?.result_label || '')}</th>
                   <th className="pb-2 pr-4 text-right">{t('Alcance', 'Reach')}</th>
                   <th className="pb-2 pr-4 text-right">{t('Cliques', 'Clicks')}</th>
                   <th className="pb-2 text-right">CTR</th>
@@ -656,12 +719,12 @@ export default function MarketingCampaignDetail() {
               <tbody>
                 {breakdownRows.map((r) => (
                   <tr key={r.key} className="border-t border-white/[0.06] text-ink-2">
-                    <td className="py-2 pr-4 capitalize">{r.key}</td>
-                    <td className="py-2 pr-4 text-right">R$ {r.spend.toFixed(2)}</td>
-                    <td className="py-2 pr-4 text-right">{r.results ? r.results.toLocaleString() : '—'}</td>
-                    <td className="py-2 pr-4 text-right">{r.reach ? r.reach.toLocaleString() : '—'}</td>
-                    <td className="py-2 pr-4 text-right">{r.clicks.toLocaleString()}</td>
-                    <td className="py-2 text-right">{r.ctr.toFixed(2)}%</td>
+                    <td className="py-2 pr-4">{breakdownLabel(t, breakdownDim, r.key)}</td>
+                    <td className="py-2 pr-4 text-right">{fmt.money(r.spend)}</td>
+                    <td className="py-2 pr-4 text-right">{r.results ? fmt.int(r.results) : '—'}</td>
+                    <td className="py-2 pr-4 text-right">{r.reach ? fmt.int(r.reach) : '—'}</td>
+                    <td className="py-2 pr-4 text-right">{fmt.int(r.clicks)}</td>
+                    <td className="py-2 text-right">{fmt.pct(r.ctr)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -692,16 +755,12 @@ export default function MarketingCampaignDetail() {
                   <div className="flex-1 min-w-0 cursor-pointer max-sm:basis-[calc(100%-2rem)]" onClick={() => toggleExpand(as.id)}>
                     <h4 className="text-white font-bold text-base truncate hover:text-indigo-400 transition-colors">{as.name}</h4>
                     <p className="text-ink-3 text-xs mt-1 flex flex-wrap items-center gap-x-2">
-                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{centsToBRL(as.daily_budget)}{t('/dia', '/day')}</span>
-                      {as.bid_amount && <span>· {t('lance', 'bid')} {centsToBRL(as.bid_amount)}</span>}
-                      {as.optimization_goal && <span>· {as.optimization_goal}</span>}
+                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{centsToMoney(as.daily_budget)}{t('/dia', '/day')}</span>
+                      {as.bid_amount && <span>· {t('lance', 'bid')} {centsToMoney(as.bid_amount)}</span>}
+                      {as.optimization_goal && <span>· {t('otimiza para', 'optimizes for')} {optimizationGoalLabel(t, as.optimization_goal)}</span>}
                     </p>
                   </div>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                    as.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/[0.05] text-ink-3 border border-white/[0.05]'
-                  }`}>
-                    {as.status === 'ACTIVE' ? t('Ativo', 'Active') : t('Pausado', 'Paused')}
-                  </span>
+                  <DeliveryBadge status={as.status} effective={as.effective_status} reasons={as.issues} />
                   {as.daily_budget && (
                     <button
                       onClick={() => openBudgetModal(as)}
@@ -740,11 +799,11 @@ export default function MarketingCampaignDetail() {
 
                 {adSetInsights[as.id] && (
                   <div className="px-5 pb-4 -mt-2 flex flex-wrap gap-x-6 gap-y-1">
-                    <PerfMetric label={t('Gasto', 'Spend')} value={`R$ ${adSetInsights[as.id].spend.toFixed(2)}`} />
-                    <PerfMetric label={adSetInsights[as.id].result_label || t('Resultados', 'Results')} value={adSetInsights[as.id].results ? adSetInsights[as.id].results.toLocaleString() : '—'} />
-                    <PerfMetric label={t('Custo/result.', 'Cost/result')} value={adSetInsights[as.id].cost_per_result ? `R$ ${adSetInsights[as.id].cost_per_result.toFixed(2)}` : '—'} />
-                    <PerfMetric label="CTR" value={`${adSetInsights[as.id].ctr.toFixed(2)}%`} />
-                    <PerfMetric label={t('Alcance', 'Reach')} value={adSetInsights[as.id].reach ? adSetInsights[as.id].reach.toLocaleString() : '—'} />
+                    <PerfMetric label={t('Gasto', 'Spend')} value={fmt.money(adSetInsights[as.id].spend)} />
+                    <PerfMetric label={resultLabel(t, adSetInsights[as.id].result_label)} value={adSetInsights[as.id].results ? fmt.int(adSetInsights[as.id].results) : '—'} />
+                    <PerfMetric label={t('Custo/result.', 'Cost/result')} value={adSetInsights[as.id].cost_per_result ? fmt.money(adSetInsights[as.id].cost_per_result) : '—'} />
+                    <PerfMetric label="CTR" value={fmt.pct(adSetInsights[as.id].ctr)} />
+                    <PerfMetric label={t('Alcance', 'Reach')} value={adSetInsights[as.id].reach ? fmt.int(adSetInsights[as.id].reach) : '—'} />
                   </div>
                 )}
 
@@ -775,20 +834,18 @@ export default function MarketingCampaignDetail() {
                             <div className="flex-1 min-w-0">
                               <p className="text-white text-sm font-semibold truncate">{ad.name}</p>
                               <p className="text-ink-3 text-xs truncate mt-0.5">{ad.creative_name}</p>
+                              {ad.review_feedback[0] && <p className="text-[11px] text-red-300 mt-1">{ad.review_feedback[0]}</p>}
                               {adInsights[ad.id] && (
                                 <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1.5 text-[11px] text-ink-3">
-                                  <span>{t('Gasto', 'Spend')} <b className="text-ink-2">R$ {adInsights[ad.id].spend.toFixed(2)}</b></span>
-                                  <span>{adInsights[ad.id].result_label || t('Result.', 'Results')} <b className="text-ink-2">{adInsights[ad.id].results ? adInsights[ad.id].results.toLocaleString() : '—'}</b></span>
-                                  <span>{t('Custo/res.', 'Cost/res.')} <b className="text-ink-2">{adInsights[ad.id].cost_per_result ? `R$ ${adInsights[ad.id].cost_per_result.toFixed(2)}` : '—'}</b></span>
-                                  <span>CTR <b className="text-ink-2">{adInsights[ad.id].ctr.toFixed(2)}%</b></span>
+                                  <span>{t('Gasto', 'Spend')} <b className="text-ink-2">{fmt.money(adInsights[ad.id].spend)}</b></span>
+                                  <span>{resultLabel(t, adInsights[ad.id].result_label)} <b className="text-ink-2">{adInsights[ad.id].results ? fmt.int(adInsights[ad.id].results) : '—'}</b></span>
+                                  <span>{t('Custo/res.', 'Cost/res.')} <b className="text-ink-2">{adInsights[ad.id].cost_per_result ? fmt.money(adInsights[ad.id].cost_per_result) : '—'}</b></span>
+                                  <span>CTR <b className="text-ink-2">{fmt.pct(adInsights[ad.id].ctr)}</b></span>
                                 </div>
                               )}
                             </div>
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded-md shrink-0 ${
-                              ad.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/[0.05] text-ink-3 border border-white/[0.05]'
-                            }`}>
-                              {ad.status === 'ACTIVE' ? t('Ativo', 'Active') : t('Pausado', 'Paused')}
-                            </span>
+                            <DeliveryBadge status={ad.status} effective={ad.effective_status}
+                              reasons={[...ad.review_feedback, ...ad.issues.filter((i) => !ad.review_feedback.includes(i))]} small />
                             <button
                               onClick={() => toggleAdStatus(as.id, ad)}
                               disabled={busyId === ad.id}
