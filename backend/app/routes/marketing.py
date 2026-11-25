@@ -17,6 +17,8 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.lead import Lead
+from app.models.automation import Customer, Sale
+from app.services.ads_diagnostics import diagnose
 from app.models.meta_connection import MetaConnection, PROVIDER_ADS, STATUS_ACTIVE
 from app.services.meta_token_service import safe_decrypt_token
 from app.services import ads_service
@@ -1195,7 +1197,10 @@ async def api_overview(
     """
     period = _period(days)
     conn, token = await _get_ads_connection(current_user, db)
-    act = _require_ad_account(conn)
+    return await _load_overview(token, _require_ad_account(conn), period)
+
+
+async def _load_overview(token: str, act: str, period: PeriodOut) -> AdsOverviewOut:
     node = ads_service._act(act)
     results = await asyncio.gather(
         ads_service.get_ad_account(token, act),
@@ -1255,6 +1260,142 @@ async def api_overview(
             for a in problems or []
         ],
     )
+
+
+class DiagnosticOut(BaseModel):
+    code: str
+    severity: str
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    values: dict[str, float | int | str] = {}
+
+
+@router.get("/diagnostics", response_model=list[DiagnosticOut])
+async def api_diagnostics(
+    days: int = Query(30),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Avisos automáticos por campanha (código + números; o painel monta o texto)."""
+    period = _period(days)
+    conn, token = await _get_ads_connection(current_user, db)
+    act = _require_ad_account(conn)
+    overview, campaigns = await asyncio.gather(
+        _load_overview(token, act, period), ads_service.list_campaigns(token, act),
+    )
+    perf = {cid: {"current": c.current.model_dump(), "previous": c.previous.model_dump()}
+            for cid, c in overview.campaigns.items()}
+    return diagnose(
+        [{"id": c.get("id"), "name": c.get("name"), "effective_status": c.get("effective_status")} for c in campaigns],
+        perf, days,
+    )
+
+
+class FunnelRowOut(BaseModel):
+    ad_id: str
+    ad_name: str | None = None
+    campaign_name: str | None = None
+    spend: float = 0.0
+    meta_results: float = 0.0
+    leads: int = 0
+    buyers: int = 0
+    sales: int = 0
+    revenue: float = 0.0
+    cost_per_lead: float = 0.0
+    cost_per_sale: float = 0.0
+    roas: float = 0.0
+
+
+class FunnelOut(BaseModel):
+    period: PeriodOut
+    totals: FunnelRowOut
+    rows: list[FunnelRowOut]
+
+
+@router.get("/funnel", response_model=FunnelOut)
+async def api_funnel(
+    days: int = Query(30),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Do anúncio à venda: para cada anúncio, o gasto na Meta, os leads que
+    chegaram no período (WhatsApp, Direct ou formulário) e as vendas
+    registradas nesses leads com "Fechou venda".
+    """
+    period = _period(days)
+    conn, token = await _get_ads_connection(current_user, db)
+    act = _require_ad_account(conn)
+    tenant = current_user.tenant_id
+    start = datetime.fromisoformat(period.since).replace(tzinfo=timezone.utc)
+    end = datetime.fromisoformat(period.until).replace(tzinfo=timezone.utc) + timedelta(days=1)
+
+    try:
+        ad_rows = await ads_service.get_insights(
+            token, ads_service._act(act), since=period.since, until=period.until,
+            fields="ad_id,ad_name,campaign_name,spend,actions", level="ad", limit=500,
+        )
+    except Exception as exc:
+        logger.warning("Funil: insights por anúncio indisponíveis: %s", exc)
+        ad_rows = []
+
+    leads = dict((await db.execute(
+        select(Lead.origin_ad_id, func.count(Lead.id)).where(
+            Lead.account_id == tenant, Lead.origin_ad_id.isnot(None),
+            Lead.captured_at >= start, Lead.captured_at < end,
+        ).group_by(Lead.origin_ad_id)
+    )).all())
+    sales = {
+        ad_id: (buyers, count, float(total or 0))
+        for ad_id, buyers, count, total in (await db.execute(
+            select(Lead.origin_ad_id, func.count(func.distinct(Lead.id)), func.count(Sale.id), func.sum(Sale.amount))
+            .join(Customer, Customer.lead_id == Lead.id)
+            .join(Sale, Sale.customer_id == Customer.id)
+            .where(
+                Lead.account_id == tenant, Sale.account_id == tenant, Sale.status == "completed",
+                Lead.origin_ad_id.isnot(None), Lead.captured_at >= start, Lead.captured_at < end,
+            ).group_by(Lead.origin_ad_id)
+        )).all()
+    }
+
+    rows: dict[str, FunnelRowOut] = {}
+    for item in ad_rows:
+        ad_id = item.get("ad_id")
+        if not ad_id:
+            continue
+        rows[ad_id] = FunnelRowOut(
+            ad_id=ad_id, ad_name=item.get("ad_name"), campaign_name=item.get("campaign_name"),
+            spend=float(item.get("spend", 0) or 0), meta_results=_pick_result(item.get("actions"))[0],
+        )
+    missing = [a for a in set(leads) | set(sales) if a not in rows]
+    names: dict[str, str] = {}
+    if missing:
+        try:
+            names = await ads_service.get_ad_names(token, missing)
+        except Exception as exc:
+            logger.debug("Funil: nomes de anúncios indisponíveis: %s", exc)
+    for ad_id in missing:
+        rows[ad_id] = FunnelRowOut(ad_id=ad_id, ad_name=names.get(ad_id))
+
+    def finish(r: FunnelRowOut) -> FunnelRowOut:
+        r.cost_per_lead = round(r.spend / r.leads, 2) if r.leads else 0.0
+        r.cost_per_sale = round(r.spend / r.sales, 2) if r.sales else 0.0
+        r.roas = round(r.revenue / r.spend, 2) if r.spend else 0.0
+        return r
+
+    for ad_id, r in rows.items():
+        r.leads = int(leads.get(ad_id, 0))
+        r.buyers, r.sales, r.revenue = sales.get(ad_id, (0, 0, 0.0))
+        finish(r)
+
+    ordered = sorted(rows.values(), key=lambda r: (r.revenue, r.leads, r.spend), reverse=True)
+    totals = finish(FunnelRowOut(
+        ad_id="total",
+        spend=sum(r.spend for r in ordered), meta_results=sum(r.meta_results for r in ordered),
+        leads=sum(r.leads for r in ordered), buyers=sum(r.buyers for r in ordered),
+        sales=sum(r.sales for r in ordered), revenue=round(sum(r.revenue for r in ordered), 2),
+    ))
+    return FunnelOut(period=period, totals=totals, rows=ordered)
 
 
 @router.get("/campaigns/{campaign_id}/insights/by-level", response_model=list[EntityInsightsOut])

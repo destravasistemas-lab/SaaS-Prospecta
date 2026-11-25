@@ -10,6 +10,7 @@ import {
   DeliveryBadge, Delta, MetricHelp, MetricLabel, PeriodPicker, WarningBanner, accountWarning, resultLabel, type MetricKey,
 } from '../components/AdsUi'
 import { makeFormat } from '../utils/format'
+import { Diagnostics, Funnel } from '../components/AdsInsights'
 
 interface Campaign {
   id: string
@@ -379,6 +380,8 @@ export default function Marketing() {
         </div>
       )}
 
+      {!noAdAccount && overview && <Diagnostics days={days} fmt={fmt} />}
+
       {cur && prev && (
         <div className="mb-6 space-y-3">
           {overview && (
@@ -530,28 +533,7 @@ export default function Marketing() {
         </>
       )}
 
-      {/* Leads por anúncio — atribuição real (conversas/formulários, não cliques) */}
-      {attribution && attribution.by_ad.length > 0 && (
-        <div className="bg-card rounded-xl border border-white/[0.06] p-5 mb-8 max-w-3xl">
-          <h3 className="text-sm font-semibold text-ink mb-1">{t('Leads por anúncio', 'Leads by ad')}</h3>
-          <p className="text-ink-4 text-xs mb-4">
-            {t('Leads que chegaram por Click-to-WhatsApp, Direct ou formulário — atribuídos ao anúncio de origem.', 'Leads that came from Click-to-WhatsApp, Direct or forms — attributed to the source ad.')}
-          </p>
-          <div className="space-y-2">
-            {attribution.by_ad.map((a) => (
-              <div key={a.ad_id} className="flex items-center gap-3">
-                <p className="flex-1 min-w-0 text-[13px] text-ink-2 truncate">{a.ad_name || `${t('Anúncio', 'Ad')} ${a.ad_id}`}</p>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-32 max-sm:w-14 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-                    <div className="h-full bg-violet-500 rounded-full" style={{ width: `${Math.max(8, (a.leads / attribution.by_ad[0].leads) * 100)}%` }} />
-                  </div>
-                  <span className="text-[13px] font-semibold text-violet-300 w-8 text-right">{a.leads}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {!noAdAccount && overview && <Funnel days={days} fmt={fmt} />}
 
       {synced && <AdsSyncPanel overview={synced} />}
 
