@@ -24,7 +24,6 @@ from app.routes import marketing
 from app.routes import studio
 from app.routes import ai as ai_routes
 from app.routes import whatsapp_calls
-from app.routes import prospect as prospect_routes
 
 # Register all models with Base.metadata so create_all creates every table
 import app.models.meta_connection   # noqa: F401
@@ -37,7 +36,6 @@ import app.models.client_assignment # noqa: F401
 import app.models.ai                # noqa: F401
 import app.models.privacy           # noqa: F401
 import app.models.followup          # noqa: F401
-import app.models.prospect          # noqa: F401
 import app.models.ads_sync          # noqa: F401
 import app.models.whatsapp_call     # noqa: F401
 
@@ -328,9 +326,6 @@ app.include_router(studio.router, prefix="/api/v1")
 # IA de atendimento (Gemini + RAG): config, base de conhecimento, uso
 app.include_router(ai_routes.router, prefix="/api/v1",
                    dependencies=[_Depends(_require_module("ia"))])
-
-# Prospecção (lista por CNPJ paga por Pix + consulta no Google Maps)
-app.include_router(prospect_routes.router, prefix="/api/v1")
 
 # WebSocket (sem prefix /api/v1 — não usa path prefix)
 app.include_router(ws.router)

@@ -149,14 +149,6 @@ Regras do código:
 
 Para ativar, ligue `WHATSAPP_CALLING_ENABLED` e assine o campo `calls` no app da Meta. A Meta só libera ligações em contas com limite de 2.000 destinatários por dia ou mais; números de teste públicos são isentos. Ligar para o cliente (`POST /whatsapp/calls/outbound`) exige opt-in de WhatsApp no lead e a permissão do cliente na Meta. O painel consulta `call_permissions` e, sem permissão, manda o pedido como mensagem livre (só com a janela de 24h aberta). O navegador gera o offer; a answer chega no webhook `connect` (`BUSINESS_INITIATED`), fica criptografada e é entregue uma única vez a quem ligou por `GET /calls/{id}/remote-sdp`. Os status `RINGING`, `ACCEPTED` e `REJECTED` chegam em `value.statuses`.
 
-## Prospecção
-
-Lista por CNPJ: `scripts/import_cnpj.py` baixa os dados abertos da Receita (share público `YggdBLfdninEJX9` no Nextcloud da Receita) e carrega só empresas ativas com telefone ou e-mail dos estados escolhidos. A tabela nova é montada ao lado e trocada no fim. O workflow `Importar base de CNPJ` roda todo dia 20 e sob demanda; precisa do secret `CNPJ_DATABASE_URL` e da variável `CNPJ_UFS`. Cada 40 mil empresas ocupam cerca de 10 MB.
-
-A conta paga a lista por Pix (Asaas). Os CNPJs ficam reservados no pedido e, depois do pagamento (webhook ou consulta ao Asaas), entram em `prospect_delivered`, que impede que voltem nas buscas daquela conta. Preço: `PROSPECT_PRICE_PER_CONTACT`, `PROSPECT_MIN_ORDER`, `PROSPECT_MAX_PER_ORDER`. Super admin gera listas sem custo.
-
-Google Maps (`GOOGLE_MAPS_API_KEY`, Places API New): só consulta no app, sem salvar nem exportar, com limite de `GOOGLE_MAPS_SEARCHES_PER_DAY` por conta.
-
 ## Deploy
 
 Push na `main` publica sozinho pelo Render:

@@ -110,13 +110,6 @@ class Settings(BaseSettings):
     # Entrega os eventos do WebSocket entre instâncias da API pelo Redis
     ws_redis_fanout: bool = False
 
-    # Prospecção por CNPJ (lista paga por Pix) e Google Maps (só consulta no app)
-    prospect_price_per_contact: float = 0.20
-    prospect_min_order: float = 10.0
-    prospect_max_per_order: int = 2000
-    google_maps_api_key: str = ""
-    google_maps_searches_per_day: int = 30
-
     # Super admins do sistema (emails separados por vírgula). Podem gerenciar
     # os módulos bloqueados de QUALQUER conta (agências e empresas).
     super_admin_emails: str = ""
