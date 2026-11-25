@@ -222,6 +222,8 @@ function groups(t: T, callingOn: boolean): Group[] {
           rules: [
             t('Só no WhatsApp: no Instagram, a Meta não permite mensagens depois de 24h sem resposta.', "WhatsApp only: on Instagram, Meta doesn't allow messages after 24h without a reply."),
             t('No máximo um follow-up por envio, nunca follow-up de follow-up, só para quem tem opt-in e até 14 dias depois do envio original.', 'At most one follow-up per message, never a follow-up of a follow-up, opted-in contacts only, and up to 14 days after the original.'),
+            t('Não vai follow-up para conversa em "Minhas" (um atendente assumiu) nem para lead com venda fechada ou perdido. Ao liberar a conversa, volta a valer.', 'No follow-up for conversations in "Mine" (an agent took over) or for leads with a closed sale or marked lost. Once the conversation is released, it applies again.'),
+            t('Fechou a venda? Clique em "Fechou venda" na conversa ou em Leads e informe o valor: o lead vira cliente e entra no faturamento do Início.', 'Closed the sale? Click "Closed sale" in the conversation or in Leads and enter the amount: the lead becomes a customer and counts toward revenue on Home.'),
             t('O sistema verifica as regras a cada 10 minutos.', 'The system checks the rules every 10 minutes.'),
           ],
         },

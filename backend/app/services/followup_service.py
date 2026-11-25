@@ -9,6 +9,7 @@ Garantias:
   - no máximo um follow-up por mensagem original (constraint única);
   - nunca segue um follow-up (sem cadeia infinita);
   - só contatos com opt-in e sem opt-out;
+  - nunca para venda fechada/perdida nem conversa com atendente;
   - só dentro da janela de horário da regra (horário local da empresa);
   - envios até 14 dias depois do original.
 """
@@ -22,7 +23,7 @@ from app.core.config import settings
 from app.core.ws_manager import ws_manager
 from app.models.conversation import Conversation
 from app.models.followup import FollowUpDispatch, FollowUpRule
-from app.models.lead import Lead
+from app.models.lead import Lead, LeadStatus
 from app.models.message import Message
 from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS_ACTIVE
 from app.services import whatsapp_service
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 MAX_AGE_DAYS = 14
 BATCH_LIMIT = 200  # envios por regra por execução
+FINISHED_STATUSES = (LeadStatus.CONVERTED, LeadStatus.LOST)
 
 
 def _aware(ts: datetime) -> datetime:
@@ -119,6 +121,12 @@ async def _run_rule(db: AsyncSession, rule: FollowUpRule, now: datetime) -> int:
 
         conv = await db.get(Conversation, conv_id)
         lead = await db.get(Lead, conv.customer_id) if conv and conv.customer_id else None
+        # Com atendente ("Minhas") ou já resolvido: quem cuida é o humano.
+        # Não grava dispatch — se a conversa for liberada, o follow-up volta a valer.
+        if conv is not None and conv.atendente_id:
+            continue
+        if lead is not None and lead.status in FINISHED_STATUSES:
+            continue
 
         dispatch = FollowUpDispatch(
             rule_id=rule.id, account_id=rule.account_id, conversation_id=conv_id,

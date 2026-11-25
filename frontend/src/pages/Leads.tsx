@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import {
   Users, Search, Flame, Thermometer, Snowflake,
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
-  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall,
+  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall, BadgeDollarSign,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
 import { useCalls } from '../components/CallProvider'
 import { LeadCallsModal } from '../components/CallLog'
+import SaleDialog from '../components/SaleDialog'
 
 interface Lead {
   id: string
@@ -99,6 +100,7 @@ export default function Leads() {
   const { t, locale } = useI18n()
   const { enabled: callingOn, callLead } = useCalls()
   const [callsLead, setCallsLead] = useState<Lead | null>(null)
+  const [saleLead, setSaleLead] = useState<Lead | null>(null)
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [scoring, setScoring] = useState(false)
@@ -593,6 +595,14 @@ export default function Leads() {
                       >
                         <MessageCircle size={13} />
                       </button>
+                      <button
+                        onClick={() => setSaleLead(lead)}
+                        title={t('Fechou venda', 'Closed sale')}
+                        aria-label={t('Fechou venda', 'Closed sale')}
+                        className="p-1.5 rounded-lg bg-amber-500/10 text-amber-300 hover:bg-amber-500/25 transition-colors"
+                      >
+                        <BadgeDollarSign size={13} />
+                      </button>
                       {callingOn && (
                         <>
                           <button
@@ -644,6 +654,15 @@ export default function Leads() {
             </p>
           </div>
         </div>
+      )}
+
+      {saleLead && (
+        <SaleDialog
+          leadId={saleLead.id}
+          name={saleLead.name || handleLabel(saleLead.instagram_handle)}
+          onClose={() => setSaleLead(null)}
+          onChanged={(sum) => setLeads((prev) => prev.map((l) => (l.id === saleLead.id ? { ...l, status: sum.lead_status } : l)))}
+        />
       )}
 
       {callsLead && (

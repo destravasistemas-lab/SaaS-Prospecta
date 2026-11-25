@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, update
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -17,6 +17,7 @@ from app.core.i18n import t
 from app.services import messaging_policy
 from app.models.user import User
 from app.models.lead import Lead, LeadSource, LeadStatus
+from app.models.automation import Customer, Sale
 from app.schemas import LeadResponse, LeadUpdate, LeadConsentUpdate, LeadCreate
 from app.services.lead_scoring import score_lead
 from app.services.lead_merge import merge_leads, auto_merge_by_phone, auto_merge_by_email
@@ -400,6 +401,107 @@ async def delete_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead não encontrado")
 
+    # A venda continua contando na receita; só perde o vínculo com o lead.
+    await db.execute(update(Customer).where(Customer.lead_id == lead.id).values(lead_id=None))
     await db.delete(lead)
     await db.flush()
     return {"detail": "Lead removido"}
+
+
+class SaleIn(BaseModel):
+    amount: float = Field(gt=0, le=100_000_000)
+    description: Optional[str] = Field(default=None, max_length=500)
+
+
+async def _tenant_lead(db: AsyncSession, lead_id: str, tenant_id: str) -> Lead:
+    lead = (await db.execute(
+        select(Lead).where(Lead.id == lead_id, Lead.account_id == tenant_id)
+    )).scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    return lead
+
+
+async def _sales_summary(db: AsyncSession, lead: Lead) -> dict:
+    rows = (await db.execute(
+        select(Sale).join(Customer, Sale.customer_id == Customer.id)
+        .where(Customer.lead_id == lead.id, Sale.account_id == lead.account_id)
+        .order_by(Sale.sold_at.desc())
+    )).scalars().all()
+    status = lead.status.value if isinstance(lead.status, LeadStatus) else lead.status
+    return {
+        "lead_status": status,
+        "total": round(sum(s.amount for s in rows if s.status == "completed"), 2),
+        "sales": [
+            {"id": s.id, "amount": s.amount, "description": s.description,
+             "status": s.status, "sold_at": s.sold_at.isoformat()}
+            for s in rows
+        ],
+    }
+
+
+@router.get("/{lead_id}/sales")
+async def list_lead_sales(
+    lead_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lead = await _tenant_lead(db, lead_id, current_user.tenant_id)
+    return await _sales_summary(db, lead)
+
+
+@router.post("/{lead_id}/sales", status_code=201)
+async def close_sale(
+    lead_id: str,
+    data: SaleIn,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Registra a venda fechada: vira cliente, entra na receita e sai do follow-up."""
+    lead = await _tenant_lead(db, lead_id, current_user.tenant_id)
+    customer = (await db.execute(
+        select(Customer).where(
+            Customer.account_id == lead.account_id, Customer.lead_id == lead.id
+        ).limit(1)
+    )).scalar_one_or_none()
+    if customer is None:
+        customer = Customer(
+            account_id=lead.account_id, lead_id=lead.id,
+            name=lead.name or lead.phone or lead.instagram_handle,
+            email=lead.email, phone=lead.phone, instagram_handle=lead.instagram_handle,
+        )
+        db.add(customer)
+        await db.flush()
+    db.add(Sale(
+        account_id=lead.account_id, customer_id=customer.id,
+        amount=round(data.amount, 2), description=(data.description or "").strip() or None,
+    ))
+    lead.status = LeadStatus.CONVERTED
+    await db.flush()
+    return await _sales_summary(db, lead)
+
+
+@router.post("/{lead_id}/sales/{sale_id}/cancel")
+async def cancel_sale(
+    lead_id: str,
+    sale_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Desfaz uma venda lançada por engano. Sem outra venda válida, o lead volta a qualificado."""
+    lead = await _tenant_lead(db, lead_id, current_user.tenant_id)
+    sale = (await db.execute(
+        select(Sale).join(Customer, Sale.customer_id == Customer.id).where(
+            Sale.id == sale_id, Sale.account_id == lead.account_id, Customer.lead_id == lead.id,
+        )
+    )).scalar_one_or_none()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Venda não encontrada")
+    sale.status = "canceled"
+    await db.flush()
+    summary = await _sales_summary(db, lead)
+    if not any(s["status"] == "completed" for s in summary["sales"]) and lead.status == LeadStatus.CONVERTED:
+        lead.status = LeadStatus.QUALIFIED
+        await db.flush()
+        summary["lead_status"] = LeadStatus.QUALIFIED.value
+    return summary

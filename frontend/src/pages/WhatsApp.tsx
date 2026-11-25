@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Bot, Clock, UserCheck, Send, Power, MessageSquare, Check, CheckCheck,
-  FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2, ArrowLeft, PhoneCall,
+  FileText, X, Paperclip, Reply, SmilePlus, LayoutList, Download, Plus, Trash2, ArrowLeft, PhoneCall, BadgeDollarSign,
 } from 'lucide-react'
 import api, { WS_BASE, apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
 import { CallBanner, useCalls } from '../components/CallProvider'
 import { CallLogLine } from '../components/CallLog'
+import SaleDialog from '../components/SaleDialog'
 
 interface Conversation {
   id: string
@@ -184,6 +185,7 @@ export default function WhatsApp() {
 
   // Envio de template
   const [showTpl, setShowTpl] = useState(false)
+  const [showSale, setShowSale] = useState(false)
   const [tpls, setTpls] = useState<Tpl[]>([])
   const [pickedTpl, setPickedTpl] = useState<Tpl | null>(null)
   const [tplVars, setTplVars] = useState<string[]>([])
@@ -666,6 +668,19 @@ export default function WhatsApp() {
                 </button>
               )}
 
+              {/* Fechou venda */}
+              {selected.customer_id && (
+                <button
+                  onClick={() => setShowSale(true)}
+                  title={t('Fechou venda', 'Closed sale')}
+                  aria-label={t('Fechou venda', 'Closed sale')}
+                  className="shrink-0 flex items-center gap-1.5 max-sm:h-9 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold transition-colors"
+                >
+                  <BadgeDollarSign size={13} />
+                  <span className="max-sm:hidden">{t('Fechou venda', 'Closed sale')}</span>
+                </button>
+              )}
+
               {/* Assumir */}
               {selected.atendente_id !== myId && (
                 <button
@@ -890,6 +905,10 @@ export default function WhatsApp() {
       </div>
 
       {/* Modal: enviar template */}
+      {showSale && selected?.customer_id && (
+        <SaleDialog leadId={selected.customer_id} name={getConvName()} onClose={() => setShowSale(false)} />
+      )}
+
       {showTpl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">

@@ -48,26 +48,30 @@ async def get_dashboard(
     total_customers = total_customers_result.scalar() or 0
 
     new_customers_result = await db.execute(
-        select(func.count(Customer.id)).where(Customer.created_at >= thirty_days_ago)
+        select(func.count(Customer.id)).where(
+            Customer.account_id == account_id, Customer.created_at >= thirty_days_ago
+        )
     )
     new_customers_30d = new_customers_result.scalar() or 0
 
     conversion_rate = (total_customers / total_leads * 100) if total_leads > 0 else 0.0
 
     total_revenue_result = await db.execute(
-        select(func.coalesce(func.sum(Sale.amount), 0)).where(Sale.status == "completed")
+        select(func.coalesce(func.sum(Sale.amount), 0)).where(
+            Sale.account_id == account_id, Sale.status == "completed"
+        )
     )
     total_revenue = float(total_revenue_result.scalar() or 0)
 
     monthly_revenue_result = await db.execute(
         select(func.coalesce(func.sum(Sale.amount), 0)).where(
-            Sale.status == "completed", Sale.sold_at >= thirty_days_ago
+            Sale.account_id == account_id, Sale.status == "completed", Sale.sold_at >= thirty_days_ago
         )
     )
     monthly_revenue = float(monthly_revenue_result.scalar() or 0)
 
     total_sales_result = await db.execute(
-        select(func.count(Sale.id)).where(Sale.status == "completed")
+        select(func.count(Sale.id)).where(Sale.account_id == account_id, Sale.status == "completed")
     )
     total_sales = total_sales_result.scalar() or 0
     average_ticket = (total_revenue / total_sales) if total_sales > 0 else 0.0

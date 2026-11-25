@@ -175,7 +175,7 @@ export default function Dashboard() {
   const { t, locale } = useI18n()
   const [data, setData] = useState<DashboardData>(emptyData)
   const monthLabel = new Date().toLocaleDateString(locale, { month: 'short', year: 'numeric' })
-  const money = (v: number) => `R$ ${v.toFixed(2)}`
+  const money = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const [waCosts, setWaCosts] = useState<{
     total: number
     breakdown: Record<string, { count: number; unit_cost: number; subtotal: number }>
