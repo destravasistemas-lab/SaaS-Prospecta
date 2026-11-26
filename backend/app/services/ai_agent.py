@@ -185,7 +185,10 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
 
     # Cota de tokens estourada → direto pra fila humana
     _ensure_month(cfg)
-    if cfg.tokens_used_month >= cfg.token_limit_monthly:
+    from app.services.billing import plan_limit
+    plan_tokens = await plan_limit(db, tenant_id, "ai_tokens")
+    limit = min(cfg.token_limit_monthly, plan_tokens) if plan_tokens is not None else cfg.token_limit_monthly
+    if cfg.tokens_used_month >= limit:
         logger.warning("IA: tenant %s estourou a cota de tokens do mês", tenant_id)
         await _fallback_to_human(db, cfg, conn, conv, reason="token_limit")
         return

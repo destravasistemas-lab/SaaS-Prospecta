@@ -31,6 +31,7 @@ from app.schemas.subscription import (
     CheckoutResponse,
 )
 from app.services.asaas_service import asaas_service
+from app.services import billing
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,10 @@ async def create_subscription(
     - Valida ownership da account
     - Log de auditoria
     """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Use a página Planos para assinar: a cobrança agora é feita pela assinatura mensal.",
+    )
     
     # Validate plan
     if data.plan not in SUBSCRIPTION_PLANS:
@@ -351,6 +356,27 @@ async def handle_asaas_webhook(
             logger.warning("Webhook sem payment_id, ignorando")
             return {"status": "ok"}
         
+        # Assinatura do Prospecta (cobrança mensal recorrente)
+        sub_id = payment_data.get("subscription")
+        if sub_id:
+            acc = (await db.execute(
+                select(Account).where(Account.asaas_subscription_id == sub_id)
+            )).scalar_one_or_none()
+            if acc is not None:
+                if event in ("PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"):
+                    billing.apply_paid(acc, payment_data.get("dueDate"), payment_id)
+                    logger.info(f"Assinatura paga: conta {acc.id}")
+                elif event == "PAYMENT_CREATED":
+                    acc.pending_payment_id = payment_id
+                elif event == "PAYMENT_OVERDUE":
+                    acc.pending_payment_id = payment_id
+                    if acc.billing_status not in (None, billing.STATUS_COURTESY):
+                        acc.billing_status = billing.STATUS_PAST_DUE
+                elif event in ("PAYMENT_DELETED", "PAYMENT_REFUNDED") and acc.pending_payment_id == payment_id:
+                    acc.pending_payment_id = None
+                await db.commit()
+                return {"status": "ok"}
+
         # Find subscription by payment ID (IMPORTANTE: sem validação de account aqui)
         # Porque o webhook é público
         stmt = select(Subscription).where(
@@ -432,6 +458,10 @@ async def upgrade_subscription(
     """
     Upgrade to a different plan
     """
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Use a página Planos para assinar: a cobrança agora é feita pela assinatura mensal.",
+    )
     
     # Cancel current subscription
     stmt = select(Subscription).where(

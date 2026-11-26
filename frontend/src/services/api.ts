@@ -47,6 +47,11 @@ api.interceptors.response.use(
         }
       }
     }
+    // Acesso pausado por falta de pagamento: só a tela de Planos funciona.
+    const detail = error.response?.data?.detail
+    if (error.response?.status === 402 && detail?.code === 'billing_required' && !window.location.pathname.startsWith('/app/planos')) {
+      window.location.href = '/app/planos'
+    }
     return Promise.reject(error)
   }
 )

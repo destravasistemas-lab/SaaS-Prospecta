@@ -12,6 +12,16 @@ export interface Me {
   modules: string[]
   is_super_admin: boolean
   calling_enabled: boolean
+  billing?: Billing
+}
+
+export interface Billing {
+  status: 'unmanaged' | 'courtesy' | 'trial' | 'active' | 'past_due' | 'canceled' | 'blocked'
+  allowed: boolean
+  enforced: boolean
+  until: string | null
+  days_left: number | null
+  plan: string | null
 }
 
 export const MeContext = createContext<Me | null>(null)

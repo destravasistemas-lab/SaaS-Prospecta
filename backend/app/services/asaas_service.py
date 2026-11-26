@@ -131,6 +131,35 @@ class AsaasService:
             logger.error(f"Error listing payments from Asaas: {e}")
             raise
     
+    async def _call(self, method: str, path: str, **kwargs) -> dict:
+        async with httpx.AsyncClient() as client:
+            response = await client.request(method, f"{self.base_url}{path}", headers=self.headers, timeout=15.0, **kwargs)
+        if response.status_code >= 400:
+            logger.error("Asaas %s %s -> %s: %s", method, path, response.status_code, response.text[:300])
+        response.raise_for_status()
+        return response.json()
+
+    async def create_subscription(self, customer_id: str, value: float, next_due_date: str,
+                                  description: str, external_reference: str | None = None) -> dict:
+        """Assinatura mensal. billingType UNDEFINED: o cliente escolhe Pix, boleto ou cartão na fatura."""
+        payload = {
+            "customer": customer_id, "billingType": "UNDEFINED", "value": value,
+            "nextDueDate": next_due_date, "cycle": "MONTHLY", "description": description,
+        }
+        if external_reference:
+            payload["externalReference"] = external_reference
+        return await self._call("POST", "/subscriptions", json=payload)
+
+    async def cancel_subscription(self, subscription_id: str) -> dict:
+        return await self._call("DELETE", f"/subscriptions/{subscription_id}")
+
+    async def subscription_payments(self, subscription_id: str) -> list[dict]:
+        return (await self._call("GET", f"/subscriptions/{subscription_id}/payments")).get("data", [])
+
+    async def get_pix_qr(self, payment_id: str) -> dict:
+        """QR Code do Pix da cobrança: {encodedImage, payload, expirationDate}."""
+        return await self._call("GET", f"/payments/{payment_id}/pixQrCode")
+
     def calculate_due_date(self, days_ahead: int = 7) -> str:
         """Calculate due date (days from now)"""
         due_date = datetime.now(timezone.utc) + timedelta(days=days_ahead)

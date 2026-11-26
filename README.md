@@ -128,6 +128,16 @@ Conta criada pelo cadastro ou pelo checkout nasce com `accounts.approval_status 
 
 Contas que já existiam ficaram aprovadas. As empresas-filhas criadas por uma agência seguem a aprovação da conta-mãe.
 
+## Planos e cobrança
+
+Os planos ficam na tabela `plans` (criados na primeira subida com Essencial, Profissional e Agência) e são editados pelo super admin em **Super Admin → Planos**: preço, limites (`users`, `clients`, `ai_tokens`), módulos e itens extras.
+
+Ao aprovar um cadastro, a conta ganha `BILLING_TRIAL_DAYS` (padrão 7) de teste no plano `BILLING_TRIAL_PLAN`. Em **Planos**, o cliente assina: o backend cria o cliente e uma assinatura mensal no Asaas (`billingType: UNDEFINED`, o cliente escolhe Pix, boleto ou cartão) e mostra o Pix da primeira cobrança. O webhook do Asaas (`/api/v1/payments/webhook/asaas`) libera até um mês depois do vencimento a cada pagamento; a tela também confere o pagamento direto no Asaas.
+
+Quem tem acesso: cortesia do super admin (com ou sem prazo), pago até `paid_until` (mais `BILLING_GRACE_DAYS` de tolerância, padrão 3) ou teste em andamento. Contas com `billing_status` nulo ficam fora da cobrança; as que já existiam viraram cortesia sem prazo. Empresas-filhas seguem a agência.
+
+Com `BILLING_ENFORCED=true`, quem não tem acesso recebe 402 (`billing_required`) em tudo menos `/billing`, `/auth`, `/admin` e `/payments`, e o painel leva para Planos; os limites de usuários, empresas clientes, módulos e tokens de IA passam a valer. Com `false` (padrão), os prazos e avisos aparecem, mas ninguém é bloqueado.
+
 ## Isolamento entre clientes
 
 Toda consulta filtra por `tenant_id` ou `account_id`, e o tenant vem sempre do JWT ou do webhook, nunca do corpo da requisição. Os módulos (`whatsapp`, `instagram`, `ads`, `ia`) são verificados por `require_module`.

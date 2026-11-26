@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import func, select, and_
+from app.core.i18n import t
 
 from app.core.database import get_db
 from app.core.security import get_current_user, hash_password
@@ -92,6 +93,19 @@ async def create_client(
     _plan: str = Depends(_require_agency_plan),
 ):
     """Agency creates a sub-account (client) under their tenant."""
+    from app.services.billing import plan_limit
+    max_clients = await plan_limit(db, current_user.tenant_id, "clients")
+    if max_clients is not None:
+        clients = (await db.execute(
+            select(func.count(Account.id)).where(Account.parent_account_id == current_user.tenant_id)
+        )).scalar() or 0
+        if clients >= max_clients:
+            raise HTTPException(status_code=403, detail={
+                "code": "plan_limit", "message": t(
+                    f"Seu plano permite até {max_clients} empresas clientes. Troque de plano para adicionar mais.",
+                    f"Your plan allows up to {max_clients} client companies. Change plans to add more.",
+                ),
+            })
 
     # Check username uniqueness
     result = await db.execute(select(User).where(User.username == body.username))

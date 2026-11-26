@@ -10,7 +10,7 @@ export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const [tab, setTab] = useState<'login' | 'signup'>('login')
+  const [tab, setTab] = useState<'login' | 'signup'>(searchParams.get('mode') === 'signup' ? 'signup' : 'login')
 
   // login fields
   const [username, setUsername] = useState('')

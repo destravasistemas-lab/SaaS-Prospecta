@@ -45,6 +45,19 @@ class Account(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     approval_status: Mapped[str] = mapped_column(String(20), nullable=False, default=APPROVAL_APPROVED)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Cobrança do Prospecta (ver app/services/billing.py). billing_status None =
+    # conta fora da cobrança (antiga/testes); empresas-filhas seguem a agência.
+    billing_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    billing_plan: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Cortesia/teste liberado pelo super admin, sem cobrança (None = sem prazo)
+    courtesy_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    billing_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    asaas_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    asaas_subscription_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    pending_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

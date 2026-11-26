@@ -218,6 +218,10 @@ _EXACT: dict[str, str] = {
     "Informe o link de destino do anúncio.": "Enter the ad's destination link.",
     "A data de término precisa ser no futuro.": "The end date must be in the future.",
     "Erro de conexão com a Meta. Nada foi criado.": "Connection error with Meta. Nothing was created.",
+    "Seu acesso está pausado por falta de pagamento. Escolha um plano para continuar.": "Your access is paused for lack of payment. Choose a plan to continue.",
+    "Use a página Planos para assinar: a cobrança agora é feita pela assinatura mensal.": "Use the Plans page to subscribe: billing is now done through the monthly subscription.",
+    "Plano não encontrado.": "Plan not found.",
+    "Código inválido: use letras, números e _.": "Invalid code: use letters, numbers and _.",
 }
 
 _PATTERNS: list[tuple[re.Pattern, str]] = [

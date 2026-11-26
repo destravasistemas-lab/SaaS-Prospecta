@@ -110,6 +110,13 @@ class Settings(BaseSettings):
     # Entrega os eventos do WebSocket entre instâncias da API pelo Redis
     ws_redis_fanout: bool = False
 
+    # Cobrança do Prospecta. Enquanto BILLING_ENFORCED=false, os status e avisos
+    # aparecem mas ninguém é bloqueado nem limitado (ligue depois do Asaas pronto).
+    billing_enforced: bool = False
+    billing_trial_days: int = 7
+    billing_grace_days: int = 3
+    billing_trial_plan: str = "profissional"
+
     # Super admins do sistema (emails separados por vírgula). Podem gerenciar
     # os módulos bloqueados de QUALQUER conta (agências e empresas).
     super_admin_emails: str = ""

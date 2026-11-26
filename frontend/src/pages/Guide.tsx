@@ -461,13 +461,19 @@ function groups(t: T, callingOn: boolean, superAdmin: boolean): Group[] {
           route: '/app/planos',
           routeLabel: t('Abrir Planos', 'Open Plans'),
           intro: t(
-            'Mostra o seu plano atual e os planos disponíveis, com preço e o que cada um inclui.',
-            'Shows your current plan and the available plans, with price and what each one includes.',
+            'Mostra a situação da sua conta (teste grátis, plano pago, em atraso ou cortesia) e os planos, com preço e o que cada um inclui.',
+            'Shows your account status (free trial, paid plan, overdue or courtesy) and the plans, with price and what each one includes.',
           ),
           steps: [
-            t('O plano em uso aparece marcado como Atual.', 'The plan in use is marked as Current.'),
-            t('Clique em Escolher no plano desejado para trocar de plano.', 'Click Choose on the plan you want to switch plans.'),
-            t('As dúvidas comuns (trocar de plano, teste e cancelamento) ficam no fim da página.', 'Common questions (changing plans, trial and cancellation) are at the bottom of the page.'),
+            t('Depois que o cadastro é aprovado, você tem alguns dias de teste grátis, sem cartão. O painel avisa quando faltam 3 dias.', 'Once your sign-up is approved, you get a few free trial days, no card. The panel warns you when 3 days are left.'),
+            t('Clique em Assinar no plano, informe nome e CPF ou CNPJ e pague o Pix. Para cartão ou boleto, use o link da fatura. A tela confirma sozinha.', 'Click Subscribe on a plan, enter the name and CPF or CNPJ and pay the Pix. For card or bank slip, use the invoice link. The screen confirms by itself.'),
+            t('A cobrança se repete todo mês. Para trocar de plano, clique em Mudar para este plano; para parar, em Cancelar renovação.', 'Billing repeats every month. To switch plans, click Switch to this plan; to stop, click Cancel renewal.'),
+          ],
+          rules: [
+            t('Se o pagamento atrasar, o acesso continua por alguns dias de tolerância. Depois, só a tela de Planos funciona até pagar.', 'If payment is late, access continues for a few grace days. After that, only the Plans screen works until you pay.'),
+            t('Ao cancelar, o acesso vai até o fim do período já pago.', 'If you cancel, access lasts until the end of the period you already paid.'),
+            t('Os limites do plano (usuários, empresas clientes, módulos e uso da IA) valem enquanto ele estiver ativo.', 'Plan limits (users, client companies, modules and AI usage) apply while it is active.'),
+            t('Empresas-filhas de uma agência usam o plano da agência.', "An agency's client businesses use the agency's plan."),
           ],
         },
         ...(superAdmin ? [{
@@ -485,9 +491,12 @@ function groups(t: T, callingOn: boolean, superAdmin: boolean): Group[] {
             t('Aprovar acesso libera a conta e manda um e-mail avisando o cliente. Recusar bloqueia a entrada.', 'Approve access unlocks the account and emails the customer. Reject blocks sign-in.'),
             t('Aprovadas e Recusadas listam as demais contas. Use a busca por nome ou e-mail.', 'Approved and Rejected list the other accounts. Use the search by name or email.'),
             t('Em cada conta, marque os módulos liberados (WhatsApp, Instagram, Meta Ads e IA) e clique em Salvar módulos.', 'On each account, tick the enabled modules (WhatsApp, Instagram, Meta Ads and AI) and click Save modules.'),
+            t('Embaixo de cada conta aparece a situação da cobrança. "Liberar teste sem cobrança" dá acesso grátis até uma data (ou sem prazo), com o plano que você escolher. "Dar teste grátis" começa um novo teste de alguns dias.', 'Below each account you see its billing status. "Grant free access" gives free access until a date (or with no end), on the plan you choose. "Give free trial" starts a new trial of a few days.'),
+            t('Na aba Planos, mude preço, limites, módulos e itens de cada plano, ou crie um novo. O preço novo vale para as próximas assinaturas.', 'In the Plans tab, change each plan’s price, limits, modules and items, or create a new one. New prices apply to the next subscriptions.'),
           ],
           rules: [
             t('Empresas-filhas de uma agência herdam a aprovação e os bloqueios da conta-mãe.', 'An agency’s client businesses inherit the parent account’s approval and blocks.'),
+            t('Os bloqueios e limites por pagamento só valem com BILLING_ENFORCED=true no servidor. Antes disso, os prazos e avisos aparecem, mas ninguém é bloqueado.', 'Payment blocks and limits only apply with BILLING_ENFORCED=true on the server. Before that, deadlines and notices show, but nobody is blocked.'),
           ],
         }] : []),
         {

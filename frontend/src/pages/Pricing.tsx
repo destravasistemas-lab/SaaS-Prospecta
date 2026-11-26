@@ -1,268 +1,305 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import { useI18n, LanguageToggle } from '../i18n';
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Check, Copy, Loader2, X, Sparkles } from 'lucide-react'
+import api, { apiError } from '../services/api'
+import { useI18n, LanguageToggle } from '../i18n'
 import HelpLink from '../components/HelpLink'
-import LegalEntity from '../components/LegalEntity';
+import LegalEntity from '../components/LegalEntity'
+import { makeFormat } from '../utils/format'
 
-interface Plan {
-  id: string;
-  name: string;
-  value: number;
-  description: string;
-  features: string[];
-  interval_days: number;
+export interface Plan {
+  code: string
+  name: string
+  description: string | null
+  price_cents: number
+  limits: { users?: number | null; clients?: number | null; ai_tokens?: number | null }
+  modules: string[]
+  extras: string[]
+  highlight: boolean
 }
 
-const PLAN_EN: Record<string, { name: string; description: string; features: string[] }> = {
-  free: { name: 'Free', description: 'Perfect to get started', features: ['Up to 5 campaigns', 'Basic chat', 'Dashboard'] },
-  starter: { name: 'Starter', description: 'For small businesses', features: ['Up to 50 campaigns', 'Email support', 'Basic automations'] },
-  pro: {
-    name: 'Professional',
-    description: 'For agencies and growing businesses',
-    features: ['Unlimited campaigns', 'Priority support', 'Advanced automations', 'APIs', 'Manage up to 10 clients', 'Access client accounts'],
-  },
-  premium: {
-    name: 'Premium',
-    description: 'For large operations',
-    features: ['Everything unlimited', '24/7 support', 'Advanced analytics', 'Dedicated manager', 'Unlimited clients'],
-  },
+interface Pending {
+  payment_id: string
+  value: number
+  due_date: string
+  invoice_url: string | null
+  pix_payload: string | null
+  pix_image: string | null
 }
 
-const PLAN_ES: Record<string, { name: string; description: string; features: string[] }> = {
-  free: { name: 'Gratis', description: 'Perfecto para empezar', features: ['Hasta 5 campañas', 'Chat básico', 'Panel'] },
-  starter: { name: 'Inicial', description: 'Para pequeños negocios', features: ['Hasta 50 campañas', 'Soporte por correo', 'Automatizaciones básicas'] },
-  pro: {
-    name: 'Profesional',
-    description: 'Para agencias y empresas en crecimiento',
-    features: ['Campañas ilimitadas', 'Soporte prioritario', 'Automatizaciones avanzadas', 'APIs', 'Administra hasta 10 clientes', 'Accede a las cuentas de los clientes'],
-  },
-  premium: {
-    name: 'Premium',
-    description: 'Para grandes operaciones',
-    features: ['Todo ilimitado', 'Soporte 24/7', 'Análisis avanzados', 'Gerente dedicado', 'Clientes ilimitados'],
-  },
+interface Status {
+  status: 'unmanaged' | 'courtesy' | 'trial' | 'active' | 'past_due' | 'canceled' | 'blocked'
+  allowed: boolean
+  enforced: boolean
+  until: string | null
+  days_left: number | null
+  plan: string | null
+  plan_name: string | null
+  subscribed: boolean
+  pending: Pending | null
+  is_child: boolean
+  trial_days: number
 }
 
-interface Subscription {
-  id: string;
-  plan: string;
-  status: string;
-  is_active: boolean;
+type T = (pt: string, en: string) => string
+
+/** O que o plano inclui, montado a partir dos limites e módulos (traduzível). */
+export function planFeatures(t: T, fmt: ReturnType<typeof makeFormat>, p: Plan): string[] {
+  const out: string[] = []
+  const users = p.limits.users
+  out.push(users == null ? t('Usuários ilimitados', 'Unlimited users')
+    : users === 1 ? t('1 usuário', '1 user') : t(`Até ${users} usuários`, `Up to ${users} users`))
+  const clients = p.limits.clients
+  if (clients == null) out.push(t('Empresas clientes ilimitadas', 'Unlimited client companies'))
+  else if (clients > 0) out.push(t(`Até ${clients} empresas clientes`, `Up to ${clients} client companies`))
+  if (p.modules.includes('whatsapp')) out.push(t('WhatsApp: atendimento, disparos, follow-ups e ligações', 'WhatsApp: inbox, broadcasts, follow-ups and calls'))
+  if (p.modules.includes('instagram')) out.push(t('Instagram: Direct, comentários e posts', 'Instagram: Direct, comments and posts'))
+  if (p.modules.includes('ads')) out.push(t('Anúncios: diagnóstico e retorno por venda', 'Ads: diagnosis and return per sale'))
+  if (p.modules.includes('ia')) {
+    const tokens = p.limits.ai_tokens
+    out.push(tokens == null ? t('Assistente de IA sem limite de uso', 'AI assistant with no usage cap')
+      : tokens >= 1_000_000 ? t(`Assistente de IA com ${fmt.int(tokens / 1_000_000)} mi de tokens por mês`, `AI assistant with ${fmt.int(tokens / 1_000_000)}M tokens a month`)
+      : t(`Assistente de IA com ${fmt.int(tokens / 1000)} mil tokens por mês`, `AI assistant with ${fmt.int(tokens / 1000)}K tokens a month`))
+  }
+  return [...out, ...p.extras]
 }
 
-/** `embedded`: dentro do painel (sem tela cheia nem botão Voltar). */
 export default function Pricing({ embedded = false }: { embedded?: boolean }) {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const { t, lang } = useI18n();
-  const localized = (plan: Plan): Plan =>
-    lang === 'en' && PLAN_EN[plan.id] ? { ...plan, ...PLAN_EN[plan.id] }
-      : lang === 'es' && PLAN_ES[plan.id] ? { ...plan, ...PLAN_ES[plan.id] }
-      : plan;
+  const { t, locale } = useI18n()
+  const navigate = useNavigate()
+  const fmt = makeFormat(locale, 'BRL')
+  const logged = !!localStorage.getItem('access_token')
+  const [plans, setPlans] = useState<Plan[] | null>(null)
+  const [status, setStatus] = useState<Status | null>(null)
+  const [buying, setBuying] = useState<Plan | null>(null)
+  const [error, setError] = useState('')
+  const [canceling, setCanceling] = useState(false)
+
+  const loadStatus = useCallback(async () => {
+    if (!logged || !embedded) return
+    try { setStatus((await api.get<Status>('/billing/status')).data) } catch { /* sem status */ }
+  }, [logged, embedded])
 
   useEffect(() => {
-    fetchPlans();
-    fetchCurrentSubscription();
-  }, []);
+    api.get<Plan[]>('/billing/plans').then(({ data }) => setPlans(data)).catch(() => setPlans([]))
+    loadStatus()
+  }, [loadStatus])
 
-  const fetchPlans = async () => {
-    try {
-      const response = await api.get('/payments/plans');
-      setPlans(response.data);
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-    }
-  };
+  // Enquanto há cobrança em aberto, confere o pagamento a cada 5 s.
+  useEffect(() => {
+    if (!status?.pending) return
+    const id = window.setInterval(loadStatus, 5000)
+    return () => window.clearInterval(id)
+  }, [status?.pending?.payment_id, loadStatus])
 
-  const fetchCurrentSubscription = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const response = await api.get('/payments/current');
-      setCurrentSubscription(response.data);
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubscribe = async (planId: string) => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    setSelectedPlan(planId);
-    try {
-      const response = await api.post('/payments/subscribe', {
-        plan: planId,
-      });
-
-      if (response.data.payment_link) {
-        window.location.href = response.data.payment_link;
-      } else {
-        const p = plans.find(p => p.id === planId);
-        alert(t('Bem-vindo ao plano ', 'Welcome to the ') + (p ? localized(p).name : '') + t('!', ' plan!'));
-        fetchCurrentSubscription();
-      }
-    } catch (error) {
-      console.error('Error subscribing:', error);
-      alert(t('Erro ao criar assinatura. Tente novamente.', 'Failed to create subscription. Please try again.'));
-    } finally {
-      setSelectedPlan(null);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className={`flex items-center justify-center ${embedded ? 'py-20' : 'min-h-screen bg-field'}`}>
-        <div className="text-ink-4">{t('Carregando planos...', 'Loading plans...')}</div>
-      </div>
-    );
+  async function cancel() {
+    if (!confirm(t('Cancelar a renovação? O acesso continua até o fim do período pago.', 'Cancel renewal? Access continues until the end of the paid period.'))) return
+    setCanceling(true)
+    setError('')
+    try { setStatus((await api.post<Status>('/billing/cancel')).data) } catch (e) {
+      setError(apiError(e, t('Não foi possível cancelar.', 'Could not cancel.')))
+    } finally { setCanceling(false) }
   }
 
+  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale) : '')
+  const isCurrent = (p: Plan) => !!status && status.plan === p.code && ['active', 'past_due', 'trial', 'courtesy'].includes(status.status)
+  const canBuy = embedded && status && !status.is_child
+
   return (
-    <div className={embedded ? '' : 'min-h-screen bg-field py-12 px-4'}>
-      <div className="max-w-7xl mx-auto">
+    <div className={embedded ? '' : 'min-h-screen bg-canvas py-12 px-4'}>
+      <div className="max-w-6xl mx-auto">
         {!embedded && (
-          <div className="flex justify-between items-center mb-6">
-            <button onClick={() => navigate(-1)} className="text-sm text-ink-4 hover:text-white">← {t('Voltar', 'Back')}</button>
+          <div className="flex justify-between items-center mb-8">
+            <Link to="/" className="text-sm text-ink-4 hover:text-white">← {t('Página inicial', 'Home page')}</Link>
             <LanguageToggle compact />
           </div>
         )}
-        <div className={embedded ? 'mb-8' : 'text-center mb-12'}>
-          <h1 className={embedded ? 'text-2xl font-semibold text-white mb-1' : 'text-4xl font-bold text-white mb-4'}>{t('Planos e Preços', 'Plans & Pricing')}</h1>
-          <p className="text-ink-4">
-            {t('Escolha o plano perfeito para suas necessidades', 'Choose the right plan for your needs')}
+        <div className={embedded ? 'mb-6' : 'text-center mb-10'}>
+          <h1 className={embedded ? 'text-2xl font-semibold text-white' : 'text-4xl font-bold text-white'}>{t('Planos e Preços', 'Plans & Pricing')}</h1>
+          <p className="text-ink-4 mt-2">
+            {t(`Teste grátis por ${status?.trial_days ?? 7} dias, sem cartão. Depois, pagamento mensal por Pix, boleto ou cartão.`, `${status?.trial_days ?? 7}-day free trial, no card. Then monthly payment by Pix, bank slip or card.`)}
           </p>
           {embedded && <HelpLink section="planos" className="mt-2" />}
         </div>
 
-        {currentSubscription && (
-          <div className="mb-8 p-4 bg-green-900/20 border border-green-500/20 rounded-lg text-center">
-            <p className="text-green-400">
-              ✓ {t('Você está no plano', "You're on the")}{' '}
-              <strong>{(() => { const p = plans.find(p => p.id === currentSubscription.plan); return p ? localized(p).name : '' })()}</strong>
-              {t('', ' plan')}
-            </p>
+        {embedded && status && status.status !== 'unmanaged' && (
+          <StatusCard status={status} date={date} canceling={canceling} onCancel={cancel} fmt={fmt} />
+        )}
+        {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
+
+        {plans === null ? (
+          <p className="text-ink-4 text-sm">{t('Carregando planos...', 'Loading plans...')}</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-5">
+            {plans.map((p) => (
+              <div key={p.code} className={`relative rounded-2xl border p-6 flex flex-col ${p.highlight ? 'border-violet-500/60 bg-violet-950/20' : 'border-white/[0.08] bg-card'}`}>
+                {p.highlight && (
+                  <span className="absolute -top-3 left-6 flex items-center gap-1 bg-violet-600 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
+                    <Sparkles size={11} />{t('Mais escolhido', 'Most popular')}
+                  </span>
+                )}
+                <h3 className="text-xl font-bold text-white">{p.name}</h3>
+                {p.description && <p className="text-sm text-ink-4 mt-1 min-h-[40px]">{p.description}</p>}
+                <p className="mt-4">
+                  <span className="text-3xl font-bold text-white">{fmt.money(p.price_cents / 100)}</span>
+                  <span className="text-ink-4 text-sm">{t('/mês', '/month')}</span>
+                </p>
+                <ul className="mt-5 space-y-2 flex-1">
+                  {planFeatures(t, fmt, p).map((f) => (
+                    <li key={f} className="flex gap-2 text-sm text-ink-2"><Check size={15} className="text-emerald-400 shrink-0 mt-0.5" />{f}</li>
+                  ))}
+                </ul>
+                <div className="mt-6">
+                  {!embedded ? (
+                    <button onClick={() => navigate(logged ? '/app/planos' : '/login?mode=signup')}
+                      className={`w-full py-2.5 rounded-lg text-sm font-semibold ${p.highlight ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'border border-white/[0.12] text-ink-2 hover:text-white'}`}>
+                      {t('Começar teste grátis', 'Start free trial')}
+                    </button>
+                  ) : status?.subscribed && status.plan === p.code && status.pending ? (
+                    <p className="text-center text-sm text-amber-300 font-medium py-2.5">{t('Aguardando pagamento', 'Awaiting payment')}</p>
+                  ) : isCurrent(p) && status?.subscribed ? (
+                    <p className="text-center text-sm text-emerald-300 font-medium py-2.5">{t('Seu plano atual', 'Your current plan')}</p>
+                  ) : canBuy ? (
+                    <button onClick={() => { setError(''); setBuying(p) }}
+                      className={`w-full py-2.5 rounded-lg text-sm font-semibold ${p.highlight ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'border border-white/[0.12] text-ink-2 hover:text-white'}`}>
+                      {status?.subscribed ? t('Mudar para este plano', 'Switch to this plan') : t('Assinar', 'Subscribe')}
+                    </button>
+                  ) : status?.is_child ? (
+                    <p className="text-center text-xs text-ink-4 py-2.5">{t('A assinatura desta empresa é feita pela agência.', "This company's subscription is handled by the agency.")}</p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-12">
-          {plans.map(localized).map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative rounded-xl border overflow-hidden transition-all duration-300 ${
-                currentSubscription?.plan === plan.id
-                  ? 'border-indigo-500 shadow-xl shadow-indigo-900/20'
-                  : 'border-white/[0.06] hover:border-white/[0.12]'
-              }`}
-            >
-              <div className="bg-card p-6 h-full flex flex-col">
-                {plan.id === 'premium' && (
-                  <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-xs font-bold rounded-bl-lg">
-                    {t('MAIS POPULAR', 'MOST POPULAR')}
-                  </div>
-                )}
-
-                {currentSubscription?.plan === plan.id && (
-                  <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-br-lg">
-                    {t('ATUAL', 'CURRENT')}
-                  </div>
-                )}
-
-                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-ink-4 text-sm mb-4">{plan.description}</p>
-
-                <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">
-                    R$ {plan.value === 0 ? '0' : plan.value.toFixed(0)}
-                  </div>
-                  <p className="text-ink-5 text-sm">
-                    {plan.value > 0 ? t('/mês', '/month') : t('Para sempre', 'Forever')}
-                  </p>
-                </div>
-
-                <div className="mb-8 flex-grow">
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="text-green-400 mr-3">✓</span>
-                        <span className="text-ink-4 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <button
-                  onClick={() => handleSubscribe(plan.id)}
-                  disabled={
-                    selectedPlan !== null ||
-                    (currentSubscription?.plan === plan.id &&
-                      currentSubscription?.is_active)
-                  }
-                  className={`w-full py-3 rounded-lg font-semibold transition-all duration-200 ${
-                    currentSubscription?.plan === plan.id &&
-                    currentSubscription?.is_active
-                      ? 'bg-white/[0.04] text-ink-4 cursor-not-allowed'
-                      : selectedPlan === plan.id
-                      ? 'bg-white/[0.04] text-ink-4 cursor-wait'
-                      : plan.id === 'premium'
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-500'
-                      : 'bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600/20'
-                  }`}
-                >
-                  {selectedPlan === plan.id
-                    ? t('Processando...', 'Processing...')
-                    : currentSubscription?.plan === plan.id &&
-                      currentSubscription?.is_active
-                    ? t('Plano Atual', 'Current Plan')
-                    : t('Escolher', 'Choose')}
-                </button>
-              </div>
+        <div className="mt-12 max-w-3xl mx-auto space-y-5">
+          <h2 className="text-lg font-bold text-white">{t('Perguntas Frequentes', 'FAQ')}</h2>
+          {[
+            [t('Como funciona o teste grátis?', 'How does the free trial work?'),
+              t('Depois que seu cadastro é aprovado, você usa tudo por alguns dias sem pagar nada e sem cartão. Antes de terminar, o painel avisa para você escolher um plano.', 'Once your sign-up is approved, you use everything for a few days without paying and without a card. Before it ends, the panel reminds you to pick a plan.')],
+            [t('Como eu pago?', 'How do I pay?'),
+              t('A cobrança é mensal pelo Asaas: Pix, boleto ou cartão. O acesso é liberado assim que o pagamento é confirmado.', 'Billing is monthly through Asaas: Pix, bank slip or card. Access is released as soon as payment is confirmed.')],
+            [t('Posso trocar de plano ou cancelar?', 'Can I switch plans or cancel?'),
+              t('Sim, quando quiser. Ao cancelar, o acesso continua até o fim do período já pago.', 'Yes, anytime. If you cancel, access continues until the end of the period you already paid.')],
+            [t('O plano inclui as mensagens do WhatsApp e os anúncios?', 'Does the plan include WhatsApp messages and ads?'),
+              t('Não. A Meta cobra direto na sua conta as mensagens de template do WhatsApp e o que você investe em anúncios.', 'No. Meta charges your account directly for WhatsApp template messages and what you spend on ads.')],
+          ].map(([q, a]) => (
+            <div key={q}>
+              <h3 className="text-ink font-semibold mb-1">{q}</h3>
+              <p className="text-ink-4 text-sm">{a}</p>
             </div>
           ))}
         </div>
-
-        <div className="bg-card rounded-xl border border-white/[0.06] p-8 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-white mb-6">{t('Perguntas Frequentes', 'FAQ')}</h2>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-ink font-semibold mb-2">
-                {t('Posso mudar de plano a qualquer momento?', 'Can I change plans at any time?')}
-              </h3>
-              <p className="text-ink-4">
-                {t('Sim! Você pode fazer upgrade ou downgrade a qualquer momento. A mudança será refletida no próximo ciclo de cobrança.', 'Yes! You can upgrade or downgrade at any time. The change applies to the next billing cycle.')}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-ink font-semibold mb-2">
-                {t('Há período de teste?', 'Is there a free trial?')}
-              </h3>
-              <p className="text-ink-4">
-                {t('Sim, todos os planos pagos têm 7 dias de teste gratuito, sem cartão de crédito.', 'Yes, all paid plans include a 7-day free trial, no credit card required.')}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-ink font-semibold mb-2">
-                {t('O que acontece se eu cancelar?', 'What happens if I cancel?')}
-              </h3>
-              <p className="text-ink-4">
-                {t('Você pode cancelar a qualquer momento. O acesso permanece até o fim do período pago.', 'You can cancel at any time. Access remains until the end of the paid period.')}
-              </p>
-            </div>
-          </div>
-        </div>
         {!embedded && <LegalEntity className="mt-12 text-center text-xs text-ink-4" />}
       </div>
+
+      {buying && (
+        <SubscribeDialog plan={buying} fmt={fmt} onClose={() => setBuying(null)}
+          onDone={(s) => { setBuying(null); setStatus(s) }} />
+      )}
     </div>
-  );
+  )
+}
+
+function StatusCard({ status, date, canceling, onCancel, fmt }: {
+  status: Status
+  date: (iso: string | null) => string
+  canceling: boolean
+  onCancel: () => void
+  fmt: ReturnType<typeof makeFormat>
+}) {
+  const { t } = useI18n()
+  const [copied, setCopied] = useState(false)
+  const s = status
+  const text = {
+    courtesy: s.until ? t(`Acesso liberado como cortesia até ${date(s.until)}.`, `Access granted as a courtesy until ${date(s.until)}.`) : t('Acesso liberado como cortesia, sem prazo.', 'Access granted as a courtesy, with no end date.'),
+    trial: s.days_left === 0 ? t('Seu teste grátis termina hoje.', 'Your free trial ends today.') : t(`Teste grátis: faltam ${s.days_left} dia(s), até ${date(s.until)}.`, `Free trial: ${s.days_left} day(s) left, until ${date(s.until)}.`),
+    active: t(`Plano ${s.plan_name ?? ''} ativo até ${date(s.until)}.`, `${s.plan_name ?? ''} plan active until ${date(s.until)}.`),
+    past_due: t(`Pagamento em atraso. Pague até ${date(s.until)} para não pausar o acesso.`, `Payment overdue. Pay by ${date(s.until)} to keep access.`),
+    canceled: s.until ? t(`Assinatura cancelada. Acesso até ${date(s.until)}.`, `Subscription canceled. Access until ${date(s.until)}.`) : t('Assinatura cancelada.', 'Subscription canceled.'),
+    blocked: t('Seu acesso está pausado. Escolha um plano para continuar.', 'Your access is paused. Choose a plan to continue.'),
+    unmanaged: '',
+  }[s.status]
+  const tone = s.status === 'blocked' || s.status === 'past_due' ? 'border-red-500/30 bg-red-950/20 text-red-200'
+    : s.status === 'trial' ? 'border-amber-500/30 bg-amber-950/15 text-amber-200'
+    : 'border-emerald-500/25 bg-emerald-950/15 text-emerald-200'
+
+  return (
+    <div className={`border rounded-2xl p-5 mb-6 ${tone}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-medium">{text}</p>
+        {s.subscribed && !s.is_child && (
+          <button onClick={onCancel} disabled={canceling} className="text-xs text-ink-4 hover:text-red-300 underline disabled:opacity-50">
+            {t('Cancelar renovação', 'Cancel renewal')}
+          </button>
+        )}
+      </div>
+      {s.pending && (
+        <div className="mt-4 flex flex-col sm:flex-row gap-4 items-start bg-black/20 rounded-xl p-4">
+          {s.pending.pix_image && <img src={`data:image/png;base64,${s.pending.pix_image}`} alt="QR Code Pix" className="w-36 h-36 rounded-lg bg-white p-1.5 shrink-0" />}
+          <div className="text-sm text-ink-2 space-y-2">
+            <p className="font-semibold text-white">{t(`Cobrança de ${fmt.money(s.pending.value)} · vence ${date(s.pending.due_date)}`, `Charge of ${fmt.money(s.pending.value)} · due ${date(s.pending.due_date)}`)}</p>
+            {s.pending.pix_payload && (
+              <button onClick={async () => { await navigator.clipboard.writeText(s.pending!.pix_payload!); setCopied(true); window.setTimeout(() => setCopied(false), 2000) }}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-white/[0.12] rounded-lg text-xs hover:text-white">
+                {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}{copied ? t('Copiado', 'Copied') : t('Copiar Pix copia e cola', 'Copy Pix code')}
+              </button>
+            )}
+            {s.pending.invoice_url && (
+              <a href={s.pending.invoice_url} target="_blank" rel="noreferrer" className="block text-xs text-violet-300 underline">
+                {t('Pagar com cartão ou boleto', 'Pay by card or bank slip')}
+              </a>
+            )}
+            <p className="flex items-center gap-1.5 text-[11px] text-ink-4"><Loader2 size={11} className="animate-spin" />{t('A tela atualiza sozinha quando o pagamento for confirmado.', 'This screen updates by itself when payment is confirmed.')}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SubscribeDialog({ plan, fmt, onClose, onDone }: {
+  plan: Plan
+  fmt: ReturnType<typeof makeFormat>
+  onClose: () => void
+  onDone: (s: Status) => void
+}) {
+  const { t } = useI18n()
+  const [name, setName] = useState('')
+  const [doc, setDoc] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const input = 'w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none'
+
+  async function submit() {
+    setSaving(true)
+    setError('')
+    try {
+      onDone((await api.post<Status>('/billing/subscribe', { plan: plan.code, name: name.trim(), document: doc })).data)
+    } catch (e) {
+      setError(apiError(e, t('Não foi possível assinar agora.', 'Could not subscribe right now.')))
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+      <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-sm">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-base font-semibold text-white">{t(`Assinar o plano ${plan.name}`, `Subscribe to ${plan.name}`)}</h3>
+          <button onClick={onClose} aria-label={t('Fechar', 'Close')} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
+        </div>
+        <p className="text-sm text-ink-4 mb-4">{t(`${fmt.money(plan.price_cents / 100)} por mês. Os dados abaixo vão na cobrança.`, `${fmt.money(plan.price_cents / 100)} a month. The details below go on the invoice.`)}</p>
+        <label className="block text-[11px] text-ink-4 mb-1">{t('Nome ou razão social', 'Name or company name')}</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} className={`${input} mb-3`} />
+        <label className="block text-[11px] text-ink-4 mb-1">CPF ou CNPJ</label>
+        <input value={doc} onChange={(e) => setDoc(e.target.value)} inputMode="numeric" className={`${input} mb-4`} />
+        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+        <button onClick={submit} disabled={saving || name.trim().length < 2 || doc.replace(/\D/g, '').length < 11}
+          className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg">
+          {saving ? t('Gerando a cobrança…', 'Creating the charge…') : t('Gerar cobrança', 'Create charge')}
+        </button>
+      </div>
+    </div>
+  )
 }

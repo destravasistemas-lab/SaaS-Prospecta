@@ -407,4 +407,30 @@ ES: dict[str, str] = {
         "La fecha de finalización debe ser en el futuro.",
     "Erro de conexão com a Meta. Nada foi criado.":
         "Error de conexión con Meta. No se creó nada.",
+    "Seu plano permite até {0} usuários. Troque de plano para adicionar mais.":
+        "Tu plan permite hasta {0} usuarios. Cambia de plan para agregar más.",
+    "Só um admin da conta pode mudar o plano.":
+        "Solo un administrador de la cuenta puede cambiar el plan.",
+    "A assinatura desta empresa é feita pela agência.":
+        "La suscripción de esta empresa la gestiona la agencia.",
+    "O pagamento ainda não está configurado. Fale com o suporte.":
+        "El pago todavía no está configurado. Habla con soporte.",
+    "Informe um CPF ou CNPJ válido.":
+        "Ingresa un CPF o CNPJ válido.",
+    "Não há assinatura ativa para cancelar.":
+        "No hay una suscripción activa para cancelar.",
+    "Não foi possível criar a assinatura agora. Tente de novo em instantes.":
+        "No se pudo crear la suscripción ahora. Inténtalo de nuevo en unos instantes.",
+    "Não foi possível cancelar agora. Tente de novo.":
+        "No se pudo cancelar ahora. Inténtalo de nuevo.",
+    "Seu plano permite até {0} empresas clientes. Troque de plano para adicionar mais.":
+        "Tu plan permite hasta {0} empresas clientes. Cambia de plan para agregar más.",
+    "Seu acesso está pausado por falta de pagamento. Escolha um plano para continuar.":
+        "Tu acceso está pausado por falta de pago. Elige un plan para continuar.",
+    "Use a página Planos para assinar: a cobrança agora é feita pela assinatura mensal.":
+        "Usa la página Planes para suscribirte: el cobro ahora se hace con la suscripción mensual.",
+    "Plano não encontrado.":
+        "No se encontró el plan.",
+    "Código inválido: use letras, números e _.":
+        "Código inválido: usa letras, números y _.",
 }

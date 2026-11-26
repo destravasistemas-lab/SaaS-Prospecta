@@ -40,10 +40,13 @@ def is_super_admin(user: User) -> bool:
 
 
 async def get_blocked_modules(db: AsyncSession, account_id: str) -> list[str]:
+    """Bloqueados pela agência/super admin + os que o plano da conta não inclui."""
+    from app.services.billing import plan_blocked_modules
+
     account = (await db.execute(
         select(Account.blocked_modules).where(Account.id == account_id)
     )).scalar_one_or_none()
-    return list(account or [])
+    return sorted(set(account or []) | await plan_blocked_modules(db, account_id))
 
 
 async def effective_modules_for(db: AsyncSession, user: User) -> list[str]:

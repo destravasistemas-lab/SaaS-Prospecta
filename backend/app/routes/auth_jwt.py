@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
+from app.core.i18n import t
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -76,6 +77,8 @@ class UserOut(BaseModel):
     is_super_admin: bool = False
     # Chamadas de voz do WhatsApp ligadas no sistema (WHATSAPP_CALLING_ENABLED)
     calling_enabled: bool = False
+    # Situação da cobrança (status, dias restantes, plano...)
+    billing: dict = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -217,7 +220,10 @@ async def me(
     account = result.scalar_one_or_none()
     from app.core.modules import is_super_admin, effective_modules_for
     modules = await effective_modules_for(db, current_user)
+    from app.services import billing as billing_service
+    access, billing_acc = await billing_service.access_for(db, current_user.tenant_id)
     return UserOut(
+        billing=billing_service.summary(access, billing_acc, None),
         id=current_user.id,
         tenant_id=current_user.tenant_id,
         username=current_user.username,
@@ -296,6 +302,18 @@ async def create_agent(
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Apenas admins podem criar usuários.")
+
+    from app.services.billing import plan_limit
+    max_users = await plan_limit(db, current_user.tenant_id, "users")
+    if max_users is not None:
+        users = (await db.execute(select(func.count(User.id)).where(User.tenant_id == current_user.tenant_id))).scalar() or 0
+        if users >= max_users:
+            raise HTTPException(status_code=403, detail={
+                "code": "plan_limit", "message": t(
+                    f"Seu plano permite até {max_users} usuários. Troque de plano para adicionar mais.",
+                    f"Your plan allows up to {max_users} users. Change plans to add more.",
+                ),
+            })
 
     result = await db.execute(select(User).where(User.username == body.username))
     if result.scalar_one_or_none():

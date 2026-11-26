@@ -3,6 +3,7 @@ import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-route
 import { Home, Menu, MessageSquare, Send, Users } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { CallProvider } from './CallProvider'
+import BillingBanner from './BillingBanner'
 import { MeContext, hasModule, type Me } from './MeContext'
 import api from '../services/api'
 import { BRANDING } from '../config/branding'
@@ -47,6 +48,10 @@ export default function Layout() {
   if (!token) {
     return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   }
+  // Cobrança ligada e acesso pausado: só a tela de Planos (o super admin nunca é bloqueado).
+  if (me?.billing?.enforced && !me.billing.allowed && !me.is_super_admin && !location.pathname.startsWith('/app/planos')) {
+    return <Navigate to="/app/planos" replace />
+  }
 
   const tabs = [
     { to: '/app', label: t('Início', 'Home'), icon: Home, end: true },
@@ -69,6 +74,7 @@ export default function Layout() {
               </span>
             </header>
             <main className="flex-1 overflow-auto px-4 pt-5 pb-24 sm:px-6 lg:px-10 lg:pt-8 lg:pb-10">
+              <BillingBanner me={me} />
               <Outlet />
             </main>
           </div>

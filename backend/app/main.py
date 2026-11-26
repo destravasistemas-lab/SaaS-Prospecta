@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine, Base, async_session
 from app.core.i18n import parse_lang, set_lang, reset_lang, translate_detail, t
 from app.core.ws_manager import ws_manager
 from app.routes import auth, webhook, dashboard, leads, accounts, automations, privacy, instagram, instagram_api
@@ -24,6 +24,7 @@ from app.routes import marketing
 from app.routes import studio
 from app.routes import ai as ai_routes
 from app.routes import whatsapp_calls
+from app.routes import billing as billing_routes
 
 # Register all models with Base.metadata so create_all creates every table
 import app.models.meta_connection   # noqa: F401
@@ -36,6 +37,7 @@ import app.models.client_assignment # noqa: F401
 import app.models.ai                # noqa: F401
 import app.models.privacy           # noqa: F401
 import app.models.followup          # noqa: F401
+import app.models.billing           # noqa: F401
 import app.models.ads_sync          # noqa: F401
 import app.models.whatsapp_call     # noqa: F401
 
@@ -119,6 +121,22 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ",
     "ALTER TABLE followup_rules ADD COLUMN IF NOT EXISTS include_without_opt_in BOOLEAN NOT NULL DEFAULT FALSE",
 
+    # Cobrança do Prospecta. As contas que já existiam entram como cortesia sem
+    # prazo (o DEFAULT só preenche as linhas antigas, na criação da coluna);
+    # depois o super admin decide conta a conta.
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_status VARCHAR(20) DEFAULT 'courtesy'",
+    "ALTER TABLE accounts ALTER COLUMN billing_status DROP DEFAULT",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_plan VARCHAR(30)",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS paid_until TIMESTAMPTZ",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS courtesy_until TIMESTAMPTZ",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_note TEXT",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS asaas_customer_id VARCHAR(100)",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS asaas_subscription_id VARCHAR(100)",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS pending_payment_id VARCHAR(100)",
+    "CREATE INDEX IF NOT EXISTS ix_accounts_asaas_subscription_id ON accounts (asaas_subscription_id)",
+    "UPDATE accounts SET billing_status = NULL WHERE approval_status <> 'approved' AND billing_status = 'courtesy' AND courtesy_until IS NULL AND billing_note IS NULL",
+
     # Prospecção foi removida: apaga as tabelas que ela criou, só se estiverem vazias
     """
     DO $$
@@ -146,6 +164,10 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
         for sql in _MIGRATIONS:
             await conn.execute(text(sql))
+    async with async_session() as db:
+        from app.services.billing import seed_plans
+        await seed_plans(db)
+        await db.commit()
 
     scheduler_task = asyncio.create_task(_start_scheduler())
     ads_sync_task = asyncio.create_task(_start_ads_sync()) if settings.ads_sync_enabled else None
@@ -345,6 +367,9 @@ app.include_router(studio.router, prefix="/api/v1")
 # IA de atendimento (Gemini + RAG): config, base de conhecimento, uso
 app.include_router(ai_routes.router, prefix="/api/v1",
                    dependencies=[_Depends(_require_module("ia"))])
+
+# Planos e assinatura do Prospecta
+app.include_router(billing_routes.router, prefix="/api/v1")
 
 # WebSocket (sem prefix /api/v1 — não usa path prefix)
 app.include_router(ws.router)

@@ -3,7 +3,7 @@ from typing import Any
 
 import bcrypt as _bcrypt
 from jose import JWTError, jwt
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, Request, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -54,6 +54,7 @@ def decode_token(token: str) -> dict[str, Any]:
 
 
 async def get_current_user(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ):
@@ -69,7 +70,32 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado.")
     await ensure_approved(db, user)
+    await ensure_billing(db, user, request.url.path if request is not None else "")
     return user
+
+
+# Abertas para quem está bloqueado por falta de pagamento: login, dados da
+# conta, a própria cobrança e o painel do super admin.
+BILLING_OPEN_PREFIXES = ("/api/v1/billing", "/api/v1/auth", "/api/v1/admin", "/api/v1/payments")
+
+
+async def ensure_billing(db: AsyncSession, user: Any, path: str) -> None:
+    """Com BILLING_ENFORCED ligado, conta sem plano pago, teste ou cortesia só acessa os Planos."""
+    from app.core.config import settings
+    from app.core.modules import is_super_admin
+
+    if not settings.billing_enforced or not path or path.startswith(BILLING_OPEN_PREFIXES):
+        return
+    if is_super_admin(user):
+        return
+    from app.services.billing import access_for
+
+    access, _ = await access_for(db, user.tenant_id)
+    if not access.allowed:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail={
+            "code": "billing_required",
+            "message": "Seu acesso está pausado por falta de pagamento. Escolha um plano para continuar.",
+        })
 
 
 def approval_error(approval_status: str) -> HTTPException:
@@ -102,7 +128,7 @@ async def get_current_account(
 ):
     from app.models.account import Account
 
-    user = await get_current_user(token, db)
+    user = await get_current_user(None, token, db)
     result = await db.execute(select(Account).where(Account.id == user.tenant_id, Account.is_active == True))
     account = result.scalar_one_or_none()
     if not account:

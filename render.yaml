@@ -102,6 +102,9 @@ services:
         sync: false
       - key: ASAAS_WEBHOOK_TOKEN
         sync: false
+      # Liga o bloqueio por falta de pagamento e os limites dos planos (depois do Asaas pronto)
+      - key: BILLING_ENFORCED
+        value: "false"
 
   - type: web
     name: prospecta-web
