@@ -10,6 +10,7 @@ from app.core.i18n import t
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.redis import get_store
 from app.core.security import (
     hash_password, verify_password,
     create_access_token, create_refresh_token, decode_token,
@@ -146,12 +147,26 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
 # Login
 # ---------------------------------------------------------------------------
 
+LOGIN_MAX_FAILURES = 10
+LOGIN_LOCK_SECONDS = 15 * 60
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+    # Contra tentativa de senha em massa: 10 erros em 15 min travam a conta por 15 min.
+    store = await get_store()
+    fail_key = f"login:fail:{body.username.strip().lower()}"
+    if int(await store.get(fail_key) or 0) >= LOGIN_MAX_FAILURES:
+        raise HTTPException(status_code=429, detail=t(
+            "Muitas tentativas de senha. Espere 15 minutos ou use \"Esqueceu?\" para criar uma nova senha.",
+            "Too many password attempts. Wait 15 minutes or use \"Forgot?\" to set a new password.",
+        ))
+
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(body.password, user.password_hash):
+        await store.incr_with_ttl(fail_key, LOGIN_LOCK_SECONDS)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciais inválidas.",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Home, Menu, MessageSquare, Send, Users } from 'lucide-react'
 import Sidebar from './Sidebar'
@@ -79,7 +79,9 @@ export default function Layout() {
             </header>
             <main className="flex-1 overflow-auto px-4 pt-5 pb-24 sm:px-6 lg:px-10 lg:pt-8 lg:pb-10">
               <BillingBanner me={me} />
-              <Outlet />
+              <Suspense fallback={<div className="py-20 text-center text-ink-5 text-sm">…</div>}>
+                <Outlet />
+              </Suspense>
             </main>
             <NotificationCenter />
           </div>

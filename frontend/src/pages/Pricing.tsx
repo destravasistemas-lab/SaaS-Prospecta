@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, Copy, Loader2, X, Sparkles } from 'lucide-react'
+import { Check, Copy, Loader2, X, Sparkles, Bot } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, LanguageToggle } from '../i18n'
 import HelpLink from '../components/HelpLink'
 import LegalEntity from '../components/LegalEntity'
+import AIPackDialog from '../components/AIPackDialog'
 import { makeFormat } from '../utils/format'
 
 export interface Plan {
@@ -81,6 +82,15 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
   const [buying, setBuying] = useState<Plan | null>(null)
   const [error, setError] = useState('')
   const [canceling, setCanceling] = useState(false)
+  const [pack, setPack] = useState<{ conversations: number; price_cents: number } | null>(null)
+  const [showPack, setShowPack] = useState(false)
+
+  useEffect(() => {
+    if (!embedded || !logged) return
+    api.get('/billing/ai-pack').then(({ data }) => {
+      if (!data?.is_child) setPack({ conversations: data.conversations, price_cents: data.price_cents })
+    }).catch(() => {})
+  }, [embedded, logged])
 
   const loadStatus = useCallback(async () => {
     if (!logged || !embedded) return
@@ -180,6 +190,27 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
           </div>
         )}
 
+        {pack && (
+          <div className="mt-10">
+            <h2 className="text-lg font-bold text-white mb-3">{t('Avulsos', 'Add-ons')}</h2>
+            <div className="bg-card border border-white/[0.08] rounded-2xl p-5 flex flex-wrap sm:flex-nowrap items-center gap-4 max-w-3xl">
+              <span className="w-11 h-11 shrink-0 rounded-xl bg-violet-600/20 flex items-center justify-center">
+                <Bot size={20} className="text-violet-300" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold">{t(`Pacote de IA: +${pack.conversations} atendimentos`, `AI pack: +${pack.conversations} conversations`)}</p>
+                <p className="text-ink-4 text-sm">{t('Usado depois da franquia do plano. Pago por Pix e não vence.', 'Used after the plan allowance. Paid by Pix and never expires.')}</p>
+              </div>
+              <div className="flex items-center gap-3 max-sm:w-full max-sm:justify-between">
+                <span className="text-white font-bold">{fmt.money(pack.price_cents / 100)}</span>
+                <button onClick={() => setShowPack(true)} className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold">
+                  {t('Comprar', 'Buy')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-12 max-w-3xl mx-auto space-y-5">
           <h2 className="text-lg font-bold text-white">{t('Perguntas Frequentes', 'FAQ')}</h2>
           {[
@@ -190,7 +221,7 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
             [t('Posso trocar de plano ou cancelar?', 'Can I switch plans or cancel?'),
               t('Sim, quando quiser. Ao cancelar, o acesso continua até o fim do período já pago.', 'Yes, anytime. If you cancel, access continues until the end of the period you already paid.')],
             [t('O plano inclui as mensagens do WhatsApp e os anúncios?', 'Does the plan include WhatsApp messages and ads?'),
-              t('Não. A Meta cobra direto na sua conta as mensagens de template do WhatsApp e o que você investe em anúncios.', 'No. Meta charges your account directly for WhatsApp template messages and what you spend on ads.')],
+              t('Não. A Meta cobra direto na sua conta as mensagens do WhatsApp (por mensagem entregue; o painel mostra o custo estimado do mês) e o que você investe em anúncios.', 'No. Meta charges your account directly for WhatsApp messages (per delivered message; the panel shows the estimated monthly cost) and what you spend on ads.')],
           ].map(([q, a]) => (
             <div key={q}>
               <h3 className="text-ink font-semibold mb-1">{q}</h3>
@@ -201,6 +232,7 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
         {!embedded && <LegalEntity className="mt-12 text-center text-xs text-ink-4" />}
       </div>
 
+      {showPack && <AIPackDialog onClose={() => setShowPack(false)} onPaid={() => setShowPack(false)} />}
       {buying && (
         <SubscribeDialog plan={buying} fmt={fmt} onClose={() => setBuying(null)}
           onDone={(s) => { setBuying(null); setStatus(s) }} />

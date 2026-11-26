@@ -1,38 +1,43 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
-import Instalar from './pages/Instalar'
-import Onboarding from './pages/Onboarding'
-import Dashboard from './pages/Dashboard'
-import ConexaoMeta from './pages/ConexaoMeta'
-import Leads from './pages/Leads'
-import Configuracoes from './pages/Configuracoes'
-import PublicarInstagram from './pages/PublicarInstagram'
-import AIConfig from './pages/AIConfig'
-import Privacy from './pages/Privacy'
-import Terms from './pages/Terms'
-import DataDeletion from './pages/DataDeletion'
-import Guide, { PublicGuide } from './pages/Guide'
-import Pricing from './pages/Pricing'
-import CompletarCadastro from './pages/CompletarCadastro'
-import Clients from './pages/Clients'
-import Marketing from './pages/Marketing'
-import MarketingCampaignDetail from './pages/MarketingCampaignDetail'
-import WhatsApp from './pages/WhatsApp'
-import InstagramInbox from './pages/InstagramInbox'
-import Templates from './pages/Templates'
-import Equipe from './pages/Equipe'
-import SuperAdmin from './pages/SuperAdmin'
-import FollowUps from './pages/FollowUps'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import VerifyEmail from './pages/VerifyEmail'
-import OAuthSuccess from './pages/OAuthSuccess'
+
+// Cada tela carrega só quando é aberta (o celular baixa bem menos na entrada).
+const Instalar = lazy(() => import('./pages/Instalar'))
+const Onboarding = lazy(() => import('./pages/Onboarding'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ConexaoMeta = lazy(() => import('./pages/ConexaoMeta'))
+const Leads = lazy(() => import('./pages/Leads'))
+const Configuracoes = lazy(() => import('./pages/Configuracoes'))
+const PublicarInstagram = lazy(() => import('./pages/PublicarInstagram'))
+const AIConfig = lazy(() => import('./pages/AIConfig'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Terms = lazy(() => import('./pages/Terms'))
+const DataDeletion = lazy(() => import('./pages/DataDeletion'))
+const Guide = lazy(() => import('./pages/Guide'))
+const PublicGuide = lazy(() => import('./pages/Guide').then((m) => ({ default: m.PublicGuide })))
+const Pricing = lazy(() => import('./pages/Pricing'))
+const CompletarCadastro = lazy(() => import('./pages/CompletarCadastro'))
+const Clients = lazy(() => import('./pages/Clients'))
+const Marketing = lazy(() => import('./pages/Marketing'))
+const MarketingCampaignDetail = lazy(() => import('./pages/MarketingCampaignDetail'))
+const WhatsApp = lazy(() => import('./pages/WhatsApp'))
+const InstagramInbox = lazy(() => import('./pages/InstagramInbox'))
+const Templates = lazy(() => import('./pages/Templates'))
+const Equipe = lazy(() => import('./pages/Equipe'))
+const SuperAdmin = lazy(() => import('./pages/SuperAdmin'))
+const FollowUps = lazy(() => import('./pages/FollowUps'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
+const OAuthSuccess = lazy(() => import('./pages/OAuthSuccess'))
 
 export default function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
       <Routes>
         <Route path="/oauth/success" element={<OAuthSuccess />} />
         <Route path="/" element={<Landing />} />
@@ -71,6 +76,7 @@ export default function App() {
           <Route path="/app/marketing/:campaignId" element={<MarketingCampaignDetail />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

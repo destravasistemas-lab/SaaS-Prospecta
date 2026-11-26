@@ -13,6 +13,7 @@ export default function Instalar() {
   const [ready, setReady] = useState(canPromptInstall())
   const [installed, setInstalled] = useState(false)
   const platform = detectPlatform()
+  const phone = platform === 'ios' || platform === 'android'
 
   useEffect(() => {
     if (isInstalledApp()) navigate('/login?source=app', { replace: true })
@@ -54,10 +55,14 @@ export default function Instalar() {
       <div className="w-full max-w-md bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 sm:p-8">
         <BrandMark className="w-16 h-16 mx-auto mb-5 rounded-2xl shadow-lg shadow-violet-500/30" />
         <h1 className="text-xl font-semibold text-center tracking-tight">
-          {t(`Instale o ${BRANDING.name} no seu computador`, `Install ${BRANDING.name} on your computer`)}
+          {phone
+            ? t(`Instale o ${BRANDING.name} no seu celular`, `Install ${BRANDING.name} on your phone`)
+            : t(`Instale o ${BRANDING.name} no seu computador`, `Install ${BRANDING.name} on your computer`)}
         </h1>
         <p className="text-sm text-violet-200/70 text-center mt-2">
-          {t('Ícone na área de trabalho, janela própria e abre direto na tela de login. Atualiza sozinho.', 'Desktop icon, its own window, and it opens straight on the login screen. Updates itself.')}
+          {phone
+            ? t('Ícone na tela de início, avisos de mensagens e de leads interessados, e abre direto na tela de login. Atualiza sozinho.', 'Home screen icon, alerts for messages and interested leads, and it opens straight on the login screen. Updates itself.')
+            : t('Ícone na área de trabalho, janela própria e abre direto na tela de login. Atualiza sozinho.', 'Desktop icon, its own window, and it opens straight on the login screen. Updates itself.')}
         </p>
 
         {installed ? (

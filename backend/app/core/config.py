@@ -5,7 +5,7 @@ import json
 
 
 class Settings(BaseSettings):
-    app_name: str = "adStudioAI"
+    app_name: str = "Prospecta"
     debug: bool = False
 
     database_url: str = "postgresql+asyncpg://marketing_user:marketing_pass@localhost:5432/adstudioai"
@@ -101,7 +101,7 @@ class Settings(BaseSettings):
     # Resend (email)
     resend_api_key: str = ""
     email_from: str = "noreply@adstudioai.com"
-    email_from_name: str = "adStudioAI"
+    email_from_name: str = "Prospecta"
     app_url: str = "http://localhost:5173"
     support_email: str = "contato@destravasistemas.com.br"
     # Fuso usado na janela de envio do follow-up automático (Brasília = -3, sem horário de verão)

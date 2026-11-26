@@ -98,6 +98,11 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      # Remetente dos emails (confirmação, senha): endereço de um domínio verificado no Resend
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: Prospecta
       - key: ASAAS_API_KEY
         sync: false
       - key: ASAAS_WEBHOOK_TOKEN

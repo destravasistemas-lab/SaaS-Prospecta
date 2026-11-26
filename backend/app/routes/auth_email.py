@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
+from app.core.redis import get_store
 from app.core.security import hash_password
 from app.models.user import User
 from app.services.email_service import send_verification_email, send_reset_email
@@ -34,6 +35,10 @@ async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depend
     result = await db.execute(select(User).where(User.username == body.email))
     user = result.scalar_one_or_none()
     if not user:
+        return {"success": True, "message": "Se o email existir, você receberá um link de redefinição."}
+    # No máximo 3 emails por hora para o mesmo endereço (a resposta é a mesma, sem revelar nada).
+    store = await get_store()
+    if await store.incr_with_ttl(f"reset:mail:{user.id}", 3600) > 3:
         return {"success": True, "message": "Se o email existir, você receberá um link de redefinição."}
 
     token = str(uuid.uuid4()) + str(uuid.uuid4()).replace("-", "")
