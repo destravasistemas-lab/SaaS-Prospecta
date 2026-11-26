@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import date, datetime, timedelta, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel, Field, field_validator
@@ -125,11 +125,18 @@ class CampaignOut(BaseModel):
     _coerce = field_validator("daily_budget", "lifetime_budget", mode="before")(_coerce_optional_str)
 
 
+class GeoLocation(BaseModel):
+    key: str = Field(..., min_length=1, max_length=50)
+    type: Literal["country", "region", "city"]
+
+
 class TargetingSpec(BaseModel):
     age_min: int = Field(default=18, ge=13, le=65)
     age_max: int = Field(default=65, ge=13, le=65)
     genders: list[int] | None = Field(default=None, description="1=masculino, 2=feminino; omitir = todos")
     country_codes: list[str] = Field(default_factory=lambda: ["BR"])
+    # Cidades/estados/países da busca de localização; quando informado, substitui country_codes
+    locations: list[GeoLocation] = Field(default_factory=list, max_length=50)
     interest_ids: list[str] = Field(default_factory=list)
 
 
@@ -400,10 +407,22 @@ _CAMPAIGN_LEVEL_FIELDS = "campaign_id,campaign_name," + "spend,impressions,reach
 
 
 def _build_targeting(t: TargetingSpec) -> dict:
+    geo: dict = {"countries": t.country_codes or ["BR"]}
+    if t.locations:
+        geo = {}
+        countries = [loc.key for loc in t.locations if loc.type == "country"]
+        regions = [{"key": loc.key} for loc in t.locations if loc.type == "region"]
+        cities = [{"key": loc.key} for loc in t.locations if loc.type == "city"]
+        if countries:
+            geo["countries"] = countries
+        if regions:
+            geo["regions"] = regions
+        if cities:
+            geo["cities"] = cities
     targeting: dict = {
         "age_min": t.age_min,
         "age_max": t.age_max,
-        "geo_locations": {"countries": t.country_codes or ["BR"]},
+        "geo_locations": geo,
     }
     if t.genders:
         targeting["genders"] = t.genders
@@ -1021,8 +1040,15 @@ async def api_create_creative(
     db: AsyncSession = Depends(get_db),
 ):
     conn, token = await _get_ads_connection(current_user, db)
-    ad_account_id = _require_ad_account(conn)
+    creative_id = await _create_creative(conn, token, _require_ad_account(conn), body)
+    return {"success": True, "creative_id": creative_id}
 
+
+async def _create_creative(
+    conn: MetaConnection, token: str, ad_account_id: str, body: AdCreativeCreate,
+    *, whatsapp: bool = False, headline: str | None = None, welcome_message: str | None = None,
+) -> str:
+    """Cria o criativo (post existente, imagem, vídeo ou carrossel) e devolve o ID; erro da Meta vira 400."""
     # Impulsionar um post existente da Página do Facebook
     if body.source_page_post_id:
         result = await ads_service.create_creative_from_page_post(
@@ -1030,7 +1056,7 @@ async def api_create_creative(
         )
         if "id" not in result:
             raise HTTPException(status_code=400, detail=_meta_error(result, "Erro ao criar criativo do post"))
-        return {"success": True, "creative_id": result["id"]}
+        return result["id"]
 
     # Impulsionar um post existente do Instagram
     if body.source_instagram_media_id:
@@ -1045,7 +1071,7 @@ async def api_create_creative(
         )
         if "id" not in result:
             raise HTTPException(status_code=400, detail=_meta_error(result, "Erro ao criar criativo do post"))
-        return {"success": True, "creative_id": result["id"]}
+        return result["id"]
 
     if not body.message.strip():
         raise HTTPException(422, "A mensagem do anúncio é obrigatória.")
@@ -1060,10 +1086,116 @@ async def api_create_creative(
         image_url=body.image_url, link_url=body.link_url,
         video_id=body.video_id, video_thumb_url=body.video_thumb_url,
         carousel_items=[i.model_dump() for i in body.carousel_items] if body.carousel_items else None,
+        whatsapp=whatsapp, headline=headline, welcome_message=welcome_message,
     )
     if "id" not in result:
         raise HTTPException(status_code=400, detail=_meta_error(result, "Erro ao criar criativo"))
-    return {"success": True, "creative_id": result["id"]}
+    return result["id"]
+
+
+# ---------------------------------------------------------------------------
+# Assistente: campanha + conjunto + anúncio de uma vez
+# ---------------------------------------------------------------------------
+
+# Objetivo do assistente → objetivo da campanha, otimização e destino na Meta
+_GOALS: dict[str, dict] = {
+    "whatsapp": {"objective": "OUTCOME_ENGAGEMENT", "optimization_goal": "CONVERSATIONS", "destination_type": "WHATSAPP"},
+    "traffic": {"objective": "OUTCOME_TRAFFIC", "optimization_goal": "LINK_CLICKS", "destination_type": None},
+    "reach": {"objective": "OUTCOME_AWARENESS", "optimization_goal": "REACH", "destination_type": None},
+}
+
+
+class QuickCampaignIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    goal: Literal["whatsapp", "traffic", "reach"]
+    special_ad_category: str = Field(default="NONE")
+    daily_budget_cents: int = Field(..., ge=500, le=100_000_000)
+    end_date: date | None = None
+    targeting: TargetingSpec = Field(default_factory=TargetingSpec)
+    creative: AdCreativeCreate
+    headline: str | None = Field(default=None, max_length=100)
+    welcome_message: str | None = Field(default=None, max_length=300)
+    publish: bool = False
+
+    @field_validator("special_ad_category")
+    @classmethod
+    def _valid_category(cls, v: str) -> str:
+        if v not in SPECIAL_AD_CATEGORIES:
+            raise ValueError("Invalid special ad category")
+        return v
+
+
+@router.post("/quick-campaign", status_code=201)
+async def api_quick_campaign(
+    body: QuickCampaignIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cria a campanha completa (campanha, conjunto, criativo e anúncio). Se um
+    passo falhar, apaga a campanha criada para não deixar nada pela metade.
+    """
+    conn, token = await _get_ads_connection(current_user, db)
+    act = _require_ad_account(conn)
+    goal = _GOALS[body.goal]
+    c = body.creative
+    if body.goal == "whatsapp":
+        if not conn.page_id:
+            raise HTTPException(400, detail={"step": "campaign", "message": "Selecione uma Página do Facebook primeiro."})
+        if c.source_instagram_media_id or c.source_page_post_id or c.carousel_items:
+            raise HTTPException(422, detail={"step": "creative", "message": "Para conversas no WhatsApp, use uma imagem ou um vídeo."})
+    if body.goal == "traffic" and not c.link_url and not c.source_page_post_id:
+        raise HTTPException(422, detail={"step": "creative", "message": "Informe o link de destino do anúncio."})
+    if body.end_date and body.end_date <= datetime.now(timezone.utc).date():
+        raise HTTPException(422, detail={"step": "budget", "message": "A data de término precisa ser no futuro."})
+
+    status = "ACTIVE" if body.publish else "PAUSED"
+    category = body.special_ad_category
+    camp = await ads_service.create_campaign(
+        token, act, body.name, goal["objective"], status,
+        special_ad_categories=[category] if category != "NONE" else ["NONE"],
+    )
+    if "id" not in camp:
+        raise HTTPException(400, detail={"step": "campaign", "message": _meta_error(camp, "Erro ao criar campanha")})
+    campaign_id = camp["id"]
+
+    async def rollback():
+        try:
+            await ads_service.delete_campaign(token, campaign_id)
+        except Exception as exc:
+            logger.warning("Assistente: não foi possível apagar a campanha %s: %s", campaign_id, exc)
+
+    try:
+        ad_set = await ads_service.create_ad_set(
+            token, act, campaign_id, f"{body.name} — público", body.daily_budget_cents,
+            optimization_goal=goal["optimization_goal"], targeting=_build_targeting(body.targeting),
+            end_time=f"{body.end_date.isoformat()}T23:59:59-0300" if body.end_date else None,
+            destination_type=goal["destination_type"],
+            promoted_object={"page_id": conn.page_id} if body.goal == "whatsapp" else None,
+            status=status,
+        )
+        if "id" not in ad_set:
+            raise HTTPException(400, detail={"step": "audience", "message": _meta_error(ad_set, "Erro ao criar conjunto")})
+        try:
+            creative_id = await _create_creative(
+                conn, token, act, c.model_copy(update={"name": f"{body.name} — criativo"}),
+                whatsapp=body.goal == "whatsapp", headline=body.headline,
+                welcome_message=body.welcome_message if body.goal == "whatsapp" else None,
+            )
+        except HTTPException as exc:
+            message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+            raise HTTPException(exc.status_code, detail={"step": "creative", "message": message})
+        ad = await ads_service.create_ad(token, act, ad_set["id"], creative_id, f"{body.name} — anúncio", status=status)
+        if "id" not in ad:
+            raise HTTPException(400, detail={"step": "creative", "message": _meta_error(ad, "Erro ao criar anúncio")})
+    except HTTPException:
+        await rollback()
+        raise
+    except Exception:
+        await rollback()
+        raise HTTPException(502, detail={"step": "campaign", "message": "Erro de conexão com a Meta. Nada foi criado."})
+
+    return {"campaign_id": campaign_id, "ad_set_id": ad_set["id"], "ad_id": ad["id"], "status": status}
 
 
 @router.post("/ads")

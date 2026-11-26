@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Pause, Play, Trash2, ChevronRight, Building2, Copy, Download, ArrowUpDown, AlertTriangle } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
@@ -11,6 +11,7 @@ import {
 } from '../components/AdsUi'
 import { makeFormat } from '../utils/format'
 import { Diagnostics, Funnel } from '../components/AdsInsights'
+import CampaignWizard from '../components/CampaignWizard'
 
 interface Campaign {
   id: string
@@ -79,15 +80,7 @@ const EMPTY: Insights = {
 
 export default function Marketing() {
   const { t, locale } = useI18n()
-  const [specialCategory, setSpecialCategory] = useState('NONE')
-  const specialCategories: Record<string, string> = {
-    NONE: t('Nenhuma', 'None'),
-    FINANCIAL_PRODUCTS_SERVICES: t('Produtos e serviços financeiros (crédito)', 'Financial products and services (credit)'),
-    EMPLOYMENT: t('Emprego', 'Employment'),
-    HOUSING: t('Imóveis / moradia', 'Housing'),
-    ISSUES_ELECTIONS_POLITICS: t('Temas sociais, eleições ou política', 'Social issues, elections or politics'),
-    ONLINE_GAMBLING_AND_GAMING: t('Jogos de azar online', 'Online gambling and gaming'),
-  }
+  const navigate = useNavigate()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [overview, setOverview] = useState<Overview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -108,9 +101,6 @@ export default function Marketing() {
   const [showCreate, setShowCreate] = useState(false)
   const [accountsLoaded, setAccountsLoaded] = useState(false)
   const noAdAccount = accountsLoaded && accounts.length === 0 && businesses.length === 0
-  const [campName, setCampName] = useState('')
-  const [campObjective, setCampObjective] = useState('OUTCOME_LEADS')
-  const [creating, setCreating] = useState(false)
 
   const objectiveLabels: Record<string, string> = {
     OUTCOME_LEADS: t('Geração de Leads', 'Leads'),
@@ -171,24 +161,6 @@ export default function Marketing() {
       setError(t('Erro ao trocar de conta de anúncios.', 'Failed to switch ad account.'))
     } finally {
       setSwitchingAccount(false)
-    }
-  }
-
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!campName.trim()) return
-    setCreating(true)
-    try {
-      await api.post('/marketing/campaigns', {
-        name: campName.trim(), objective: campObjective, status: 'PAUSED', special_ad_categories: [specialCategory],
-      })
-      setShowCreate(false)
-      setCampName('')
-      await loadData(days)
-    } catch (err: any) {
-      setError(apiError(err, t('Erro ao criar campanha.', 'Failed to create campaign.')))
-    } finally {
-      setCreating(false)
     }
   }
 
@@ -540,43 +512,8 @@ export default function Marketing() {
       <FacebookPagePanel />
 
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-card border border-white/[0.08] rounded-2xl p-8 w-full max-w-md">
-            <h3 className="text-lg font-bold text-white mb-6">{t('Nova Campanha', 'New Campaign')}</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Nome da campanha', 'Campaign name')}</label>
-                <input type="text" value={campName} onChange={(e) => setCampName(e.target.value)} placeholder={t('Ex: Captação Leads - Maio', 'E.g. Lead Generation - May')}
-                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none placeholder-ink-5" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Objetivo', 'Objective')}</label>
-                <select value={campObjective} onChange={(e) => setCampObjective(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
-                  {Object.entries(objectiveLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-ink-4 mb-1.5">{t('Categoria especial de anúncio', 'Special ad category')}</label>
-                <select value={specialCategory} onChange={(e) => setSpecialCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
-                  {Object.entries(specialCategories).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
-                <p className="text-[10px] text-ink-4 mt-1">
-                  {t('A Meta exige declarar anúncios de crédito, emprego, moradia, política ou jogos. A campanha é criada pausada.', 'Meta requires declaring ads about credit, employment, housing, politics or gambling. The campaign is created paused.')}
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors">
-                  {t('Cancelar', 'Cancel')}
-                </button>
-                <button type="submit" disabled={creating || !campName.trim()} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
-                  {creating ? t('Criando...', 'Creating...') : t('Criar Campanha', 'Create Campaign')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CampaignWizard currency={currency} onClose={() => setShowCreate(false)}
+          onCreated={(id) => { setShowCreate(false); navigate(`/app/marketing/${id}`) }} />
       )}
     </div>
   )

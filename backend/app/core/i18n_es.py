@@ -399,4 +399,12 @@ ES: dict[str, str] = {
         "Archivo no disponible: {0}",
     "Período inválido. Use: {0}":
         "Período inválido. Usa: {0}",
+    "Para conversas no WhatsApp, use uma imagem ou um vídeo.":
+        "Para conversaciones de WhatsApp, usa una imagen o un video.",
+    "Informe o link de destino do anúncio.":
+        "Indica el enlace de destino del anuncio.",
+    "A data de término precisa ser no futuro.":
+        "La fecha de finalización debe ser en el futuro.",
+    "Erro de conexão com a Meta. Nada foi criado.":
+        "Error de conexión con Meta. No se creó nada.",
 }

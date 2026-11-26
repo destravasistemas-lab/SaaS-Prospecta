@@ -214,6 +214,10 @@ _EXACT: dict[str, str] = {
     "Erro ao duplicar anúncio.": "Failed to duplicate ad.",
     "Janela de 24h expirada — o cliente não responde há mais de 24 horas. Envie um template aprovado para reabrir a conversa.":
         "24-hour window expired — the customer hasn't replied in over 24 hours. Send an approved template to reopen the conversation.",
+    "Para conversas no WhatsApp, use uma imagem ou um vídeo.": "For WhatsApp conversations, use an image or a video.",
+    "Informe o link de destino do anúncio.": "Enter the ad's destination link.",
+    "A data de término precisa ser no futuro.": "The end date must be in the future.",
+    "Erro de conexão com a Meta. Nada foi criado.": "Connection error with Meta. Nothing was created.",
 }
 
 _PATTERNS: list[tuple[re.Pattern, str]] = [

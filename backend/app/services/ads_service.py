@@ -155,6 +155,9 @@ async def create_ad_set(
     targeting: dict | None = None,
     bid_amount: int | None = None,
     end_time: str | None = None,
+    destination_type: str | None = None,
+    promoted_object: dict | None = None,
+    status: str = "PAUSED",
 ) -> dict:
     """
     Create an ad set inside a campaign.
@@ -174,8 +177,12 @@ async def create_ad_set(
             "targeting_automation": {"advantage_audience": 0},
             **(targeting or {"geo_locations": {"countries": ["BR"]}}),
         },
-        "status": "PAUSED",
+        "status": status,
     }
+    if destination_type:
+        payload["destination_type"] = destination_type
+    if promoted_object:
+        payload["promoted_object"] = promoted_object
     if bid_amount:
         # Lance manual → estratégia com teto de lance (exige o valor do lance).
         payload["bid_strategy"] = "LOWEST_COST_WITH_BID_CAP"
@@ -264,12 +271,49 @@ async def create_ad_creative(
     video_id: str | None = None,
     video_thumb_url: str | None = None,
     carousel_items: list[dict] | None = None,
+    whatsapp: bool = False,
+    headline: str | None = None,
+    welcome_message: str | None = None,
 ) -> dict:
     """
     Create an ad creative — imagem única, vídeo (via video_id já enviado por
     upload_ad_video) ou carrossel (2-10 itens: image_url + link_url + message).
+
+    whatsapp=True monta o anúncio de clique para o WhatsApp: botão
+    WHATSAPP_MESSAGE e, se informado, o texto que já aparece digitado para o
+    cliente enviar (welcome_message).
     """
     object_story_spec: dict = {"page_id": page_id}
+    if whatsapp:
+        cta = {"type": "WHATSAPP_MESSAGE", "value": {"app_destination": "WHATSAPP"}}
+        welcome = None
+        if welcome_message:
+            welcome = {
+                "type": "VISUAL_EDITOR", "version": 2, "landing_screen_type": "welcome_message",
+                "media_type": "text",
+                "text_format": {"customer_action_type": "autofill_message",
+                                "message": {"autofill_message": {"content": welcome_message}, "text": welcome_message}},
+            }
+        if video_id:
+            object_story_spec["video_data"] = {
+                "video_id": video_id, "message": message, "call_to_action": cta,
+                **({"title": headline} if headline else {}),
+                **({"image_url": video_thumb_url} if video_thumb_url else {}),
+                **({"page_welcome_message": welcome} if welcome else {}),
+            }
+        else:
+            object_story_spec["link_data"] = {
+                "message": message, "link": "https://api.whatsapp.com/send", "call_to_action": cta,
+                **({"name": headline} if headline else {}),
+                **({"picture": image_url} if image_url else {}),
+                **({"page_welcome_message": welcome} if welcome else {}),
+            }
+        return await _request(
+            "POST",
+            f"{settings.meta_graph_url}/{_act(ad_account_id)}/adcreatives",
+            params={"access_token": token},
+            json={"name": name, "object_story_spec": object_story_spec},
+        )
 
     if carousel_items:
         object_story_spec["link_data"] = {
@@ -296,6 +340,7 @@ async def create_ad_creative(
             "message": message,
             **({"link": link_url} if link_url else {}),
             **({"picture": image_url} if image_url else {}),
+            **({"name": headline} if headline else {}),
         }
 
     return await _request(
