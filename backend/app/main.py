@@ -25,6 +25,7 @@ from app.routes import studio
 from app.routes import ai as ai_routes
 from app.routes import whatsapp_calls
 from app.routes import billing as billing_routes
+from app.routes import push as push_routes
 
 # Register all models with Base.metadata so create_all creates every table
 import app.models.meta_connection   # noqa: F401
@@ -40,6 +41,8 @@ import app.models.followup          # noqa: F401
 import app.models.billing           # noqa: F401
 import app.models.ads_sync          # noqa: F401
 import app.models.whatsapp_call     # noqa: F401
+import app.models.queue             # noqa: F401
+import app.models.push              # noqa: F401
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -142,6 +145,8 @@ _MIGRATIONS = [
     "ALTER TABLE ai_configs ALTER COLUMN use_own_key SET DEFAULT FALSE",
     "ALTER TABLE ai_configs ALTER COLUMN use_own_key SET NOT NULL",
     "ALTER TABLE ai_configs ADD COLUMN IF NOT EXISTS platform_tokens_month BIGINT NOT NULL DEFAULT 0",
+    # Quando a IA marca o lead como interessado e chama um atendente (texto livre da empresa)
+    "ALTER TABLE ai_configs ADD COLUMN IF NOT EXISTS handoff_rules TEXT",
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS input_tokens BIGINT NOT NULL DEFAULT 0",
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS output_tokens BIGINT NOT NULL DEFAULT 0",
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS platform_tokens BIGINT NOT NULL DEFAULT 0",
@@ -185,10 +190,11 @@ async def lifespan(app: FastAPI):
     scheduler_task = asyncio.create_task(_start_scheduler())
     ads_sync_task = asyncio.create_task(_start_ads_sync()) if settings.ads_sync_enabled else None
     ws_fanout_task = asyncio.create_task(ws_manager.fanout_loop()) if settings.ws_redis_fanout else None
+    broadcast_task = asyncio.create_task(_start_broadcasts())
 
     yield
 
-    for task in filter(None, (scheduler_task, ads_sync_task, ws_fanout_task)):
+    for task in filter(None, (scheduler_task, ads_sync_task, ws_fanout_task, broadcast_task)):
         task.cancel()
         try:
             await task
@@ -203,6 +209,11 @@ async def lifespan(app: FastAPI):
 async def _start_scheduler():
     from app.services.scheduler import scheduler_loop
     await scheduler_loop()
+
+
+async def _start_broadcasts():
+    from app.services.broadcast_worker import broadcast_loop
+    await broadcast_loop()
 
 
 async def _start_ads_sync():
@@ -383,6 +394,9 @@ app.include_router(ai_routes.router, prefix="/api/v1",
 
 # Planos e assinatura do Prospecta
 app.include_router(billing_routes.router, prefix="/api/v1")
+
+# Notificações no celular (Web Push), silenciar todos / por contato
+app.include_router(push_routes.router, prefix="/api/v1")
 
 # WebSocket (sem prefix /api/v1 — não usa path prefix)
 app.include_router(ws.router)

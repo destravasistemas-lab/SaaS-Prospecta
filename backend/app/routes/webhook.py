@@ -24,7 +24,7 @@ from app.models.meta_connection import (
 )
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.services import instagram_service
+from app.services import instagram_service, push_service, wpp_pricing
 from app.services.lead_merge import auto_merge_by_phone
 from app.services.lead_identity import resolve_or_create_lead
 from app.services.meta_token_service import safe_decrypt_token, decrypt_token
@@ -567,6 +567,7 @@ async def handle_ig_dm(account: Account, value: dict, db: AsyncSession):
         "atendimento_status": conv.atendimento_status,
         "last_updated": conv.last_updated.isoformat(),
     })
+    await _push_inbound(db, conv, lead, message_text, media_type)
 
     # Contexto de personalização (nome do lead, buscado no perfil ao criar)
     try:
@@ -660,6 +661,22 @@ async def handle_ig_dm(account: Account, value: dict, db: AsyncSession):
 # WhatsApp Cloud API handler
 # ---------------------------------------------------------------------------
 
+_DELIVERED = ("delivered", "read")
+
+
+async def _push_inbound(db: AsyncSession, conv, lead, text: str | None, media_type: str | None) -> None:
+    """Aviso no celular de mensagem nova do cliente (respeita silenciar todos / contato)."""
+    try:
+        channel = "Instagram" if conv.channel == "instagram" else "WhatsApp"
+        name = (lead.name if lead else None) or "Cliente"
+        url = f"/app/whatsapp?conv={conv.id}" if conv.channel == "whatsapp" else "/app/instagram-dm"
+        await push_service.notify_new_message(
+            db, conv=conv, title=f"{name} · {channel}", text=text, media_type=media_type, url=url,
+        )
+    except Exception as exc:  # aviso no celular nunca derruba o webhook
+        logger.warning("Push de mensagem nova falhou (conversa %s): %s", conv.id, exc)
+
+
 async def handle_whatsapp_message(
     conn: MetaConnection,
     account: Account,
@@ -686,12 +703,18 @@ async def handle_whatsapp_message(
         pricing = status_evt.get("pricing", {})
         category = pricing.get("category", "").lower()  # marketing/utility/service/authentication
 
+        chargeable = bool(category) and wpp_pricing.is_chargeable(pricing)
+        # A Meta cobra uma vez, na entrega; sent/delivered/read trazem o mesmo pricing.
+        first_delivery = new_status == "delivered"
+
         if wamid and new_status:
             result = await db.execute(select(Message).where(Message.message_id == wamid))
             msg = result.scalar_one_or_none()
             if msg:
+                first_delivery = (new_status in _DELIVERED
+                                  and (msg.status or "") not in _DELIVERED)
                 msg.status = new_status
-                if category and pricing.get("billable"):
+                if chargeable:
                     msg.meta_category = category
 
                 # Falha de entrega: guarda o motivo para exibir no chat
@@ -711,8 +734,8 @@ async def handle_whatsapp_message(
                                            {"message_id": wamid, "status": new_status,
                                             "conversation_id": msg.conversation_id,
                                             "error": error_detail})
-        # Increment monthly counters
-        if category and pricing.get("billable"):
+        # Contadores do mês: só mensagem cobrada, contada uma vez
+        if chargeable and first_delivery:
             if category == "marketing":
                 conn.conv_count_marketing = (conn.conv_count_marketing or 0) + 1
             elif category == "utility":
@@ -943,6 +966,7 @@ async def handle_whatsapp_message(
             "atendimento_status": conv.atendimento_status,
             "last_updated": conv.last_updated.isoformat(),
         })
+        await _push_inbound(db, conv, lead, text_body, media_type)
 
         # Opt-out / opt-in por palavra-chave (STOP, SAIR, PARAR… / START, VOLTAR).
         # Política do WhatsApp: pedidos de saída precisam ser respeitados — o

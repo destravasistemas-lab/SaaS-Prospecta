@@ -176,10 +176,16 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData>(emptyData)
   const monthLabel = new Date().toLocaleDateString(locale, { month: 'short', year: 'numeric' })
   const money = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const usd = (v: number | undefined) => `US$ ${(v ?? 0).toFixed(2)}`
   const [waCosts, setWaCosts] = useState<{
     total: number
-    breakdown: Record<string, { count: number; unit_cost: number; subtotal: number }>
+    total_usd?: number
+    breakdown: Record<string, { count: number; unit_cost: number; subtotal: number; subtotal_usd?: number }>
   } | null>(null)
+  const waSub = (key: string) => {
+    const b = waCosts?.breakdown[key]
+    return `${usd(b?.subtotal_usd)} · ${b?.count ?? 0} ${t('mensagens', 'messages')}`
+  }
 
   const me = useMe()
   const [connected, setConnected] = useState<Set<string> | null>(null)
@@ -250,10 +256,10 @@ export default function Dashboard() {
         <>
           <SectionLabel>{t('WhatsApp — Custo estimado do mês', 'WhatsApp — Estimated cost this month')}</SectionLabel>
           <CardsGrid minWidth={140}>
-            <MetricCard icon="coins" iconColor="green" value={money(waCosts.total)} label={t('Custo total (mês)', 'Total cost (month)')} />
-            <MetricCard icon="receipt" iconColor="blue" value={money(waCosts.breakdown.utility?.subtotal ?? 0)} label={t('Utilidade', 'Utility')} sub={`${waCosts.breakdown.utility?.count ?? 0} ${t('mensagens', 'messages')}`} />
-            <MetricCard icon="receipt" iconColor="purple" value={money(waCosts.breakdown.marketing?.subtotal ?? 0)} label="Marketing" sub={`${waCosts.breakdown.marketing?.count ?? 0} ${t('mensagens', 'messages')}`} />
-            <MetricCard icon="receipt" iconColor="orange" value={money(waCosts.breakdown.authentication?.subtotal ?? 0)} label={t('Autenticação', 'Authentication')} sub={`${waCosts.breakdown.authentication?.count ?? 0} ${t('mensagens', 'messages')}`} />
+            <MetricCard icon="coins" iconColor="green" value={money(waCosts.total)} label={t('Custo total (mês)', 'Total cost (month)')} sub={usd(waCosts.total_usd)} />
+            <MetricCard icon="receipt" iconColor="blue" value={money(waCosts.breakdown.utility?.subtotal ?? 0)} label={t('Utilidade', 'Utility')} sub={waSub('utility')} />
+            <MetricCard icon="receipt" iconColor="purple" value={money(waCosts.breakdown.marketing?.subtotal ?? 0)} label="Marketing" sub={waSub('marketing')} />
+            <MetricCard icon="receipt" iconColor="orange" value={money(waCosts.breakdown.authentication?.subtotal ?? 0)} label={t('Autenticação', 'Authentication')} sub={waSub('authentication')} />
           </CardsGrid>
         </>
       )}

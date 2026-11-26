@@ -15,6 +15,8 @@ interface AIConfigData {
   platform_available: boolean
   use_own_key: boolean
   system_prompt: string
+  handoff_rules: string
+  default_handoff_rules: string
   temperature: number
   rag_top_k: number
   sender_rate_limit_per_min: number
@@ -246,43 +248,28 @@ export default function AIConfig() {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-ink-4 mb-1">{t('Temperatura', 'Temperature')}</label>
-                <input
-                  type="number" step="0.1" min="0" max="2"
-                  value={cfg.temperature}
-                  onChange={(e) => setCfg({ ...cfg, temperature: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-ink-4 mb-1">{t('Top-K do RAG', 'RAG Top-K')}</label>
-                <input
-                  type="number" min="1" max="10"
-                  value={cfg.rag_top_k}
-                  onChange={(e) => setCfg({ ...cfg, rag_top_k: parseInt(e.target.value) || 4 })}
-                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-ink-4 mb-1" title={t('Anti-loop: acima disso a IA ignora o remetente por 1 min', 'Anti-loop: above this the AI ignores the sender for 1 min')}>{t('Msgs/min por contato', 'Msgs/min per contact')}</label>
-                <input
-                  type="number" min="1" max="200"
-                  value={cfg.sender_rate_limit_per_min}
-                  onChange={(e) => setCfg({ ...cfg, sender_rate_limit_per_min: parseInt(e.target.value) || 20 })}
-                  className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
-                />
-              </div>
+            {/* Lead interessado → chama o atendente */}
+            <div>
+              <label className="block text-xs font-medium text-ink-4 mb-1">
+                {t('🔥 Quando a IA deve te chamar (lead interessado)', '🔥 When the AI should call you (interested lead)')}
+              </label>
+              <textarea
+                value={cfg.handoff_rules}
+                onChange={(e) => setCfg({ ...cfg, handoff_rules: e.target.value })}
+                rows={3}
+                placeholder={cfg.default_handoff_rules}
+                className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink rounded-lg text-sm resize-none focus:border-indigo-500 focus:outline-none placeholder-ink-5"
+              />
+              <p className="text-[11px] text-ink-5 mt-1">
+                {t(
+                  'Nesses casos a IA avisa o cliente, para de responder, marca o lead como qualificado e você recebe o alerta no painel e no celular. Em branco, vale o texto de exemplo.',
+                  'In these cases the AI tells the customer, stops replying, marks the lead as qualified and you get an alert on the panel and on your phone. Blank uses the example text.',
+                )}
+              </p>
             </div>
 
             <button
-              onClick={() => save({
-                system_prompt: cfg.system_prompt,
-                temperature: cfg.temperature,
-                rag_top_k: cfg.rag_top_k,
-                sender_rate_limit_per_min: cfg.sender_rate_limit_per_min,
-              })}
+              onClick={() => save({ system_prompt: cfg.system_prompt, handoff_rules: cfg.handoff_rules })}
               disabled={saving}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-lg text-sm flex items-center justify-center gap-2"
             >

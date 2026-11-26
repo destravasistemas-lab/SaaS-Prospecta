@@ -11,6 +11,7 @@ import { useI18n, LanguageToggle } from '../i18n'
 import LegalEntity from '../components/LegalEntity'
 import { useCalls } from '../components/CallProvider'
 import { useMe } from '../components/MeContext'
+import BrandMark from '../components/BrandMark'
 
 type T = (pt: string, en: string) => string
 
@@ -711,7 +712,7 @@ export function PublicGuide() {
       <header className="border-b border-white/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 flex items-center justify-center text-white font-bold text-xs">P</span>
+            <BrandMark className="w-7 h-7 rounded-lg" />
             <span className="text-sm font-semibold text-white">{BRANDING.name}</span>
           </Link>
           <div className="flex items-center gap-3">

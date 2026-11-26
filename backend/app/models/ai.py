@@ -36,6 +36,9 @@ class AIConfig(Base):
     platform_tokens_month: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     # System prompt FIXO — injetado em toda requisição, nunca sobrescrito
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False, default=DEFAULT_SYSTEM_PROMPT)
+    # Quando o cliente conta como interessado (a IA passa para um atendente e avisa no celular).
+    # Vazio = critério padrão da plataforma (pediu preço/tabela/orçamento, quer comprar ou falar com alguém).
+    handoff_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
     temperature: Mapped[float] = mapped_column(Float, nullable=False, default=0.4)
     rag_top_k: Mapped[int] = mapped_column(Integer, nullable=False, default=4)
     # Rate limit anti-loop por remetente (mensagens/minuto)

@@ -12,9 +12,15 @@ Fallbacks (indisponibilidade da IA):
   cota de tokens estourada → fila humana
 Fila humana = bot_active False + atendimento_status "aguardando" (fila Espera)
 + mensagem automática ao cliente + notificação em tempo real (WS).
+
+Lead interessado: a IA termina a resposta com INTEREST_MARKER quando o cliente
+se encaixa no critério da empresa (ou no padrão). O marcador sai do texto, a
+conversa vai para a fila humana, o lead vira "qualificado" e os atendentes
+recebem o aviso no painel (som) e no celular (push).
 """
 import asyncio
 import logging
+import re
 from datetime import datetime, timezone, date
 
 from sqlalchemy import select
@@ -25,10 +31,12 @@ from app.core.database import async_session
 from app.core.ws_manager import ws_manager
 from app.models.ai import AIConfig, AIUsageDay
 from app.models.conversation import Conversation
+from app.models.lead import Lead, LeadStatus
 from app.models.message import Message
 from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS_ACTIVE
 from app.services import gemini_service, rag_service, whatsapp_service
-from app.services import ai_debounce, ai_guard, ai_platform
+from app.services import ai_debounce, ai_guard, ai_platform, push_service
+from app.services.lead_scoring import score_lead
 from app.services.gemini_service import GeminiError, GeminiRateLimited, GeminiTimeout
 from app.services.meta_token_service import decrypt_token
 
@@ -51,6 +59,33 @@ POLICY_GUARDRAILS = (
     "- Nunca peça senhas, dados completos de cartão ou documentos sensíveis.\n"
     "- Responda no idioma do cliente."
 )
+
+INTEREST_MARKER = "[[LEAD_INTERESSADO]]"
+_INTEREST_RE = re.compile(r"\[\[\s*LEAD[_ ]INTERESSADO\s*\]\]", re.IGNORECASE)
+DEFAULT_HANDOFF_RULES = (
+    "o cliente pede preço, tabela, catálogo, orçamento ou proposta; quer comprar, fechar, "
+    "agendar ou saber a forma de pagamento; ou pede para falar com uma pessoa."
+)
+INTEREST_REPLY = "Perfeito! Vou chamar um atendente para continuar com você agora mesmo 🙌"
+
+
+def interest_rule(cfg: AIConfig) -> str:
+    rules = (cfg.handoff_rules or "").strip() or DEFAULT_HANDOFF_RULES
+    return (
+        "\n\n[Lead interessado]\n"
+        f"Considere o cliente interessado quando: {rules}\n"
+        "Nesse caso, responda normalmente (se a informação estiver no contexto, pode enviá-la), "
+        "avise que um atendente vai continuar o atendimento e termine a resposta com "
+        f"{INTEREST_MARKER} sozinho na última linha. Nunca mencione nem explique esse marcador."
+    )
+
+
+def split_interest(answer: str) -> tuple[str, bool]:
+    """Tira o marcador da resposta. Devolve (texto para o cliente, interessado?)."""
+    if not _INTEREST_RE.search(answer):
+        return answer, False
+    text = _INTEREST_RE.sub("", answer).strip()
+    return text or INTEREST_REPLY, True
 
 
 async def get_ai_config(db: AsyncSession, account_id: str) -> AIConfig | None:
@@ -240,7 +275,8 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
             return
         try:
             answer, tokens_used = await gemini_service.generate_content(
-                ai_platform.key_for(cfg, slot), (cfg.system_prompt or "") + POLICY_GUARDRAILS, contents,
+                ai_platform.key_for(cfg, slot), (cfg.system_prompt or "") + POLICY_GUARDRAILS + interest_rule(cfg),
+                contents,
                 temperature=cfg.temperature, usage_out=usage,
             )
             break
@@ -262,6 +298,7 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
     if not answer:
         await _fallback_to_human(db, cfg, conn, conv, reason="empty")
         return
+    answer, interested = split_interest(answer)
 
     # Envia a resposta e registra
     wa_to = history["customer_wa_id"]
@@ -308,6 +345,37 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
         "created_at": ai_msg.created_at.isoformat(),
     })
     logger.info("IA respondeu conversa %s (%d tokens)", conversation_id, tokens_used)
+    if interested:
+        await mark_interested(db, conv, "\n".join(history["pending"]))
+
+
+async def mark_interested(db: AsyncSession, conv: Conversation, customer_text: str | None) -> None:
+    """Lead interessado: fila humana, lead qualificado e aviso no painel e no celular."""
+    conv.bot_active = False
+    conv.atendimento_status = "aguardando"
+    conv.last_updated = datetime.now(timezone.utc)
+    lead = await db.get(Lead, conv.customer_id) if conv.customer_id else None
+    if lead and lead.status in (LeadStatus.NEW, LeadStatus.CONTACTED):
+        lead.status = LeadStatus.QUALIFIED
+        await score_lead(lead)
+    await db.flush()
+
+    name = (lead.name if lead else None) or "Cliente"
+    url = f"/app/whatsapp?conv={conv.id}" if conv.channel == "whatsapp" else "/app/instagram-dm"
+    await ws_manager.broadcast(conv.tenant_id, "conversation_updated", {
+        "id": conv.id, "atendimento_status": conv.atendimento_status, "bot_active": False,
+        "lead_interested": True, "last_updated": conv.last_updated.isoformat(),
+    })
+    await ws_manager.broadcast(conv.tenant_id, "lead_interested", {
+        "conversation_id": conv.id, "lead_id": lead.id if lead else None, "name": name,
+        "text": push_service.preview(customer_text), "channel": conv.channel, "url": url,
+    })
+    try:
+        await push_service.notify_interest(db, conv=conv, title=f"🔥 Lead interessado: {name}",
+                                           text=customer_text, url=url)
+    except Exception as exc:  # aviso no celular não pode derrubar o atendimento
+        logger.warning("Push de lead interessado falhou (conversa %s): %s", conv.id, exc)
+    logger.info("Lead interessado → fila humana (conversa %s)", conv.id)
 
 
 # ---------------------------------------------------------------------------

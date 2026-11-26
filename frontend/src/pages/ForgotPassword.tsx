@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n } from '../i18n'
+import BrandMark from '../components/BrandMark'
 
 export default function ForgotPassword() {
   const { t } = useI18n()
@@ -52,9 +53,7 @@ export default function ForgotPassword() {
       <div className="w-full max-w-sm">
         <div className="mb-8">
           <Link to="/" className="inline-flex items-center gap-2 no-underline mb-8">
-            <div className="w-6 h-6 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 rounded-md flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-violet-500/30">
-              P
-            </div>
+            <BrandMark className="w-6 h-6 rounded-md shadow-sm shadow-violet-500/30" />
             <span className="text-sm font-semibold text-white">
               {BRANDING.name}
               <span className="ml-1 text-[10px] text-violet-400 font-normal">by {BRANDING.company}</span>

@@ -19,7 +19,7 @@ from app.models.ai import AIConfig, AIUsageDay, KnowledgeChunk, KnowledgeDoc, DE
 from app.models.user import User
 from app.services import rag_service
 from app.services.meta_token_service import safe_encrypt_token
-from app.services import ai_platform
+from app.services import ai_agent, ai_platform
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -39,6 +39,8 @@ class AIConfigOut(BaseModel):
     platform_available: bool = False
     use_own_key: bool = False
     system_prompt: str
+    handoff_rules: str = ""
+    default_handoff_rules: str = ""
     temperature: float
     rag_top_k: int
     sender_rate_limit_per_min: int
@@ -51,6 +53,7 @@ class AIConfigUpdate(BaseModel):
     gemini_api_key: str | None = Field(default=None, description="Write-only; nunca é retornada")
     use_own_key: bool | None = None
     system_prompt: str | None = Field(default=None, min_length=10)
+    handoff_rules: str | None = Field(default=None, max_length=2000)
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     rag_top_k: int | None = Field(default=None, ge=1, le=10)
     sender_rate_limit_per_min: int | None = Field(default=None, ge=1, le=200)
@@ -125,6 +128,8 @@ def _config_out(cfg: AIConfig) -> AIConfigOut:
         platform_available=ai_platform.platform_available(),
         use_own_key=ai_platform.uses_own_key(cfg),
         system_prompt=cfg.system_prompt,
+        handoff_rules=cfg.handoff_rules or "",
+        default_handoff_rules=ai_agent.DEFAULT_HANDOFF_RULES,
         temperature=cfg.temperature,
         rag_top_k=cfg.rag_top_k,
         sender_rate_limit_per_min=cfg.sender_rate_limit_per_min,
@@ -167,6 +172,8 @@ async def update_config(
         cfg.enabled = body.enabled
     if body.system_prompt is not None:
         cfg.system_prompt = body.system_prompt.strip()
+    if body.handoff_rules is not None:
+        cfg.handoff_rules = body.handoff_rules.strip() or None
     if body.temperature is not None:
         cfg.temperature = body.temperature
     if body.rag_top_k is not None:

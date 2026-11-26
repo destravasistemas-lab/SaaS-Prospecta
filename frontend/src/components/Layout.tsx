@@ -8,6 +8,9 @@ import { MeContext, hasModule, type Me } from './MeContext'
 import api from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n } from '../i18n'
+import BrandMark from './BrandMark'
+import NotificationBell from './NotificationBell'
+import NotificationCenter from './NotificationCenter'
 
 export default function Layout() {
   const location = useLocation()
@@ -68,15 +71,17 @@ export default function Layout() {
           {menuOpen && <div className="lg:hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
           <div className="flex-1 min-w-0 flex flex-col">
             <header className="lg:hidden sticky top-0 z-30 h-14 shrink-0 flex items-center gap-2.5 px-4 bg-canvas/90 backdrop-blur border-b border-line">
-              <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xs">P</span>
+              <BrandMark className="w-7 h-7 rounded-lg" />
               <span className="text-sm font-semibold text-white tracking-tight flex-1 truncate">
                 {me?.brand_name || BRANDING.name}
               </span>
+              <NotificationBell placement="header" />
             </header>
             <main className="flex-1 overflow-auto px-4 pt-5 pb-24 sm:px-6 lg:px-10 lg:pt-8 lg:pb-10">
               <BillingBanner me={me} />
               <Outlet />
             </main>
+            <NotificationCenter />
           </div>
 
           {/* Celular: barra de abas fixa com as telas mais usadas; "Menu" abre o resto. */}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Users, Search, Flame, Thermometer, Snowflake,
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
-  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall, BadgeDollarSign,
+  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall, BadgeDollarSign, Download,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -107,6 +107,8 @@ export default function Leads() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterScore, setFilterScore] = useState('')
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // DM modal
   const [dmLead, setDmLead] = useState<Lead | null>(null)
@@ -173,6 +175,31 @@ export default function Leads() {
       /* ignore */
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function exportCsv(interested: boolean) {
+    setExportOpen(false)
+    setExporting(true)
+    try {
+      const params: Record<string, string> = {}
+      if (interested) params.interested = 'true'
+      else {
+        if (filterStatus) params.status = filterStatus
+        if (filterScore) params.score_label = filterScore
+        if (search.trim()) params.search = search.trim()
+      }
+      const { data } = await api.get('/leads/export', { params, responseType: 'blob' })
+      const url = URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${interested ? 'leads-interessados' : 'leads'}-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      alert(apiError(err, t('Erro ao exportar leads.', 'Failed to export leads.')))
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -287,6 +314,34 @@ export default function Leads() {
           <HelpLink section="leads" className="mt-1" />
         </div>
         <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setExportOpen((v) => !v)}
+              disabled={exporting}
+              className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.09] disabled:opacity-50 text-ink text-sm font-medium rounded-lg transition-colors"
+            >
+              <Download size={14} />
+              {exporting ? t('Exportando...', 'Exporting...') : t('Exportar CSV', 'Export CSV')}
+              <ChevronDown size={12} />
+            </button>
+            {exportOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
+                <div className="absolute right-0 lg:left-0 lg:right-auto mt-1 z-20 w-64 max-w-[calc(100vw-2rem)] bg-card border border-white/[0.1] rounded-lg shadow-xl p-1">
+                  <button onClick={() => exportCsv(true)} className="w-full text-left px-3 py-2 rounded-md hover:bg-white/[0.05]">
+                    <span className="block text-sm text-ink font-medium">{t('Interessados', 'Interested')}</span>
+                    <span className="block text-[11px] text-ink-4">{t('Quentes, qualificados e convertidos', 'Hot, qualified and converted')}</span>
+                  </button>
+                  <button onClick={() => exportCsv(false)} className="w-full text-left px-3 py-2 rounded-md hover:bg-white/[0.05]">
+                    <span className="block text-sm text-ink font-medium">
+                      {filterStatus || filterScore || search.trim() ? t('Com os filtros atuais', 'With current filters') : t('Todos os leads', 'All leads')}
+                    </span>
+                    <span className="block text-[11px] text-ink-4">{t('Abre direto no Excel ou Google Sheets', 'Opens in Excel or Google Sheets')}</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             onClick={handleScoreAll}
             disabled={scoring || leads.length === 0}

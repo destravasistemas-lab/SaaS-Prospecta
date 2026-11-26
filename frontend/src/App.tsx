@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import Instalar from './pages/Instalar'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import ConexaoMeta from './pages/ConexaoMeta'
@@ -36,6 +37,8 @@ export default function App() {
         <Route path="/oauth/success" element={<OAuthSuccess />} />
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/instalar" element={<Instalar />} />
+        <Route path="/download" element={<Instalar />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />

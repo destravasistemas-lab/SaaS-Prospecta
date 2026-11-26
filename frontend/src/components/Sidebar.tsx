@@ -10,6 +10,8 @@ import AccountSwitcher from './AccountSwitcher'
 import { hasModule, useMe } from './MeContext'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
+import BrandMark from './BrandMark'
+import NotificationBell from './NotificationBell'
 
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; hint?: string; badge?: number }
 type NavSection = { label?: string; items: NavItem[] }
@@ -132,12 +134,13 @@ export default function Sidebar({ menuOpen, onClose }: { menuOpen: boolean; onCl
     >
       <div className="h-16 shrink-0 px-5 flex items-center gap-2.5">
         <button onClick={() => navigate('/app')} className="flex items-center gap-2.5 flex-1 min-w-0">
-          <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-600/25 text-white font-bold text-sm">P</span>
+          <BrandMark className="w-8 h-8 rounded-lg shadow-lg shadow-violet-600/25" />
           <span className="text-left">
             <span className="block text-sm font-semibold text-white tracking-tight">{BRANDING.name}</span>
             <span className="block text-[10px] text-ink-4">by {BRANDING.company}</span>
           </span>
         </button>
+        <span className="max-lg:hidden"><NotificationBell placement="sidebar" /></span>
         <button onClick={onClose} aria-label={t('Fechar menu', 'Close menu')} className="lg:hidden w-9 h-9 -mr-2 flex items-center justify-center rounded-lg text-ink-3 hover:bg-white/[0.06]">
           <X size={18} />
         </button>

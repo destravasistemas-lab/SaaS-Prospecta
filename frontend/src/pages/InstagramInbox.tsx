@@ -4,6 +4,7 @@ import api, { WS_BASE } from '../services/api'
 import { useI18n, tr } from '../i18n'
 import { IS_TOUCH, statusText } from './WhatsApp'
 import HelpLink from '../components/HelpLink'
+import ConversationMuteButton from '../components/ConversationMuteButton'
 
 interface Conversation {
   id: string
@@ -343,6 +344,8 @@ export default function InstagramInbox() {
                 </p>
                 <p className="text-[11px] text-ink-4">{statusText(selected.atendimento_status)}</p>
               </div>
+
+              <ConversationMuteButton conversationId={selected.id} />
 
               {selected.atendente_id !== myId && (
                 <button

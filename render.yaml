@@ -108,6 +108,11 @@ services:
       # Chaves da Gemini da IA do Prospecta, separadas por vírgula (conta paga no Google)
       - key: GEMINI_API_KEYS
         sync: false
+      # Notificação no celular (Web Push). Gere com: python backend/scripts/gen_vapid_keys.py
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
 
   - type: web
     name: prospecta-web

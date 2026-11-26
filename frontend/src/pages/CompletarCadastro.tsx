@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n } from '../i18n'
+import BrandMark from '../components/BrandMark'
 
 export default function CompletarCadastro() {
   const { t } = useI18n()
@@ -55,9 +56,7 @@ export default function CompletarCadastro() {
     <div className="min-h-screen bg-canvas flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#d946ef]/30">
-            <span className="text-2xl font-bold text-white">P</span>
-          </div>
+          <BrandMark className="w-14 h-14 rounded-xl mx-auto mb-4 shadow-lg shadow-[#d946ef]/30" />
           <h1 className="text-2xl font-bold text-white">{t('Bem-vindo ao', 'Welcome to')} {BRANDING.name}</h1>
           <p className="text-xs text-violet-400 font-medium mb-1">{t(BRANDING.developedBy, 'Developed by Destrava')}</p>
           <p className="text-ink-3 text-sm mt-1">{t('Seu pagamento foi confirmado! Agora defina sua senha.', 'Your payment is confirmed! Now set your password.')}</p>

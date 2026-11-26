@@ -11,6 +11,7 @@ import { CallBanner, useCalls } from '../components/CallProvider'
 import { CallLogLine } from '../components/CallLog'
 import SaleDialog from '../components/SaleDialog'
 import OptInRisk from '../components/OptInRisk'
+import ConversationMuteButton from '../components/ConversationMuteButton'
 
 interface Conversation {
   id: string
@@ -667,6 +668,8 @@ export default function WhatsApp() {
                   )}
                 </p>
               </div>
+
+              <ConversationMuteButton conversationId={selected.id} />
 
               {/* Ligar para o cliente */}
               {callingOn && selected.customer_id && (

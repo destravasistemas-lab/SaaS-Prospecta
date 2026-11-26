@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import api, { apiError } from '../services/api'
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
 import LegalEntity from '../components/LegalEntity'
+import BrandMark from '../components/BrandMark'
 
 export default function Login() {
   const { t } = useI18n()
@@ -28,6 +29,11 @@ export default function Login() {
 
   // Cadastro em análise ou recusado (vem do login, do cadastro ou do painel via ?status=)
   const [notice, setNotice] = useState<string | null>(searchParams.get('status'))
+
+  // Aberto pelo ícone do app com sessão ativa: vai direto ao painel.
+  useEffect(() => {
+    if (searchParams.get('source') === 'app' && localStorage.getItem('access_token')) navigate('/app', { replace: true })
+  }, [searchParams, navigate])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -104,9 +110,7 @@ export default function Login() {
       {/* top nav */}
       <nav className="absolute top-0 left-0 right-0 flex items-center justify-between px-7 py-[18px]">
         <a href="/" className="flex items-center gap-2 no-underline">
-          <div className="w-6 h-6 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 rounded-md flex items-center justify-center font-bold text-xs text-white shadow-sm shadow-violet-500/30">
-            P
-          </div>
+          <BrandMark className="w-6 h-6 rounded-md shadow-sm shadow-violet-500/30" />
           <span className="text-[13px] font-semibold text-white tracking-tight">
             {BRANDING.name}
             <span className="ml-1.5 text-[10px] text-violet-400 font-normal">by {BRANDING.company}</span>

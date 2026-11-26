@@ -67,6 +67,8 @@ class Settings(BaseSettings):
 
     # Janela máxima (em dias) para agendar um post no futuro.
     max_schedule_days: int = 15
+    # Envios simultâneos de um lote de disparo em massa
+    broadcast_send_concurrency: int = 10
     # Limites de posts, mídia e automações para contas sem plano (o plano manda quando tem a chave)
     default_scheduled_posts: int = 30
     default_storage_mb: int = 500
@@ -104,6 +106,11 @@ class Settings(BaseSettings):
     support_email: str = "contato@destravasistemas.com.br"
     # Fuso usado na janela de envio do follow-up automático (Brasília = -3, sem horário de verão)
     followup_utc_offset_hours: int = -3
+    # Notificação no celular (Web Push). Gere o par com backend/scripts/gen_vapid_keys.py;
+    # a privada é segredo (variável de ambiente, nunca no repositório). Vazio = push desligado.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:contato@destravasistemas.com.br"
     # Sync periódico da Marketing API (app/services/ads_sync.py)
     ads_sync_enabled: bool = False
 

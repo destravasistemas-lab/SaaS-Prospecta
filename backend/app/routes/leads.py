@@ -5,16 +5,16 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, update
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.core.phone import normalize_phone
+from app.core.phone import normalize_phone, format_phone_display
 from app.core.i18n import t
-from app.services import messaging_policy
+from app.services import messaging_policy, lead_vars
 from app.models.user import User
 from app.models.lead import Lead, LeadSource, LeadStatus
 from app.models.automation import Customer, Sale
@@ -38,6 +38,7 @@ class MergeLeadsRequest(BaseModel):
 _NAME_COLS = {"nome", "name", "cliente", "contato", "nome completo"}
 _PHONE_COLS = {"telefone", "phone", "celular", "whatsapp", "numero", "número", "fone", "tel"}
 _OPTIN_COLS = {"opt_in", "optin", "opt-in", "consent", "consentimento", "whatsapp_opt_in"}
+_EMAIL_COLS = {"email", "e-mail", "e_mail"}
 _TRUTHY = {"1", "true", "sim", "yes", "s", "y", "x"}
 
 
@@ -51,6 +52,8 @@ async def import_leads_csv(
     Importa leads em massa de um CSV com colunas de nome e telefone.
     Telefones são padronizados para 55DDDNUMERO; duplicados/ inválidos são pulados.
     Coluna opcional `opt_in` (sim/yes/1) registra o consentimento para WhatsApp.
+    As demais colunas (cidade, nome da loja...) viram campos do lead, usáveis
+    como variáveis no disparo: {{cidade}}, {{nome_da_loja}}.
     """
     if current_user.role != "admin":
         raise HTTPException(403, "Apenas admins podem importar leads.")
@@ -75,6 +78,12 @@ async def import_leads_csv(
     name_col = find_col(reader.fieldnames, _NAME_COLS)
     phone_col = find_col(reader.fieldnames, _PHONE_COLS)
     optin_col = find_col(reader.fieldnames, _OPTIN_COLS)
+    email_col = find_col(reader.fieldnames, _EMAIL_COLS)
+    known = {name_col, phone_col, optin_col, email_col}
+    extra_cols = {
+        f: lead_vars.field_key(f) for f in reader.fieldnames or []
+        if f and f not in known and lead_vars.field_key(f)
+    }
     now = datetime.now(timezone.utc)
     if not phone_col:
         raise HTTPException(
@@ -101,7 +110,12 @@ async def import_leads_csv(
             continue
         name = (row.get(name_col) or "").strip() if name_col else ""
         opted_in = bool(optin_col) and (row.get(optin_col) or "").strip().lower() in _TRUTHY
+        email = (row.get(email_col) or "").strip().lower() if email_col else ""
+        campos = {key: (row.get(col) or "").strip() for col, key in extra_cols.items()}
+        campos = {k: v for k, v in campos.items() if v}
         db.add(Lead(
+            email=email or None,
+            metadata_json=json.dumps({"campos": campos}, ensure_ascii=False) if campos else None,
             whatsapp_opt_in=opted_in,
             whatsapp_opt_in_at=now if opted_in else None,
             whatsapp_opt_in_source="csv_import" if opted_in else None,
@@ -220,6 +234,102 @@ async def list_leads(
         ]
 
     return leads
+
+
+_STATUS_LABELS = {
+    "new": ("Novo", "New"), "contacted": ("Contatado", "Contacted"),
+    "qualified": ("Qualificado", "Qualified"), "converted": ("Convertido", "Converted"),
+    "lost": ("Perdido", "Lost"),
+}
+_SCORE_LABELS = {
+    "hot": ("Quente", "Hot"), "warm": ("Morno", "Warm"), "cold": ("Frio", "Cold"),
+    "converted": ("Convertido", "Converted"), "lost": ("Perdido", "Lost"),
+}
+
+
+def _label(table: dict, value) -> str:
+    key = getattr(value, "value", value) or ""
+    pair = table.get(key)
+    return t(*pair) if pair else key
+
+
+def _csv_safe(value) -> str:
+    """Evita que o Excel execute fórmula vinda de um campo (CSV injection)."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
+def _csv_list(raw: Optional[str]) -> set[str]:
+    return {v.strip() for v in (raw or "").split(",") if v.strip()}
+
+
+@router.get("/export")
+async def export_leads_csv(
+    status: Optional[str] = Query(None, description="Um ou mais, separados por vírgula: qualified,converted"),
+    score_label: Optional[str] = Query(None, description="Um ou mais: hot,warm"),
+    search: Optional[str] = Query(None),
+    interested: bool = Query(False, description="Quentes, qualificados e convertidos juntos"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Planilha CSV (abre direto no Excel) com os leads filtrados."""
+    query = select(Lead).where(Lead.account_id == current_user.tenant_id)
+    if interested:
+        query = query.where(or_(
+            Lead.score_label == "hot",
+            Lead.status.in_([LeadStatus.QUALIFIED, LeadStatus.CONVERTED]),
+        ))
+    labels = _csv_list(score_label)
+    try:
+        statuses = {LeadStatus(v) for v in _csv_list(status)}
+    except ValueError:
+        raise HTTPException(422, t("Status inválido.", "Invalid status."))
+    if statuses:
+        query = query.where(Lead.status.in_(statuses))
+    if labels:
+        query = query.where(Lead.score_label.in_(labels))
+    if search:
+        like = f"%{search.strip()}%"
+        query = query.where(or_(
+            Lead.name.ilike(like), Lead.instagram_handle.ilike(like), Lead.email.ilike(like),
+        ))
+    leads = (await db.execute(query.order_by(Lead.captured_at.desc()))).scalars().all()
+
+    extras = sorted({k for lead in leads for k in lead_vars.custom_fields(lead)})
+    header = [
+        t("Nome", "Name"), t("Telefone", "Phone"), "E-mail", "Instagram", "Status",
+        t("Temperatura", "Temperature"), t("Pontuação", "Score"), t("Origem", "Source"),
+        t("Aceitou WhatsApp", "WhatsApp opt-in"), t("Captado em", "Captured at"),
+        t("Observações", "Notes"), *extras,
+    ]
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=";")
+    writer.writerow(header)
+    for lead in leads:
+        ctx = lead_vars.lead_context(lead)
+        campos = lead_vars.custom_fields(lead)
+        try:
+            notes = (json.loads(lead.metadata_json or "{}") or {}).get("notes", "")
+        except (ValueError, TypeError, AttributeError):
+            notes = ""
+        phone = (format_phone_display(lead.phone) or lead.phone or "").lstrip("+")
+        captured = lead.captured_at.strftime("%d/%m/%Y %H:%M") if lead.captured_at else ""
+        writer.writerow([_csv_safe(v) for v in [
+            ctx["nome"] or lead.name, phone, lead.email, ctx["instagram"],
+            _label(_STATUS_LABELS, lead.status), _label(_SCORE_LABELS, lead.score_label),
+            lead.score if lead.score is not None else "",
+            getattr(lead.source, "value", lead.source),
+            t("Sim", "Yes") if lead.can_receive_whatsapp_templates else t("Não", "No"),
+            captured, notes, *[campos.get(k, "") for k in extras],
+        ]])
+
+    filename = f"leads-{datetime.now(timezone.utc):%Y-%m-%d}.csv"
+    # BOM: o Excel em pt-BR só reconhece UTF-8 (acentos) com ele.
+    return Response(
+        content="\ufeff" + out.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/{lead_id}", response_model=LeadResponse)

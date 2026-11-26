@@ -155,6 +155,12 @@ O agendador reserva cada post vencido (`scheduled` → `publishing`) antes de pu
 
 Limites por empresa, definidos no plano (`scheduled_posts`, `storage_mb`, `automations`) ou, sem plano, por `DEFAULT_SCHEDULED_POSTS`, `DEFAULT_STORAGE_MB` e `DEFAULT_AUTOMATIONS`. Valem mesmo com `BILLING_ENFORCED=false`, porque são custo de armazenamento. Cada upload fica em `media_uploads` e conta na cota até ser apagado: ao publicar, ao remover o agendamento, quando sobra sem virar post (24h) e quando o post falhou e ficou parado (`FAILED_MEDIA_DAYS`, padrão 7). A automação de comentário de um post desliga sozinha depois de `POST_AUTOMATION_DAYS` (padrão 30) sem alteração.
 
+## Disparos em massa
+
+`POST /whatsapp/broadcast` só cria o disparo (`broadcast_jobs`) e a lista de destinatários (`broadcast_recipients`) e responde 202. O envio roda numa fila no Postgres, em lotes de 50 (`BROADCAST_SEND_CONCURRENCY` envios simultâneos), dentro do processo da API: começa logo depois da resposta e um loop a cada 2 segundos continua de onde parou, inclusive depois de reinício. Cada destinatário é reservado antes do envio (`SKIP LOCKED`), então duas instâncias não mandam duas vezes para o mesmo número. Quem ficou "enviando" por mais de 5 minutos (instância caiu) vira falha, sem reenvio.
+
+As variáveis de cada contato (`{{primeiro_nome}}`, colunas do CSV) são resolvidas na hora do envio por `lead_vars.resolve`; campo vazio sem padrão, opt-out feito depois de criar o disparo e lead apagado viram `skipped`. Telefone repetido em dois leads recebe uma vez. Erro da conta ou do template antes do primeiro envio para o disparo inteiro. Um segundo disparo do mesmo template em andamento recebe 409 (`broadcast_running`). O progresso sai em `GET /whatsapp/broadcast/jobs/{id}` e `POST /whatsapp/broadcast/jobs/{id}/cancel` para o resto.
+
 ## Isolamento entre clientes
 
 Toda consulta filtra por `tenant_id` ou `account_id`, e o tenant vem sempre do JWT ou do webhook, nunca do corpo da requisição. Os módulos (`whatsapp`, `instagram`, `ads`, `ia`) são verificados por `require_module`.

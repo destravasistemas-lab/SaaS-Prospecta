@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FileText, Plus, RefreshCw, Trash2, X, Link2, AlertCircle, Send, Users } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
 import HelpLink from '../components/HelpLink'
 import OptInRisk from '../components/OptInRisk'
+import { broadcastText, cancelBroadcast, isFinished, runBroadcast as startBroadcast, type BroadcastJob } from '../services/broadcast'
 
 interface Template {
   name: string
@@ -15,14 +16,20 @@ interface Template {
 
 interface CostData {
   total: number
-  breakdown: Record<string, { count: number; unit_cost: number; subtotal: number }>
+  total_usd?: number
+  pricing?: Record<string, number>
+  pricing_usd?: Record<string, number>
+  prices_effective_from?: string
+  prices_checked_at?: string
+  prices_source?: string
+  breakdown: Record<string, { count: number; unit_cost: number; subtotal: number; unit_cost_usd?: number; subtotal_usd?: number }>
 }
 
-// Categorias da Meta + custo estimado por conversa (configurável — a Meta muda os valores).
-const CATEGORIES: Record<string, { pt: string; en: string; cost: number; badge: string }> = {
-  UTILITY: { pt: 'Utilidade', en: 'Utility', cost: 0.12, badge: 'text-blue-400 bg-blue-900/20 border-blue-500/20' },
-  MARKETING: { pt: 'Marketing', en: 'Marketing', cost: 0.33, badge: 'text-purple-400 bg-purple-900/20 border-purple-500/20' },
-  AUTHENTICATION: { pt: 'Autenticação', en: 'Authentication', cost: 0.15, badge: 'text-amber-400 bg-amber-900/20 border-amber-500/20' },
+// Categorias da Meta. O preço vem de /whatsapp/costs (tabela da Meta para o Brasil, em R$ e US$).
+const CATEGORIES: Record<string, { pt: string; en: string; badge: string }> = {
+  UTILITY: { pt: 'Utilidade', en: 'Utility', badge: 'text-blue-400 bg-blue-900/20 border-blue-500/20' },
+  MARKETING: { pt: 'Marketing', en: 'Marketing', badge: 'text-purple-400 bg-purple-900/20 border-purple-500/20' },
+  AUTHENTICATION: { pt: 'Autenticação', en: 'Authentication', badge: 'text-amber-400 bg-amber-900/20 border-amber-500/20' },
 }
 
 const LANGUAGES = [
@@ -38,10 +45,17 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
+// Preço por mensagem tem até 4 casas (ex.: R$ 0,0350).
+const brlUnit = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+const usdUnit = (v: number) => `US$ ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+const usd = (v: number) => `US$ ${v.toFixed(2)}`
+const fmtDate = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '')
 
 export default function Templates() {
   const { t, lang } = useI18n()
   const catLabel = (c: { pt: string; en: string }) => t(c.pt, c.en)
+  const unitBrl = (key: string) => costs?.pricing?.[key.toLowerCase()]
+  const unitUsd = (key: string) => costs?.pricing_usd?.[key.toLowerCase()]
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [noConnection, setNoConnection] = useState(false)
@@ -62,12 +76,15 @@ export default function Templates() {
   // Disparo em massa
   const [bcTpl, setBcTpl] = useState<Template | null>(null)
   const [bcVars, setBcVars] = useState<string[]>([])
+  const [bcFields, setBcFields] = useState<string[]>([])
   const [audience, setAudience] = useState<number | null>(null)
   const [noOptIn, setNoOptIn] = useState(0)
   const [includeNoOptIn, setIncludeNoOptIn] = useState(false)
   const [riskMsg, setRiskMsg] = useState('')
   const [broadcasting, setBroadcasting] = useState(false)
   const [bcResult, setBcResult] = useState('')
+  const [bcJob, setBcJob] = useState<BroadcastJob | null>(null)
+  const watching = useRef(false)
 
   useEffect(() => { load() }, [])
 
@@ -149,6 +166,9 @@ export default function Templates() {
     setBcVars(Array(nums.length ? Math.max(...nums) : 0).fill(''))
     setAudience(null)
     setIncludeNoOptIn(false)
+    api.get('/whatsapp/broadcast/fields')
+      .then(({ data }) => setBcFields([...(data?.base ?? []), ...(data?.custom ?? [])]))
+      .catch(() => setBcFields([]))
     try {
       const { data } = await api.get('/whatsapp/broadcast/audience')
       setAudience(data.count)
@@ -161,17 +181,19 @@ export default function Templates() {
     if (!bcTpl) return
     setBroadcasting(true)
     setBcResult('')
+    watching.current = true
     try {
-      const { data } = await api.post('/whatsapp/broadcast', {
-        template_name: bcTpl.name,
-        language: bcTpl.language || 'pt_BR',
-        variables: bcVars,
-        include_without_opt_in: includeNoOptIn,
-      })
-      setBcResult(t(
-        `Disparo concluído: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`,
-        `Broadcast finished: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`,
-      ) + (data.error ? ` ${t('Motivo das falhas', 'Failure reason')}: ${data.error}` : ''))
+      const job = await startBroadcast(
+        {
+          template_name: bcTpl.name,
+          language: bcTpl.language || 'pt_BR',
+          variables: bcVars,
+          include_without_opt_in: includeNoOptIn,
+        },
+        (progress) => { setBcJob(progress); setBcResult(broadcastText(progress)) },
+        () => watching.current,
+      )
+      setBcResult(broadcastText(job))
     } catch (err: any) {
       setBcResult(apiError(err, t('Erro no disparo em massa.', 'Broadcast failed.')))
     } finally {
@@ -226,27 +248,43 @@ export default function Templates() {
       <div className="bg-card border border-white/[0.06] rounded-xl p-4 mb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-ink-3">{t('Custo estimado do mês (WhatsApp) — valores de referência; a cobrança é feita pela Meta', 'Estimated cost this month (WhatsApp) — reference values; billing is done by Meta')}</p>
-          <p className="text-lg font-semibold text-ink">{brl(costs?.total ?? 0)}</p>
+          <div className="text-right">
+            <p className="text-lg font-semibold text-ink leading-tight">{brl(costs?.total ?? 0)}</p>
+            <p className="text-[11px] text-ink-5">{usd(costs?.total_usd ?? 0)}</p>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {(['UTILITY', 'MARKETING', 'AUTHENTICATION'] as const).map((key) => {
             const c = CATEGORIES[key]
             const b = costs?.breakdown[key.toLowerCase()]
+            const ub = unitBrl(key)
+            const uu = unitUsd(key)
             return (
               <div key={key} className="bg-field border border-white/[0.05] rounded-lg p-3">
                 <p className={`text-[10px] font-medium px-1.5 py-0.5 rounded border w-fit ${c.badge}`}>{catLabel(c)}</p>
                 <p className="text-sm font-semibold text-ink mt-2 leading-none">
-                  {brl(c.cost)}<span className="text-[10px] text-ink-5 font-normal"> {t('/mensagem', '/message')}</span>
+                  {ub !== undefined ? brlUnit(ub) : '—'}<span className="text-[10px] text-ink-5 font-normal"> {t('/mensagem', '/message')}</span>
                 </p>
+                {uu !== undefined && <p className="text-[11px] text-ink-5 mt-1">{usdUnit(uu)}</p>}
                 {b && (
                   <p className="text-[11px] text-ink-4 mt-1.5">
                     {b.count} {t('mensagens', 'messages')} · <span className="text-ink-2">{brl(b.subtotal)}</span>
+                    {b.subtotal_usd !== undefined && <span className="text-ink-5"> ({usd(b.subtotal_usd)})</span>}
                   </p>
                 )}
               </div>
             )
           })}
         </div>
+        {costs?.prices_effective_from && (
+          <p className="text-[10px] text-ink-5 mt-3">
+            {t(
+              `Tabela oficial da Meta para o Brasil, por mensagem entregue, vigente desde ${fmtDate(costs.prices_effective_from)}.`,
+              `Official Meta rate card for Brazil, per delivered message, effective ${fmtDate(costs.prices_effective_from)}.`,
+            )}{' '}
+            {costs.prices_source && <a href={costs.prices_source} target="_blank" rel="noreferrer" className="underline hover:text-ink-3">{t('Fonte', 'Source')}</a>}
+          </p>
+        )}
       </div>
 
       {/* Estados */}
@@ -296,7 +334,7 @@ export default function Templates() {
                   <div className="flex-1 min-w-0 max-sm:basis-full">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h3 className="text-sm font-semibold text-ink break-all">{tpl.name}</h3>
-                      {cat && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${cat.badge}`}>{catLabel(cat)} · {brl(cat.cost)}</span>}
+                      {cat && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${cat.badge}`}>{catLabel(cat)}{unitBrl(tpl.category!) !== undefined && ` · ${brlUnit(unitBrl(tpl.category!)!)}`}</span>}
                       {tpl.status && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${STATUS_BADGE[tpl.status] ?? 'text-ink-4 bg-white/[0.03] border-white/[0.05]'}`}>{tpl.status}</span>}
                       <span className="text-[10px] text-ink-5">{tpl.language}</span>
                     </div>
@@ -380,7 +418,8 @@ export default function Templates() {
                       }`}
                     >
                       {catLabel(c)}
-                      <span className="block text-[10px] opacity-70">{brl(c.cost)}</span>
+                      {unitBrl(key) !== undefined && <span className="block text-[10px] opacity-70">{brlUnit(unitBrl(key)!)}</span>}
+                      {unitUsd(key) !== undefined && <span className="block text-[10px] opacity-50">{usdUnit(unitUsd(key)!)}</span>}
                     </button>
                   ))}
                 </div>
@@ -460,15 +499,35 @@ export default function Templates() {
 
             {bcVars.length > 0 && (
               <div className="space-y-2 mb-4">
+                <p className="text-[11px] text-ink-4">
+                  {t(
+                    'Toque num campo para personalizar por contato. Se o campo estiver vazio, use um padrão: {{primeiro_nome|tudo bem}}. Contato sem o campo e sem padrão é pulado.',
+                    'Tap a field to personalize per contact. If the field may be empty, add a default: {{primeiro_nome|tudo bem}}. Contacts missing the field with no default are skipped.',
+                  )}
+                </p>
                 {bcVars.map((v, i) => (
                   <div key={i}>
                     <label className="block text-[11px] text-ink-4 mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
                     <input
                       value={v}
                       onChange={(e) => setBcVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
-                      placeholder={t(`valor para {{${i + 1}}}`, `value for {{${i + 1}}}`)}
+                      placeholder={t(`valor para {{${i + 1}}} — ex.: {{primeiro_nome}}`, `value for {{${i + 1}}} — e.g. {{primeiro_nome}}`)}
                       className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none placeholder-ink-5"
                     />
+                    {bcFields.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {bcFields.map((f) => (
+                          <button
+                            key={f}
+                            type="button"
+                            onClick={() => setBcVars((prev) => prev.map((x, j) => (j === i ? `${x}${x && !x.endsWith(' ') ? ' ' : ''}{{${f}}}` : x)))}
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-indigo-500/25 bg-indigo-600/10 text-indigo-300 hover:border-indigo-500/60"
+                          >
+                            {`{{${f}}}`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -496,9 +555,17 @@ export default function Templates() {
             )}
 
             <div className="flex gap-3">
-              <button onClick={() => setBcTpl(null)} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors">
+              <button onClick={() => { watching.current = false; setBcTpl(null); setBcJob(null) }} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm font-medium rounded-lg transition-colors">
                 {bcResult ? t('Fechar', 'Close') : t('Cancelar', 'Cancel')}
               </button>
+              {bcJob && !isFinished(bcJob) && (
+                <button
+                  onClick={() => cancelBroadcast(bcJob.id).then((job) => { setBcJob(job); setBcResult(broadcastText(job)) }).catch(() => {})}
+                  className="flex-1 py-2.5 bg-red-900/20 text-red-400 hover:bg-red-900/40 text-sm font-medium rounded-lg transition-colors"
+                >
+                  {t('Parar disparo', 'Stop broadcast')}
+                </button>
+              )}
               {!bcResult && (
                 <button
                   onClick={runBroadcast}

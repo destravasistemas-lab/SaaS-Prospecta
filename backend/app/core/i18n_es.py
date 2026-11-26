@@ -447,4 +447,10 @@ ES: dict[str, str] = {
         "Este post ya fue publicado o se está publicando.",
     "Este post está sendo publicado agora. Espere terminar para remover.":
         "Este post se está publicando ahora. Espera a que termine para eliminarlo.",
+    "Preencha a variável {{{0}}} do template.":
+        "Completa la variable {{{0}}} de la plantilla.",
+    "Já existe um disparo deste template em andamento. Acompanhe o progresso ou pare antes de disparar de novo.":
+        "Ya hay un envío masivo de esta plantilla en curso. Sigue el progreso o detenlo antes de enviar de nuevo.",
+    "Disparo não encontrado.":
+        "No se encontró el envío masivo.",
 }

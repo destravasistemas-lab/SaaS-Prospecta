@@ -76,7 +76,8 @@ async def test_broadcast_can_include_contacts_without_opt_in(client, db_session)
     with _tpl_mock() as mock_tpl:
         r = await client.post("/api/v1/whatsapp/broadcast",
                               json={"template_name": "promo", "include_without_opt_in": True}, headers=headers)
-    assert r.json()["total"] == 2 and r.json()["sent"] == 2
+    job = (await client.get(f"/api/v1/whatsapp/broadcast/jobs/{r.json()['id']}", headers=headers)).json()
+    assert job["total"] == 2 and job["sent"] == 2
     assert sorted(c.args[2] for c in mock_tpl.call_args_list) == ["5583900000111", "5583900000112"]
 
     msgs = (await db_session.execute(

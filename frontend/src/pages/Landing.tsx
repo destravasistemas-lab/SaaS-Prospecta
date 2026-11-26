@@ -7,6 +7,7 @@ import {
 import { BRANDING } from '../config/branding'
 import { useI18n, LanguageToggle } from '../i18n'
 import LegalEntity from '../components/LegalEntity'
+import BrandMark from '../components/BrandMark'
 
 const FONT = { fontFamily: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" }
 const GRADIENT = 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400'
@@ -15,9 +16,7 @@ const GRADIENT_TEXT = 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orang
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <span className={`w-8 h-8 rounded-xl ${GRADIENT} flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-fuchsia-500/30`}>
-        P
-      </span>
+      <BrandMark className="w-8 h-8 rounded-xl shadow-md shadow-fuchsia-500/30" />
       <span className={`font-extrabold text-lg tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>{BRANDING.name}</span>
     </span>
   )
@@ -571,6 +570,7 @@ export default function Landing() {
               <li><a href="#trafego" className="hover:text-white">{t('Tráfego', 'Traffic')}</a></li>
               <li><Link to="/pricing" className="hover:text-white">{t('Preços', 'Pricing')}</Link></li>
               <li><Link to="/guia" className="hover:text-white">{t('Guia do sistema', 'System guide')}</Link></li>
+              <li><Link to="/instalar" className="hover:text-white">{t('Baixar o app', 'Download the app')}</Link></li>
             </ul>
           </div>
           <div>

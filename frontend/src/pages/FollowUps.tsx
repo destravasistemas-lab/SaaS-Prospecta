@@ -8,6 +8,7 @@ import api, { apiError } from '../services/api'
 import AutoFollowUps from '../components/AutoFollowUps'
 import { useI18n, tr } from '../i18n'
 import HelpLink from '../components/HelpLink'
+import { broadcastText, runBroadcast } from '../services/broadcast'
 
 interface Lead {
   id: string
@@ -80,6 +81,7 @@ export default function FollowUps() {
   const [dispatching, setDispatching] = useState(false)
   const [dispatchResult, setDispatchResult] = useState('')
   const [unitCosts, setUnitCosts] = useState<Record<string, number>>({})
+  const [unitCostsUsd, setUnitCostsUsd] = useState<Record<string, number>>({})
 
   // Follow-ups
   const [pending, setPending] = useState<PendingItem[]>([])
@@ -156,8 +158,13 @@ export default function FollowUps() {
     } catch { setTpls([]) }
     api.get('/whatsapp/costs').then(({ data }) => {
       const units: Record<string, number> = {}
-      for (const [k, v] of Object.entries<any>(data?.breakdown ?? {})) units[k.toLowerCase()] = v.unit_cost
+      const unitsUsd: Record<string, number> = {}
+      for (const [k, v] of Object.entries<any>(data?.breakdown ?? {})) {
+        units[k.toLowerCase()] = v.unit_cost
+        if (v.unit_cost_usd !== undefined) unitsUsd[k.toLowerCase()] = v.unit_cost_usd
+      }
       setUnitCosts(units)
+      setUnitCostsUsd(unitsUsd)
     }).catch(() => {})
   }
 
@@ -173,16 +180,16 @@ export default function FollowUps() {
     setDispatching(true)
     setDispatchResult('')
     try {
-      const { data } = await api.post('/whatsapp/broadcast', {
-        template_name: pickedTpl.name,
-        language: pickedTpl.language || 'pt_BR',
-        variables: tplVars,
-        lead_ids: selected.size > 0 ? [...selected] : leads.map((l) => l.id),
-      })
-      setDispatchResult(
-        t(`Disparo: ${data.sent} enviados · ${data.failed} falharam (de ${data.total}).`, `Broadcast: ${data.sent} sent · ${data.failed} failed (of ${data.total}).`)
-        + (data.error ? ` ${t('Motivo das falhas', 'Failure reason')}: ${data.error}` : ''),
+      const job = await runBroadcast(
+        {
+          template_name: pickedTpl.name,
+          language: pickedTpl.language || 'pt_BR',
+          variables: tplVars,
+          lead_ids: selected.size > 0 ? [...selected] : leads.map((l) => l.id),
+        },
+        (progress) => setDispatchResult(broadcastText(progress)),
       )
+      setDispatchResult(broadcastText(job))
     } catch (err: any) {
       setDispatchResult(apiError(err, t('Erro no disparo.', 'Broadcast failed.')))
     } finally {
@@ -444,11 +451,15 @@ export default function FollowUps() {
                   // Custo estimado: quantidade × preço da categoria do template (tabela da Meta).
                   const total = selected.size > 0 ? selected.size : leads.length
                   const unit = unitCosts[(pickedTpl.category || '').toLowerCase()]
+                  const unitUsd = unitCostsUsd[(pickedTpl.category || '').toLowerCase()]
                   return (
                     <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.06] px-3 py-2.5 mb-3 text-xs text-amber-100/80">
                       {t('Confirme antes de enviar:', 'Confirm before sending:')} <b className="text-white">{total}</b> {t('contatos', 'contacts')}
                       {unit !== undefined && (
-                        <> · {t('custo estimado', 'estimated cost')} <b className="text-white">R$ {(unit * total).toFixed(2)}</b></>
+                        <> · {t('custo estimado', 'estimated cost')} <b className="text-white">R$ {(unit * total).toFixed(2).replace('.', ',')}</b></>
+                      )}
+                      {unit !== undefined && unitUsd !== undefined && (
+                        <span className="block text-[11px] text-amber-100/60 mt-0.5">US$ {(unitUsd * total).toFixed(2)}</span>
                       )}
                     </div>
                   )
