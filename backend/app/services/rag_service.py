@@ -12,9 +12,10 @@ import io
 import logging
 import math
 
-from sqlalchemy import select, delete
+from sqlalchemy import or_, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.ai import KnowledgeDoc, KnowledgeChunk
 from app.services import gemini_service
 
@@ -106,6 +107,7 @@ async def index_document(
                     chunk_index=batch_start + i,
                     content=content,
                     embedding=emb,
+                    embedding_model=settings.gemini_embedding_model,
                 ))
 
         doc.status = "ready"
@@ -118,6 +120,32 @@ async def index_document(
         doc.error = str(exc)[:500]
         await db.flush()
         logger.warning("RAG: falha ao indexar %s: %s", doc.filename, exc)
+
+
+async def refresh_stale(db: AsyncSession, account_id: str, api_key: str, limit: int = 200) -> int:
+    """Refaz os embeddings de trechos gerados por outro modelo (troca de modelo de embedding)."""
+    stale = (await db.execute(
+        select(KnowledgeChunk)
+        .join(KnowledgeDoc, KnowledgeDoc.id == KnowledgeChunk.doc_id)
+        .where(
+            KnowledgeChunk.account_id == account_id,
+            KnowledgeDoc.status == "ready",
+            or_(KnowledgeChunk.embedding_model.is_(None),
+                KnowledgeChunk.embedding_model != settings.gemini_embedding_model),
+        )
+        .order_by(KnowledgeChunk.id)
+        .limit(limit)
+    )).scalars().all()
+    for start in range(0, len(stale), EMBED_BATCH):
+        batch = stale[start:start + EMBED_BATCH]
+        embeddings = await gemini_service.embed_texts(api_key, [c.content for c in batch])
+        for chunk, emb in zip(batch, embeddings):
+            chunk.embedding = emb
+            chunk.embedding_model = settings.gemini_embedding_model
+        await db.flush()
+    if stale:
+        logger.info("RAG: %d trechos reindexados com %s", len(stale), settings.gemini_embedding_model)
+    return len(stale)
 
 
 async def retrieve(
@@ -135,6 +163,7 @@ async def retrieve(
         .where(
             KnowledgeChunk.account_id == account_id,
             KnowledgeDoc.status == "ready",
+            KnowledgeChunk.embedding_model == settings.gemini_embedding_model,
         )
     )).all()
 

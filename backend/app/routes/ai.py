@@ -83,6 +83,7 @@ class UsageOut(BaseModel):
     conversations_included: int | None = None
     conversations_left: int | None = None
     tokens_per_conversation: int = 0
+    billing_status: str | None = None
     series: list[UsagePoint]
     fallback_rate: float
 
@@ -351,9 +352,10 @@ async def get_usage(
         extra_tokens=allowance.extra,
         platform_used_tokens=allowance.used,
         conversations_included=ai_platform.tokens_to_conversations(
-            None if allowance.included is None else allowance.included + allowance.extra),
+            None if allowance.included is None else allowance.used + (allowance.remaining or 0)),
         conversations_left=ai_platform.tokens_to_conversations(allowance.remaining),
         tokens_per_conversation=settings.ai_tokens_per_conversation,
+        billing_status=allowance.status,
         tokens_used_month=cfg.tokens_used_month,
         token_limit_monthly=cfg.token_limit_monthly,
         series=series,

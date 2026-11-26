@@ -68,10 +68,13 @@ async def generate_content(
 
     data = resp.json()
     try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
+        parts = data["candidates"][0]["content"]["parts"]
     except (KeyError, IndexError) as exc:
         # Bloqueio de safety ou resposta vazia
         raise GeminiError(f"Resposta sem texto: {str(data)[:300]}") from exc
+    text = "".join(p.get("text", "") for p in parts if isinstance(p, dict) and not p.get("thought"))
+    if not text.strip():
+        raise GeminiError(f"Resposta sem texto: {str(data)[:300]}")
 
     meta = data.get("usageMetadata", {}) or {}
     tokens = int(meta.get("totalTokenCount", 0) or 0)
@@ -83,11 +86,12 @@ async def generate_content(
 
 
 async def embed_texts(api_key: str, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
-    """Gera embeddings (768 dims) em lote via batchEmbedContents."""
+    """Gera embeddings em lote via batchEmbedContents (GEMINI_EMBEDDING_DIMS dimensões)."""
     model = f"models/{settings.gemini_embedding_model}"
     body = {
         "requests": [
-            {"model": model, "content": {"parts": [{"text": t}]}, "taskType": task_type}
+            {"model": model, "content": {"parts": [{"text": t}]}, "taskType": task_type,
+             "outputDimensionality": settings.gemini_embedding_dims}
             for t in texts
         ]
     }

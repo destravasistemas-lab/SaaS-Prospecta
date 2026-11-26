@@ -147,6 +147,7 @@ _MIGRATIONS = [
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS platform_tokens BIGINT NOT NULL DEFAULT 0",
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS rate_limited INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS queue_wait_ms BIGINT NOT NULL DEFAULT 0",
+    "ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS embedding_model VARCHAR(64)",
     "UPDATE accounts SET billing_status = NULL WHERE approval_status <> 'approved' AND billing_status = 'courtesy' AND courtesy_until IS NULL AND billing_note IS NULL",
 
     # Prospecção foi removida: apaga as tabelas que ela criou, só se estiverem vazias

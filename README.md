@@ -141,7 +141,9 @@ Com `BILLING_ENFORCED=true`, quem não tem acesso recebe 402 (`billing_required`
 
 ## IA do Prospecta
 
-A conta escolhe em **IA e conhecimento** entre a IA do Prospecta (chaves de `GEMINI_API_KEYS`) e a própria chave da Gemini. Com a do Prospecta, o plano inclui `limits.ai_tokens` por mês, mostrados como atendimentos (`AI_TOKENS_PER_CONVERSATION`, padrão 20.000 tokens). A franquia soma a agência e as empresas-filhas e vale mesmo com `BILLING_ENFORCED=false`. Contas sem plano ficam com `AI_DEFAULT_TOKEN_LIMIT`.
+A conta escolhe em **IA e conhecimento** entre a IA do Prospecta (chaves de `GEMINI_API_KEYS`) e a própria chave da Gemini. Com a do Prospecta, o plano inclui `limits.ai_tokens` por mês, mostrados como atendimentos (`AI_TOKENS_PER_CONVERSATION`, padrão 20.000 tokens). A franquia soma a agência e as empresas-filhas e vale mesmo com `BILLING_ENFORCED=false`, porque a IA do Prospecta é paga por nós: no teste ela fica limitada a `AI_TRIAL_CONVERSATIONS` (padrão 100) e, com o teste ou o pagamento vencido, só sobram os pacotes extras. Contas sem plano ficam com `AI_DEFAULT_TOKEN_LIMIT`.
+
+Modelo padrão: `gemini-3.5-flash-lite` (`GEMINI_MODEL`). Embeddings: `gemini-embedding-001` em 768 dimensões (`GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMS`). Cada trecho guarda o modelo que o gerou, e trechos de outro modelo são refeitos automaticamente antes da próxima busca.
 
 "Comprar mais" gera um Pix no Asaas de `AI_PACK_CONVERSATIONS` atendimentos por `AI_PACK_PRICE_CENTS`. O saldo (`accounts.ai_extra_tokens`) entra pelo webhook ou pela conferência da tela, é usado depois da franquia e não vence. Ao acabar tudo, as conversas vão para a fila humana.
 

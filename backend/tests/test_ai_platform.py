@@ -110,15 +110,26 @@ async def test_allowance_then_extra_pack_then_human_queue(db_session):
     with q[0], q[1], q[2], _send_ok(), patch("app.services.gemini_service.generate_content", new_callable=AsyncMock,
                                              return_value=("Resposta", 5000)):
         await ai_agent.reply_to_conversation(db_session, account.id, conv.id)
-    # Passou 1000 da franquia: saiu do saldo do pacote
+    # Passou 1000 da franquia: saiu do saldo do pacote, sobram 1000 dele
     assert account.ai_extra_tokens == 1000
     allowance = await ai_platform.allowance(db_session, account.id)
-    assert allowance.used == 5000 and allowance.remaining == 0
+    assert allowance.used == 5000 and allowance.remaining == 1000 and allowance.allowed
 
-    db_session.add(Message(tenant_id=account.id, conversation_id=conv.id, sender="5583999990000", text="E agora?",
-                           direction="inbound", wa_id="5583999990000", status="delivered", message_id="wamid.X2",
-                           created_at=datetime.now(timezone.utc) + timedelta(seconds=5)))
-    await db_session.flush()
+    async def new_question(mid, secs):
+        db_session.add(Message(tenant_id=account.id, conversation_id=conv.id, sender="5583999990000", text="E agora?",
+                               direction="inbound", wa_id="5583999990000", status="delivered", message_id=mid,
+                               created_at=datetime.now(timezone.utc) + timedelta(seconds=secs)))
+        conv.bot_active = True
+        await db_session.flush()
+
+    await new_question("wamid.X2", 5)
+    with q[0], q[1], q[2], _send_ok(), patch("app.services.gemini_service.generate_content", new_callable=AsyncMock,
+                                             return_value=("Resposta", 1500)):
+        await ai_agent.reply_to_conversation(db_session, account.id, conv.id)
+    assert account.ai_extra_tokens == 0
+    assert (await ai_platform.allowance(db_session, account.id)).remaining == 0
+
+    await new_question("wamid.X3", 10)
     with q[0], q[1], q[2], _send_ok(), patch("app.services.gemini_service.generate_content", new_callable=AsyncMock) as gen:
         await ai_agent.reply_to_conversation(db_session, account.id, conv.id)
     gen.assert_not_called()
@@ -232,3 +243,95 @@ async def test_super_admin_ai_usage(client, db_session, make_user, monkeypatch):
     expected = round((900_000 * settings.ai_price_input_usd_per_m + 100_000 * settings.ai_price_output_usd_per_m) / 1e6 * settings.usd_brl, 2)
     assert data["totals"]["cost_brl"] == expected
     assert data["accounts"][0]["conversations"] == 50
+
+
+@pytest.mark.asyncio
+async def test_trial_is_capped_and_expired_access_keeps_only_paid_packs(db_session, monkeypatch):
+    monkeypatch.setattr(settings, "billing_enforced", False)
+    await seed_plans(db_session)
+    account, _, cfg, conv = await _conversation(db_session, "PN_AI9", plan="profissional")
+    account.billing_status = "trial"
+    account.trial_ends_at = datetime.now(timezone.utc) + timedelta(days=3)
+    await db_session.flush()
+    a = await ai_platform.allowance(db_session, account.id)
+    assert a.status == "trial"
+    assert a.included == settings.ai_trial_conversations * settings.ai_tokens_per_conversation
+
+    # Teste vencido sem pagamento: a IA do Prospecta para, mesmo com a cobrança desligada
+    account.trial_ends_at = datetime.now(timezone.utc) - timedelta(days=1)
+    await db_session.flush()
+    a = await ai_platform.allowance(db_session, account.id)
+    assert a.status == "blocked" and a.included == 0 and not a.allowed
+    q = _quiet()
+    with q[0], q[1], q[2], _send_ok(), patch("app.services.gemini_service.generate_content", new_callable=AsyncMock) as gen:
+        await ai_agent.reply_to_conversation(db_session, account.id, conv.id)
+    gen.assert_not_called()
+    assert conv.atendimento_status == "aguardando"
+
+    # Pacote pago continua valendo
+    account.ai_extra_tokens = 50_000
+    await db_session.flush()
+    assert (await ai_platform.allowance(db_session, account.id)).allowed
+
+
+@pytest.mark.asyncio
+async def test_chunks_from_another_embedding_model_are_redone_before_search(db_session):
+    from app.models.ai import KnowledgeChunk, KnowledgeDoc
+    from app.services import rag_service
+
+    account, _, _, _ = await _conversation(db_session, "PN_AI10")
+    doc = KnowledgeDoc(account_id=account.id, filename="precos.pdf", status="ready", chunk_count=2)
+    db_session.add(doc)
+    await db_session.flush()
+    db_session.add_all([
+        KnowledgeChunk(doc_id=doc.id, account_id=account.id, chunk_index=0, content="Consulta custa R$ 200",
+                       embedding=[1.0, 0.0], embedding_model=None),
+        KnowledgeChunk(doc_id=doc.id, account_id=account.id, chunk_index=1, content="Abrimos às 8h",
+                       embedding=[0.0, 1.0], embedding_model=None),
+    ])
+    await db_session.flush()
+
+    # Trecho antigo não entra na busca
+    assert await rag_service.retrieve(db_session, account.id, [1.0, 0.0]) == []
+
+    with patch("app.services.gemini_service.embed_texts", new_callable=AsyncMock,
+               return_value=[[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]) as emb:
+        assert await rag_service.refresh_stale(db_session, account.id, "KEY_A") == 2
+        assert await rag_service.refresh_stale(db_session, account.id, "KEY_A") == 0
+    emb.assert_awaited_once()
+    assert await rag_service.retrieve(db_session, account.id, [0.0, 1.0, 0.0]) == ["Consulta custa R$ 200"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_calls_use_the_configured_models(monkeypatch):
+    import httpx
+    from app.services import gemini_service
+
+    sent = []
+
+    class Resp:
+        def __init__(self, data):
+            self.status_code, self._data, self.text = 200, data, ""
+
+        def json(self):
+            return self._data
+
+    async def fake_post(self, url, params=None, json=None):
+        sent.append((url, json))
+        if url.endswith(":batchEmbedContents"):
+            return Resp({"embeddings": [{"values": [0.1, 0.2]}]})
+        return Resp({"candidates": [{"content": {"parts": [
+            {"text": "pensando…", "thought": True},
+            {"text": "Custa R$ 200.", "thoughtSignature": "abc"},
+        ]}}], "usageMetadata": {"promptTokenCount": 100, "totalTokenCount": 130}})
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
+    await gemini_service.embed_texts("K", ["oi"])
+    url, body = sent[-1]
+    assert url.endswith(f"models/{settings.gemini_embedding_model}:batchEmbedContents")
+    assert body["requests"][0]["outputDimensionality"] == settings.gemini_embedding_dims
+
+    usage = {}
+    text, total = await gemini_service.generate_content("K", "sys", [{"role": "user", "parts": [{"text": "oi"}]}], usage_out=usage)
+    assert sent[-1][0].endswith(f"models/{settings.gemini_model}:generateContent")
+    assert text == "Custa R$ 200." and total == 130 and usage == {"input": 100, "output": 30}

@@ -40,6 +40,7 @@ interface Usage {
   conversations_included: number | null
   conversations_left: number | null
   tokens_per_conversation: number
+  billing_status: string | null
   tokens_used_month: number
   token_limit_monthly: number
   series: UsagePoint[]
@@ -158,8 +159,8 @@ export default function AIConfig() {
       </h2>
       <p className="text-ink-4 text-sm mb-3">
         {t(
-          'Gemini 2.5 Flash + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo; se ficar indisponível, a conversa vai automaticamente para a fila humana.',
-          'Gemini 2.5 Flash + your knowledge base (RAG). The AI replies on WhatsApp when the conversation bot is on; if it is unavailable, the conversation automatically goes to the human queue.',
+          'IA da Gemini + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo; se ficar indisponível, a conversa vai automaticamente para a fila humana.',
+          'Gemini AI + your knowledge base (RAG). The AI replies on WhatsApp when the conversation bot is on; if it is unavailable, the conversation automatically goes to the human queue.',
         )}
       </p>
       <HelpLink section="ia" className="mb-3" />
@@ -319,6 +320,17 @@ export default function AIConfig() {
                   {usage.extra_tokens > 0 && ' ' + t(`Inclui ${Math.floor(usage.extra_tokens / per).toLocaleString(locale)} de pacotes extras.`, `Includes ${Math.floor(usage.extra_tokens / per).toLocaleString(locale)} from extra packs.`)}
                   {' '}{t('Ao acabar, as conversas vão para a fila humana.', 'When it runs out, conversations go to the human queue.')}
                 </p>
+                {usage.billing_status === 'trial' && (
+                  <p className="text-[11px] text-amber-300/90 mt-2">
+                    {t('No teste grátis, a IA do Prospecta tem uma franquia menor. Assine um plano para liberar a franquia completa.', 'During the free trial, Prospecta AI has a smaller allowance. Subscribe to a plan to unlock the full allowance.')}
+                  </p>
+                )}
+                {usage.billing_status === 'blocked' && (
+                  <p className="text-[11px] text-red-300 mt-2">
+                    {t('O teste ou o pagamento venceu: a IA do Prospecta só usa os pacotes extras.', 'Your trial or payment has expired: Prospecta AI only uses extra packs.')}{' '}
+                    <button onClick={() => navigate('/app/planos')} className="underline">{t('Ver planos', 'See plans')}</button>
+                  </p>
+                )}
               </div>
             )
           })()}

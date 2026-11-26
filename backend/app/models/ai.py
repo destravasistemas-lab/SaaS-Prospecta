@@ -76,7 +76,7 @@ class KnowledgeDoc(Base):
 
 class KnowledgeChunk(Base):
     """
-    Chunk de texto + embedding (JSON de floats, dim 768 — text-embedding-004).
+    Chunk de texto + embedding (JSON de floats, GEMINI_EMBEDDING_DIMS dimensões).
     A similaridade (cosseno) é computada em Python; volumes típicos de base de
     conhecimento (milhares de chunks) resolvem em milissegundos e o schema
     funciona em qualquer Postgres (sem exigir a extensão pgvector).
@@ -95,6 +95,8 @@ class KnowledgeChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Modelo que gerou o embedding; trechos de outro modelo são refeitos antes da busca
+    embedding_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
         Index("ix_kchunk_account_doc", "account_id", "doc_id"),

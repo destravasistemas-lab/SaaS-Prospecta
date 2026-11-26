@@ -126,19 +126,26 @@ class Allowance:
     extra: int             # saldo de pacotes extras
     used: int              # gasto no mês com as chaves do Prospecta (conta + empresas-filhas)
     billing_account_id: str | None
+    status: str | None = None  # situação da cobrança (trial, blocked…)
 
     @property
     def allowed(self) -> bool:
-        return self.included is None or self.used < self.included + self.extra
+        return self.included is None or (self.remaining or 0) > 0
 
     @property
     def remaining(self) -> int | None:
-        return None if self.included is None else max(0, self.included + self.extra - self.used)
+        # `extra` já vem descontado do que passou da franquia (charge_extra)
+        return None if self.included is None else max(0, self.included - self.used) + self.extra
 
 
 async def allowance(db: AsyncSession, account_id: str) -> Allowance:
-    """Franquia da IA do Prospecta, somando a agência e as empresas-filhas."""
-    from app.services.billing import billing_account
+    """Franquia da IA do Prospecta, somando a agência e as empresas-filhas.
+
+    A IA do Prospecta custa dinheiro de verdade, então vale mesmo com a cobrança
+    desligada: no teste a franquia é limitada a AI_TRIAL_CONVERSATIONS e, sem
+    acesso (teste ou pagamento vencidos), só sobram os pacotes extras pagos.
+    """
+    from app.services.billing import STATUS_BLOCKED, STATUS_TRIAL, billing_account, compute_access
 
     acc = await billing_account(db, account_id)
     if acc is None:
@@ -157,7 +164,13 @@ async def allowance(db: AsyncSession, account_id: str) -> Allowance:
         if plan is not None:
             limits = plan.limits or {}
             included = int(limits["ai_tokens"]) if limits.get("ai_tokens") is not None else (None if "ai_tokens" in limits else included)
-    return Allowance(included, int(acc.ai_extra_tokens or 0), int(used), acc.id)
+    status = compute_access(acc).status
+    if status == STATUS_BLOCKED:
+        included = 0
+    elif status == STATUS_TRIAL:
+        cap = settings.ai_trial_conversations * max(1, settings.ai_tokens_per_conversation)
+        included = cap if included is None else min(included, cap)
+    return Allowance(included, int(acc.ai_extra_tokens or 0), int(used), acc.id, status)
 
 
 async def charge_extra(db: AsyncSession, before: Allowance, tokens: int) -> None:

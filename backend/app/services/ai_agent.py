@@ -1,5 +1,5 @@
 """
-Orquestrador da IA de atendimento (WhatsApp + Gemini 2.5 Flash + RAG).
+Orquestrador da IA de atendimento (WhatsApp + Gemini + RAG).
 
 Fluxo por mensagem recebida (chamado pelo webhook):
   guards (anti-loop, rate limit) → transcrição de áudio se preciso →
@@ -353,6 +353,7 @@ async def _build_contents(db: AsyncSession, cfg: AIConfig, api_key: str, history
 
     chunks: list[str] = []
     try:
+        await rag_service.refresh_stale(db, cfg.account_id, api_key)
         query_emb = await gemini_service.embed_query(api_key, question)
         chunks = await rag_service.retrieve(db, cfg.account_id, query_emb, top_k=cfg.rag_top_k)
     except Exception as exc:  # RAG indisponível não bloqueia a resposta

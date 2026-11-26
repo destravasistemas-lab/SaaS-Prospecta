@@ -124,8 +124,9 @@ class Settings(BaseSettings):
     # IA (Gemini + RAG). A API key da Gemini é POR TENANT (fica no banco,
     # criptografada) — aqui só os defaults de comportamento.
     redis_url: str = ""  # ex.: redis://redis:6379/0 (vazio = fallback em memória)
-    gemini_model: str = "gemini-2.5-flash"
-    gemini_embedding_model: str = "text-embedding-004"
+    gemini_model: str = "gemini-3.5-flash-lite"
+    gemini_embedding_model: str = "gemini-embedding-001"
+    gemini_embedding_dims: int = 768
     ai_debounce_seconds: float = 3.0
     ai_request_timeout: float = 10.0
     ai_default_token_limit: int = 1_000_000  # tokens/mês incluídos por tenant
@@ -143,6 +144,7 @@ class Settings(BaseSettings):
     ai_price_output_usd_per_m: float = 2.50
     usd_brl: float = 5.60
     # Pacote extra de IA vendido pelo Asaas (Pix)
+    ai_trial_conversations: int = 100
     ai_pack_conversations: int = 500
     ai_pack_price_cents: int = 4900
 

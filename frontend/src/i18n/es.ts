@@ -221,7 +221,7 @@ export const ES: Record<string, string> = {
   "Erro ao reindexar.": "Error al reindexar.",
   "Erro ao carregar os trechos.": "Error al cargar los fragmentos.",
   "Assistente de IA": "Asistente de IA",
-  "Gemini 2.5 Flash + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo; se ficar indisponível, a conversa vai automaticamente para a fila humana.": "Gemini 2.5 Flash + tu base de conocimiento (RAG). La IA responde en WhatsApp cuando el bot de la conversación está activo; si no está disponible, la conversación pasa automáticamente a la cola humana.",
+  "IA da Gemini + sua base de conhecimento (RAG). A IA responde no WhatsApp quando o bot da conversa está ativo; se ficar indisponível, a conversa vai automaticamente para a fila humana.": "IA de Gemini + tu base de conocimiento (RAG). La IA responde en WhatsApp cuando el bot de la conversación está activo; si no está disponible, la conversación pasa automáticamente a la cola humana.",
   "Regras fixas da plataforma (aplicadas a todo prompt): o assistente responde só sobre o seu negócio, se identifica como automatizado quando perguntado, transfere para um humano quando o cliente pedir e nunca solicita senhas ou dados de cartão. Quem envia SAIR/STOP não recebe resposta automática.": "Reglas fijas de la plataforma (aplicadas a todo prompt): el asistente responde solo sobre tu negocio, se identifica como automatizado cuando se le pregunta, transfiere a un humano cuando el cliente lo pide y nunca solicita contraseñas ni datos de tarjeta. Quien envía SALIR/STOP no recibe respuesta automática.",
   "IA ativa": "IA activa",
   "Desligada, as conversas seguem para os bots por palavra-chave e a fila humana.": "Desactivada, las conversaciones siguen a los bots por palabra clave y a la cola humana.",
@@ -1707,4 +1707,6 @@ export const ES: Record<string, string> = {
   "IA que responde no WhatsApp, sem limite de atendimentos": "IA que responde en WhatsApp, sin límite de atenciones",
   "IA que responde no WhatsApp: até {0} atendimentos por mês": "IA que responde en WhatsApp: hasta {0} atenciones por mes",
   "ai": "ai",
+  "No teste grátis, a IA do Prospecta tem uma franquia menor. Assine um plano para liberar a franquia completa.": "En la prueba gratis, la IA de Prospecta tiene una franquicia menor. Suscríbete a un plan para liberar la franquicia completa.",
+  "O teste ou o pagamento venceu: a IA do Prospecta só usa os pacotes extras.": "La prueba o el pago venció: la IA de Prospecta solo usa los paquetes extra."
 }
