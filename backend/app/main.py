@@ -135,6 +135,18 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS asaas_subscription_id VARCHAR(100)",
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS pending_payment_id VARCHAR(100)",
     "CREATE INDEX IF NOT EXISTS ix_accounts_asaas_subscription_id ON accounts (asaas_subscription_id)",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS ai_extra_tokens BIGINT NOT NULL DEFAULT 0",
+    # IA da plataforma: quem já tinha chave própria continua usando a dela
+    "ALTER TABLE ai_configs ADD COLUMN IF NOT EXISTS use_own_key BOOLEAN",
+    "UPDATE ai_configs SET use_own_key = (gemini_api_key_encrypted IS NOT NULL) WHERE use_own_key IS NULL",
+    "ALTER TABLE ai_configs ALTER COLUMN use_own_key SET DEFAULT FALSE",
+    "ALTER TABLE ai_configs ALTER COLUMN use_own_key SET NOT NULL",
+    "ALTER TABLE ai_configs ADD COLUMN IF NOT EXISTS platform_tokens_month BIGINT NOT NULL DEFAULT 0",
+    "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS input_tokens BIGINT NOT NULL DEFAULT 0",
+    "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS output_tokens BIGINT NOT NULL DEFAULT 0",
+    "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS platform_tokens BIGINT NOT NULL DEFAULT 0",
+    "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS rate_limited INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS queue_wait_ms BIGINT NOT NULL DEFAULT 0",
     "UPDATE accounts SET billing_status = NULL WHERE approval_status <> 'approved' AND billing_status = 'courtesy' AND courtesy_until IS NULL AND billing_note IS NULL",
 
     # Prospecção foi removida: apaga as tabelas que ela criou, só se estiverem vazias

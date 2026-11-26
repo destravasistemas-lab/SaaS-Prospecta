@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Text, DateTime, Boolean, Integer, ForeignKey, JSON
+from sqlalchemy import BigInteger, String, Text, DateTime, Boolean, Integer, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -58,6 +58,8 @@ class Account(Base):
     asaas_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     asaas_subscription_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     pending_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Saldo de tokens de IA comprados em pacotes extras (gasto depois da franquia do plano)
+    ai_extra_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

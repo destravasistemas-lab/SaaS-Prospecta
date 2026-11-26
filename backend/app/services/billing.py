@@ -26,15 +26,15 @@ ALL_MODULES = ["whatsapp", "instagram", "ads", "ia"]
 DEFAULT_PLANS = [
     {"code": "essencial", "name": "Essencial", "price_cents": 14700, "sort": 1, "highlight": False,
      "description": "Atendimento no WhatsApp e no Instagram para um negócio.",
-     "limits": {"users": 2, "clients": 0, "ai_tokens": 1_000_000},
+     "limits": {"users": 2, "clients": 0, "ai_tokens": 6_000_000},
      "modules": ["whatsapp", "instagram", "ia"], "extras": []},
     {"code": "profissional", "name": "Profissional", "price_cents": 29700, "sort": 2, "highlight": True,
      "description": "Atendimento, automações e anúncios com retorno por venda.",
-     "limits": {"users": 5, "clients": 0, "ai_tokens": 3_000_000},
+     "limits": {"users": 5, "clients": 0, "ai_tokens": 20_000_000},
      "modules": ALL_MODULES, "extras": []},
     {"code": "agencia", "name": "Agência", "price_cents": 59700, "sort": 3, "highlight": False,
      "description": "Para agências que atendem várias empresas.",
-     "limits": {"users": 15, "clients": 10, "ai_tokens": 10_000_000},
+     "limits": {"users": 15, "clients": 10, "ai_tokens": 60_000_000},
      "modules": ALL_MODULES, "extras": []},
 ]
 
@@ -57,12 +57,23 @@ def _aware(ts: datetime | None) -> datetime | None:
     return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
 
+# Franquia de IA da primeira versão dos planos padrão (antes da IA do Prospecta)
+_OLD_AI_TOKENS = {"essencial": 1_000_000, "profissional": 3_000_000, "agencia": 10_000_000}
+
+
 async def seed_plans(db: AsyncSession) -> None:
     """Cria os planos padrão na primeira subida (depois o super admin edita)."""
-    if (await db.execute(select(func.count()).select_from(Plan))).scalar():
+    existing = {p.code: p for p in (await db.execute(select(Plan))).scalars().all()}
+    if not existing:
+        for p in DEFAULT_PLANS:
+            db.add(Plan(**p))
+        await db.flush()
         return
-    for p in DEFAULT_PLANS:
-        db.add(Plan(**p))
+    # Atualiza a franquia de IA só onde ainda está o valor antigo de fábrica
+    for d in DEFAULT_PLANS:
+        plan = existing.get(d["code"])
+        if plan and (plan.limits or {}).get("ai_tokens") == _OLD_AI_TOKENS.get(d["code"]):
+            plan.limits = {**(plan.limits or {}), "ai_tokens": d["limits"]["ai_tokens"]}
     await db.flush()
 
 

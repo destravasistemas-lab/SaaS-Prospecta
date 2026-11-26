@@ -18,7 +18,8 @@ from app.core.security import get_current_user
 from app.models.ai import AIConfig, AIUsageDay, KnowledgeChunk, KnowledgeDoc, DEFAULT_SYSTEM_PROMPT
 from app.models.user import User
 from app.services import rag_service
-from app.services.meta_token_service import safe_decrypt_token, safe_encrypt_token
+from app.services.meta_token_service import safe_encrypt_token
+from app.services import ai_platform
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -34,6 +35,9 @@ _MAX_PDF = 20 * 1024 * 1024  # 20 MB
 class AIConfigOut(BaseModel):
     enabled: bool
     has_api_key: bool
+    # IA do Prospecta (chaves da plataforma) disponível no servidor
+    platform_available: bool = False
+    use_own_key: bool = False
     system_prompt: str
     temperature: float
     rag_top_k: int
@@ -45,6 +49,7 @@ class AIConfigOut(BaseModel):
 class AIConfigUpdate(BaseModel):
     enabled: bool | None = None
     gemini_api_key: str | None = Field(default=None, description="Write-only; nunca é retornada")
+    use_own_key: bool | None = None
     system_prompt: str | None = Field(default=None, min_length=10)
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     rag_top_k: int | None = Field(default=None, ge=1, le=10)
@@ -70,6 +75,14 @@ class UsagePoint(BaseModel):
 class UsageOut(BaseModel):
     tokens_used_month: int
     token_limit_monthly: int
+    # IA do Prospecta: franquia do plano + pacotes, somando agência e empresas-filhas
+    own_key: bool = False
+    included_tokens: int | None = None
+    extra_tokens: int = 0
+    platform_used_tokens: int = 0
+    conversations_included: int | None = None
+    conversations_left: int | None = None
+    tokens_per_conversation: int = 0
     series: list[UsagePoint]
     fallback_rate: float
 
@@ -108,6 +121,8 @@ def _config_out(cfg: AIConfig) -> AIConfigOut:
     return AIConfigOut(
         enabled=cfg.enabled,
         has_api_key=bool(cfg.gemini_api_key_encrypted),
+        platform_available=ai_platform.platform_available(),
+        use_own_key=ai_platform.uses_own_key(cfg),
         system_prompt=cfg.system_prompt,
         temperature=cfg.temperature,
         rag_top_k=cfg.rag_top_k,
@@ -137,12 +152,18 @@ async def update_config(
     db: AsyncSession = Depends(get_db),
 ):
     cfg = await _get_or_create_config(db, current_user.tenant_id)
-    if body.enabled is not None:
-        if body.enabled and not (body.gemini_api_key or cfg.gemini_api_key_encrypted):
-            raise HTTPException(422, "Configure a API key da Gemini antes de ativar a IA.")
-        cfg.enabled = body.enabled
     if body.gemini_api_key:
         cfg.gemini_api_key_encrypted = safe_encrypt_token(body.gemini_api_key.strip())
+        if body.use_own_key is None:
+            cfg.use_own_key = True
+    if body.use_own_key is not None:
+        if body.use_own_key and not cfg.gemini_api_key_encrypted:
+            raise HTTPException(422, "Cole a API key da Gemini para usar a sua própria chave.")
+        cfg.use_own_key = body.use_own_key
+    if body.enabled is not None:
+        if body.enabled and not (ai_platform.uses_own_key(cfg) or ai_platform.platform_available()):
+            raise HTTPException(422, "Configure a API key da Gemini antes de ativar a IA.")
+        cfg.enabled = body.enabled
     if body.system_prompt is not None:
         cfg.system_prompt = body.system_prompt.strip()
     if body.temperature is not None:
@@ -170,7 +191,7 @@ async def _index_in_background(doc_id: str, pdf_path: str) -> None:
         cfg = (await db.execute(
             select(AIConfig).where(AIConfig.account_id == doc.account_id)
         )).scalars().first()
-        api_key = safe_decrypt_token(cfg.gemini_api_key_encrypted) if cfg and cfg.gemini_api_key_encrypted else ""
+        api_key = ai_platform.any_key(cfg) if cfg else ""
         if not api_key:
             doc.status = "failed"
             doc.error = "Configure a API key da Gemini antes de indexar documentos."
@@ -323,7 +344,16 @@ async def get_usage(
     total_msgs = sum(p.messages for p in series)
     total_fb = sum(p.fallbacks for p in series)
     rate = round(total_fb / (total_msgs + total_fb) * 100, 1) if (total_msgs + total_fb) else 0.0
+    allowance = await ai_platform.allowance(db, current_user.tenant_id)
     return UsageOut(
+        own_key=ai_platform.uses_own_key(cfg),
+        included_tokens=allowance.included,
+        extra_tokens=allowance.extra,
+        platform_used_tokens=allowance.used,
+        conversations_included=ai_platform.tokens_to_conversations(
+            None if allowance.included is None else allowance.included + allowance.extra),
+        conversations_left=ai_platform.tokens_to_conversations(allowance.remaining),
+        tokens_per_conversation=settings.ai_tokens_per_conversation,
         tokens_used_month=cfg.tokens_used_month,
         token_limit_monthly=cfg.token_limit_monthly,
         series=series,

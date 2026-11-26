@@ -1,7 +1,9 @@
 """Planos do Prospecta (editáveis pelo super admin)."""
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Integer, JSON, String, Text
+import uuid
+
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -27,3 +29,20 @@ class Plan(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class AIPackPurchase(Base):
+    """Pacote extra de atendimentos com IA, pago por Pix no Asaas."""
+
+    __tablename__ = "ai_pack_purchases"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tokens: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")  # pending | paid | canceled
+    asaas_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

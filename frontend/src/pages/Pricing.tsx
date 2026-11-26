@@ -16,6 +16,8 @@ export interface Plan {
   modules: string[]
   extras: string[]
   highlight: boolean
+  ai_conversations: number | null
+  tokens_per_conversation: number
 }
 
 interface Pending {
@@ -56,10 +58,9 @@ export function planFeatures(t: T, fmt: ReturnType<typeof makeFormat>, p: Plan):
   if (p.modules.includes('instagram')) out.push(t('Instagram: Direct, comentários e posts', 'Instagram: Direct, comments and posts'))
   if (p.modules.includes('ads')) out.push(t('Anúncios: diagnóstico e retorno por venda', 'Ads: diagnosis and return per sale'))
   if (p.modules.includes('ia')) {
-    const tokens = p.limits.ai_tokens
-    out.push(tokens == null ? t('Assistente de IA sem limite de uso', 'AI assistant with no usage cap')
-      : tokens >= 1_000_000 ? t(`Assistente de IA com ${fmt.int(tokens / 1_000_000)} mi de tokens por mês`, `AI assistant with ${fmt.int(tokens / 1_000_000)}M tokens a month`)
-      : t(`Assistente de IA com ${fmt.int(tokens / 1000)} mil tokens por mês`, `AI assistant with ${fmt.int(tokens / 1000)}K tokens a month`))
+    out.push(p.ai_conversations == null
+      ? t('IA que responde no WhatsApp, sem limite de atendimentos', 'AI that replies on WhatsApp, unlimited conversations')
+      : t(`IA que responde no WhatsApp: até ${fmt.int(p.ai_conversations)} atendimentos por mês`, `AI that replies on WhatsApp: up to ${fmt.int(p.ai_conversations)} conversations a month`))
   }
   return [...out, ...p.extras]
 }

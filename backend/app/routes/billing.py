@@ -17,7 +17,8 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.i18n import t
 from app.core.security import get_current_user
-from app.models.billing import Plan
+from app.models.billing import AIPackPurchase, Plan
+from app.services import ai_platform
 from app.models.user import User
 from app.services import billing
 from app.services.asaas_service import asaas_service
@@ -35,11 +36,17 @@ class PlanOut(BaseModel):
     modules: list[str] = []
     extras: list[str] = []
     highlight: bool = False
+    # Franquia de IA convertida em atendimentos (média configurada em AI_TOKENS_PER_CONVERSATION)
+    ai_conversations: int | None = None
+    tokens_per_conversation: int = 0
 
 
 def plan_out(p: Plan) -> PlanOut:
+    limits = p.limits or {}
     return PlanOut(code=p.code, name=p.name, description=p.description, price_cents=p.price_cents,
-                   limits=p.limits or {}, modules=p.modules or [], extras=p.extras or [], highlight=p.highlight)
+                   limits=limits, modules=p.modules or [], extras=p.extras or [], highlight=p.highlight,
+                   ai_conversations=ai_platform.tokens_to_conversations(limits.get("ai_tokens")),
+                   tokens_per_conversation=settings.ai_tokens_per_conversation)
 
 
 @router.get("/plans", response_model=list[PlanOut])
@@ -183,3 +190,104 @@ async def cancel(
         acc.billing_status = billing.STATUS_CANCELED
     await db.flush()
     return await billing_status(current_user, db)
+
+
+
+# ---------------------------------------------------------------------------
+# Pacote extra de atendimentos com IA (Pix avulso no Asaas)
+# ---------------------------------------------------------------------------
+
+class AIPackIn(BaseModel):
+    name: str | None = Field(default=None, max_length=120)
+    document: str | None = Field(default=None, max_length=18)
+
+
+def _pack_info() -> dict:
+    return {"conversations": settings.ai_pack_conversations, "price_cents": settings.ai_pack_price_cents,
+            "tokens": settings.ai_pack_conversations * settings.ai_tokens_per_conversation}
+
+
+async def mark_pack_paid(db: AsyncSession, purchase: AIPackPurchase) -> None:
+    """Pacote pago: credita os tokens na conta que paga (idempotente)."""
+    if purchase.status == "paid":
+        return
+    from app.models.account import Account
+    purchase.status = "paid"
+    purchase.paid_at = datetime.now(timezone.utc)
+    acc = await db.get(Account, purchase.account_id)
+    if acc is not None:
+        acc.ai_extra_tokens = int(acc.ai_extra_tokens or 0) + purchase.tokens
+    await db.flush()
+
+
+@router.get("/ai-pack")
+async def ai_pack_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Preço do pacote e, se houver, o Pix do último pacote ainda não pago."""
+    acc = await billing.billing_account(db, current_user.tenant_id)
+    pending = None
+    if acc is not None:
+        purchase = (await db.execute(
+            select(AIPackPurchase).where(AIPackPurchase.account_id == acc.id, AIPackPurchase.status == "pending")
+            .order_by(AIPackPurchase.created_at.desc()).limit(1)
+        )).scalar_one_or_none()
+        if purchase and purchase.asaas_payment_id and settings.asaas_api_key:
+            try:
+                payment = await asaas_service.get_payment(purchase.asaas_payment_id)
+                if payment.get("status") in ("RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"):
+                    await mark_pack_paid(db, purchase)
+                elif payment.get("status") in ("REFUNDED", "DELETED"):
+                    purchase.status = "canceled"
+                else:
+                    qr = {}
+                    try:
+                        qr = await asaas_service.get_pix_qr(purchase.asaas_payment_id)
+                    except Exception:
+                        pass
+                    pending = {"id": purchase.id, "value": purchase.amount, "invoice_url": payment.get("invoiceUrl"),
+                               "pix_payload": qr.get("payload"), "pix_image": qr.get("encodedImage")}
+            except Exception as exc:
+                logger.warning("Pacote de IA %s indisponível no Asaas: %s", purchase.id, exc)
+        await db.flush()
+    return {**_pack_info(), "pending": pending, "has_customer": bool(acc and acc.asaas_customer_id),
+            "is_child": bool(acc and acc.id != current_user.tenant_id)}
+
+
+@router.post("/ai-pack")
+async def buy_ai_pack(
+    body: AIPackIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Gera o Pix de um pacote extra de atendimentos com IA."""
+    _require_owner(current_user)
+    acc = await billing.billing_account(db, current_user.tenant_id)
+    if acc is None or acc.id != current_user.tenant_id:
+        raise HTTPException(400, t("A assinatura desta empresa é feita pela agência.", "This company's subscription is handled by the agency."))
+    if not settings.asaas_api_key:
+        raise HTTPException(503, t("O pagamento ainda não está configurado. Fale com o suporte.", "Payments are not set up yet. Contact support."))
+    info = _pack_info()
+    try:
+        if not acc.asaas_customer_id:
+            document = re.sub(r"\D", "", body.document or "")
+            if len(document) not in (11, 14) or not (body.name or "").strip():
+                raise HTTPException(422, t("Informe um CPF ou CNPJ válido.", "Enter a valid CPF or CNPJ."))
+            customer = await asaas_service.create_customer(
+                name=body.name.strip(), email=acc.customer_email or current_user.username, cpf_cnpj=document,
+            )
+            acc.asaas_customer_id = customer.get("id")
+        payment = await asaas_service.create_payment(
+            customer_id=acc.asaas_customer_id, value=info["price_cents"] / 100,
+            due_date=asaas_service.calculate_due_date(days_ahead=1),
+            description=f"Prospecta — +{info['conversations']} atendimentos com IA", billing_type="PIX",
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(502, t("Não foi possível gerar a cobrança agora. Tente de novo em instantes.", "Could not create the charge right now. Try again shortly."))
+    db.add(AIPackPurchase(account_id=acc.id, tokens=info["tokens"], amount=info["price_cents"] / 100,
+                          asaas_payment_id=payment.get("id")))
+    await db.flush()
+    return await ai_pack_status(current_user, db)

@@ -105,6 +105,9 @@ services:
       # Liga o bloqueio por falta de pagamento e os limites dos planos (depois do Asaas pronto)
       - key: BILLING_ENFORCED
         value: "false"
+      # Chaves da Gemini da IA do Prospecta, separadas por vírgula (conta paga no Google)
+      - key: GEMINI_API_KEYS
+        sync: false
 
   - type: web
     name: prospecta-web

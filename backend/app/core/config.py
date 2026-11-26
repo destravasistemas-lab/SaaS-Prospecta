@@ -130,6 +130,22 @@ class Settings(BaseSettings):
     ai_request_timeout: float = 10.0
     ai_default_token_limit: int = 1_000_000  # tokens/mês incluídos por tenant
 
+    # IA da plataforma (chaves do Prospecta, várias separadas por vírgula).
+    # Conta sem chave própria usa estas e consome a franquia do plano.
+    gemini_api_keys: str = ""
+    ai_key_rpm: int = 500           # chamadas/min por chave (abaixo do limite do Google)
+    ai_account_rpm: int = 20        # respostas/min por conta (um cliente não ocupa a cota de todos)
+    ai_slot_wait_seconds: float = 25.0  # quanto uma resposta espera na fila por vaga
+    ai_key_cooldown_seconds: int = 30   # pausa de uma chave depois de um 429
+    # Média usada para mostrar a franquia em atendimentos e estimar custo
+    ai_tokens_per_conversation: int = 20_000
+    ai_price_input_usd_per_m: float = 0.30
+    ai_price_output_usd_per_m: float = 2.50
+    usd_brl: float = 5.60
+    # Pacote extra de IA vendido pelo Asaas (Pix)
+    ai_pack_conversations: int = 500
+    ai_pack_price_cents: int = 4900
+
     @property
     def meta_graph_url(self) -> str:
         return f"https://graph.facebook.com/{self.meta_api_version}"

@@ -99,6 +99,7 @@ A lista completa está em `backend/.env.example`. As principais:
 | `SUPER_ADMIN_EMAILS` | Quem aprova cadastros e bloqueia módulos de qualquer conta |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Armazenamento de mídia dos posts |
 | `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` | Pagamentos |
+| `GEMINI_API_KEYS` | Chaves da Gemini da IA do Prospecta, separadas por vírgula |
 | `RESEND_API_KEY` | E-mails |
 
 Recursos ligados por variável, todos desligados por padrão:
@@ -137,6 +138,14 @@ Ao aprovar um cadastro, a conta ganha `BILLING_TRIAL_DAYS` (padrão 7) de teste 
 Quem tem acesso: cortesia do super admin (com ou sem prazo), pago até `paid_until` (mais `BILLING_GRACE_DAYS` de tolerância, padrão 3) ou teste em andamento. Contas com `billing_status` nulo ficam fora da cobrança; as que já existiam viraram cortesia sem prazo. Empresas-filhas seguem a agência.
 
 Com `BILLING_ENFORCED=true`, quem não tem acesso recebe 402 (`billing_required`) em tudo menos `/billing`, `/auth`, `/admin` e `/payments`, e o painel leva para Planos; os limites de usuários, empresas clientes, módulos e tokens de IA passam a valer. Com `false` (padrão), os prazos e avisos aparecem, mas ninguém é bloqueado.
+
+## IA do Prospecta
+
+A conta escolhe em **IA e conhecimento** entre a IA do Prospecta (chaves de `GEMINI_API_KEYS`) e a própria chave da Gemini. Com a do Prospecta, o plano inclui `limits.ai_tokens` por mês, mostrados como atendimentos (`AI_TOKENS_PER_CONVERSATION`, padrão 20.000 tokens). A franquia soma a agência e as empresas-filhas e vale mesmo com `BILLING_ENFORCED=false`. Contas sem plano ficam com `AI_DEFAULT_TOKEN_LIMIT`.
+
+"Comprar mais" gera um Pix no Asaas de `AI_PACK_CONVERSATIONS` atendimentos por `AI_PACK_PRICE_CENTS`. O saldo (`accounts.ai_extra_tokens`) entra pelo webhook ou pela conferência da tela, é usado depois da franquia e não vence. Ao acabar tudo, as conversas vão para a fila humana.
+
+Vazão: cada resposta pega uma vaga no Redis, limitada por conta (`AI_ACCOUNT_RPM`) e por chave (`AI_KEY_RPM`). A chave que recebe 429 fica `AI_KEY_COOLDOWN_SECONDS` em pausa e a próxima assume. Sem vaga em `AI_SLOT_WAIT_SECONDS`, a conversa vai para a fila humana. O super admin acompanha respostas, custo estimado, 429 e espera em **Super Admin → IA**.
 
 ## Isolamento entre clientes
 

@@ -249,3 +249,60 @@ async def admin_save_plan(
     await db.flush()
     logger.info("Super admin %s salvou o plano %s", admin.username, code)
     return AdminPlanOut(**plan_out(plan).model_dump(), active=plan.active, sort=plan.sort)
+
+
+@router.get("/ai-usage")
+async def admin_ai_usage(
+    days: int = 30,
+    _: User = Depends(_require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Consumo da IA do Prospecta: custo estimado, 429, espera na fila e as contas que mais gastam."""
+    from datetime import timedelta
+    from app.core.config import settings
+    from app.models.ai import AIUsageDay
+    from app.services import ai_platform
+
+    days = max(1, min(days, 90))
+    since = datetime.now(timezone.utc).date() - timedelta(days=days - 1)
+    rows = (await db.execute(select(AIUsageDay).where(AIUsageDay.day >= since))).scalars().all()
+
+    def platform_cost(r) -> float:
+        share = (r.platform_tokens or 0) / r.tokens if r.tokens else 0
+        return ai_platform.cost_brl(int((r.input_tokens or 0) * share), int((r.output_tokens or 0) * share))
+
+    per_account: dict[str, dict] = {}
+    for r in rows:
+        a = per_account.setdefault(r.account_id, {"tokens": 0, "platform_tokens": 0, "replies": 0, "fallbacks": 0,
+                                                  "rate_limited": 0, "cost": 0.0})
+        a["tokens"] += r.tokens or 0
+        a["platform_tokens"] += r.platform_tokens or 0
+        a["replies"] += r.messages or 0
+        a["fallbacks"] += r.fallbacks or 0
+        a["rate_limited"] += r.rate_limited or 0
+        a["cost"] += platform_cost(r)
+    names = dict((await db.execute(
+        select(Account.id, Account.brand_name).where(Account.id.in_(list(per_account) or [""]))
+    )).all())
+    replies = sum(a["replies"] for a in per_account.values())
+    top = sorted(per_account.items(), key=lambda kv: kv[1]["platform_tokens"], reverse=True)[:20]
+    return {
+        "days": days,
+        "keys": len(ai_platform.platform_keys()),
+        "limits": {"key_rpm": settings.ai_key_rpm, "account_rpm": settings.ai_account_rpm,
+                   "slot_wait_seconds": settings.ai_slot_wait_seconds,
+                   "tokens_per_conversation": settings.ai_tokens_per_conversation},
+        "totals": {
+            "replies": replies,
+            "fallbacks": sum(a["fallbacks"] for a in per_account.values()),
+            "rate_limited": sum(a["rate_limited"] for a in per_account.values()),
+            "platform_tokens": sum(a["platform_tokens"] for a in per_account.values()),
+            "cost_brl": round(sum(a["cost"] for a in per_account.values()), 2),
+            "avg_wait_ms": int(sum(r.queue_wait_ms or 0 for r in rows) / replies) if replies else 0,
+        },
+        "accounts": [
+            {"account_id": aid, "name": names.get(aid) or aid, **{k: (round(v, 2) if k == "cost" else v) for k, v in a.items()},
+             "conversations": ai_platform.tokens_to_conversations(a["platform_tokens"])}
+            for aid, a in top
+        ],
+    }

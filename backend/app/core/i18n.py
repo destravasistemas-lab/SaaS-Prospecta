@@ -222,6 +222,8 @@ _EXACT: dict[str, str] = {
     "Use a página Planos para assinar: a cobrança agora é feita pela assinatura mensal.": "Use the Plans page to subscribe: billing is now done through the monthly subscription.",
     "Plano não encontrado.": "Plan not found.",
     "Código inválido: use letras, números e _.": "Invalid code: use letters, numbers and _.",
+    "Cole a API key da Gemini para usar a sua própria chave.": "Paste your Gemini API key to use your own key.",
+    "Não foi possível gerar a cobrança agora. Tente de novo em instantes.": "Could not create the charge right now. Try again shortly.",
 }
 
 _PATTERNS: list[tuple[re.Pattern, str]] = [

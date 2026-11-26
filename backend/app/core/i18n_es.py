@@ -433,4 +433,8 @@ ES: dict[str, str] = {
         "No se encontró el plan.",
     "Código inválido: use letras, números e _.":
         "Código inválido: usa letras, números y _.",
+    "Cole a API key da Gemini para usar a sua própria chave.":
+        "Pega la API key de Gemini para usar tu propia clave.",
+    "Não foi possível gerar a cobrança agora. Tente de novo em instantes.":
+        "No se pudo generar el cobro ahora. Inténtalo de nuevo en unos instantes.",
 }

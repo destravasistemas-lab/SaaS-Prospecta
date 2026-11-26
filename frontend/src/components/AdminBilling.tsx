@@ -132,7 +132,8 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
   const set = (code: string, patch: Partial<AdminPlan & { priceText: string; extrasText: string }>) =>
     setDrafts((d) => ({ ...d, [code]: { ...d[code], ...patch } }))
   const setLimit = (code: string, key: 'users' | 'clients' | 'ai_tokens', raw: string) =>
-    set(code, { limits: { ...drafts[code].limits, [key]: raw === '' ? null : key === 'ai_tokens' ? Math.round(Number(raw) * 1_000_000) : Number(raw) } })
+    set(code, { limits: { ...drafts[code].limits, [key]: raw === '' ? null : key === 'ai_tokens' ? Math.round(Number(raw) * perConv(code)) : Number(raw) } })
+  const perConv = (code: string) => Math.max(1, drafts[code]?.tokens_per_conversation || 20000)
 
   async function save(code: string) {
     const d = drafts[code]
@@ -153,7 +154,8 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
     const code = newCode.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_')
     if (!code || drafts[code]) return
     set(code, { code, name: newCode.trim(), description: '', price_cents: 0, priceText: '0,00', limits: { users: 1, clients: 0, ai_tokens: 1_000_000 },
-      modules: ['whatsapp'], extras: [], extrasText: '', highlight: false, active: false, sort: plans.length + 1 })
+      modules: ['whatsapp'], extras: [], extrasText: '', highlight: false, active: false, sort: plans.length + 1,
+      ai_conversations: 50, tokens_per_conversation: plans[0]?.tokens_per_conversation || 20000 })
     setNewCode('')
   }
 
@@ -176,7 +178,7 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
             <label className="text-[11px] text-ink-4">{t('Preço por mês (R$)', 'Price per month (R$)')}<input value={d.priceText} onChange={(e) => set(d.code, { priceText: e.target.value })} className={`${input} block mt-1 w-full`} /></label>
             <label className="text-[11px] text-ink-4">{t('Usuários', 'Users')}<input type="number" min={0} value={d.limits.users ?? ''} onChange={(e) => setLimit(d.code, 'users', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
             <label className="text-[11px] text-ink-4">{t('Empresas clientes', 'Client companies')}<input type="number" min={0} value={d.limits.clients ?? ''} onChange={(e) => setLimit(d.code, 'clients', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
-            <label className="text-[11px] text-ink-4">{t('IA (milhões de tokens/mês)', 'AI (million tokens/month)')}<input type="number" min={0} step={0.5} value={d.limits.ai_tokens == null ? '' : d.limits.ai_tokens / 1_000_000} onChange={(e) => setLimit(d.code, 'ai_tokens', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
+            <label className="text-[11px] text-ink-4">{t('IA (atendimentos/mês)', 'AI (conversations/month)')}<input type="number" min={0} step={50} value={d.limits.ai_tokens == null ? '' : Math.round(d.limits.ai_tokens / perConv(d.code))} onChange={(e) => setLimit(d.code, 'ai_tokens', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {[['whatsapp', 'WhatsApp'], ['instagram', 'Instagram'], ['ads', 'Meta Ads'], ['ia', 'IA']].map(([key, name]) => {
@@ -203,6 +205,87 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
           <Plus size={13} />{t('Novo plano', 'New plan')}
         </button>
       </div>
+    </div>
+  )
+}
+
+interface AIUsageData {
+  days: number
+  keys: number
+  limits: { key_rpm: number; account_rpm: number; slot_wait_seconds: number; tokens_per_conversation: number }
+  totals: { replies: number; fallbacks: number; rate_limited: number; platform_tokens: number; cost_brl: number; avg_wait_ms: number }
+  accounts: { account_id: string; name: string; replies: number; fallbacks: number; rate_limited: number; platform_tokens: number; cost: number; conversations: number }[]
+}
+
+/** Consumo e saúde da IA do Prospecta (custo estimado, 429 e espera na fila). */
+export function AIUsagePanel() {
+  const { t, locale } = useI18n()
+  const fmt = makeFormat(locale, 'BRL')
+  const [days, setDays] = useState(30)
+  const [data, setData] = useState<AIUsageData | null>(null)
+  useEffect(() => {
+    setData(null)
+    api.get<AIUsageData>('/admin/ai-usage', { params: { days } }).then(({ data }) => setData(data)).catch(() => {})
+  }, [days])
+  if (!data) return <p className="text-sm text-ink-4">{t('Carregando…', 'Loading…')}</p>
+  const tot = data.totals
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {[7, 30, 90].map((d) => (
+          <button key={d} onClick={() => setDays(d)} className={`px-3 py-1.5 rounded-lg text-xs border ${days === d ? 'border-violet-500/50 bg-violet-600/15 text-violet-200' : 'border-line text-ink-4'}`}>
+            {t(`${d} dias`, `${d} days`)}
+          </button>
+        ))}
+        <span className="text-xs text-ink-4 ml-auto">
+          {data.keys === 0 ? t('Nenhuma chave do Prospecta configurada (GEMINI_API_KEYS).', 'No Prospecta key configured (GEMINI_API_KEYS).')
+            : t(`${data.keys} chave(s) · ${data.limits.key_rpm}/min por chave · ${data.limits.account_rpm}/min por conta`, `${data.keys} key(s) · ${data.limits.key_rpm}/min per key · ${data.limits.account_rpm}/min per account`)}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {([
+          [t('Respostas da IA', 'AI replies'), fmt.int(tot.replies)],
+          [t('Custo estimado (chaves do Prospecta)', 'Estimated cost (Prospecta keys)'), fmt.money(tot.cost_brl)],
+          [t('Atendimentos consumidos', 'Conversations used'), fmt.int(Math.floor(tot.platform_tokens / Math.max(1, data.limits.tokens_per_conversation)))],
+          [t('Limite do Google (429)', 'Google rate limit (429)'), fmt.int(tot.rate_limited)],
+          [t('Espera média na fila', 'Average queue wait'), `${(tot.avg_wait_ms / 1000).toFixed(1)} s`],
+          [t('Foram para o humano', 'Handed to a human'), fmt.int(tot.fallbacks)],
+        ] as [string, string][]).map(([label, value]) => (
+          <div key={label} className="bg-card border border-line rounded-xl p-3">
+            <p className="text-[11px] text-ink-4">{label}</p>
+            <p className="text-lg font-bold text-ink">{value}</p>
+          </div>
+        ))}
+      </div>
+      {tot.rate_limited > 0 && (
+        <p className="text-xs text-amber-300">{t('Houve limite do Google no período. Se acontecer com frequência, acrescente outra chave em GEMINI_API_KEYS ou suba o nível da conta no Google.', 'Google rate limits happened in the period. If it is frequent, add another key to GEMINI_API_KEYS or raise the Google account tier.')}</p>
+      )}
+      <div className="bg-card border border-line rounded-xl p-4 overflow-x-auto">
+        <p className="text-sm font-semibold text-ink mb-2">{t('Contas que mais usam a IA do Prospecta', 'Accounts using Prospecta AI the most')}</p>
+        {data.accounts.length === 0 ? <p className="text-xs text-ink-4">{t('Sem uso no período.', 'No usage in the period.')}</p> : (
+          <table className="w-full text-xs">
+            <thead><tr className="text-ink-4 text-left">
+              <th className="pb-2 pr-2 font-medium">{t('Conta', 'Account')}</th>
+              <th className="pb-2 px-2 text-right font-medium">{t('Atendimentos', 'Conversations')}</th>
+              <th className="pb-2 px-2 text-right font-medium">{t('Respostas', 'Replies')}</th>
+              <th className="pb-2 px-2 text-right font-medium">{t('Custo', 'Cost')}</th>
+              <th className="pb-2 pl-2 text-right font-medium">429</th>
+            </tr></thead>
+            <tbody>
+              {data.accounts.map((a) => (
+                <tr key={a.account_id} className="border-t border-line">
+                  <td className="py-2 pr-2 text-ink">{a.name}</td>
+                  <td className="py-2 px-2 text-right text-ink-2">{fmt.int(a.conversations)}</td>
+                  <td className="py-2 px-2 text-right text-ink-2">{fmt.int(a.replies)}</td>
+                  <td className="py-2 px-2 text-right text-ink-2">{fmt.money(a.cost)}</td>
+                  <td className="py-2 pl-2 text-right text-ink-2">{a.rate_limited}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <p className="text-[11px] text-ink-5">{t('O custo é estimado com os preços configurados no servidor (AI_PRICE_*, USD_BRL). Confira a fatura do Google Cloud.', 'Cost is estimated with the prices configured on the server (AI_PRICE_*, USD_BRL). Check your Google Cloud invoice.')}</p>
     </div>
   )
 }

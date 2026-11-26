@@ -28,9 +28,9 @@ from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS_ACTIVE
 from app.services import gemini_service, rag_service, whatsapp_service
-from app.services import ai_debounce, ai_guard
+from app.services import ai_debounce, ai_guard, ai_platform
 from app.services.gemini_service import GeminiError, GeminiRateLimited, GeminiTimeout
-from app.services.meta_token_service import decrypt_token, safe_decrypt_token
+from app.services.meta_token_service import decrypt_token
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +70,17 @@ def _ensure_month(cfg: AIConfig) -> None:
         cfg.tokens_used_month = 0
 
 
-async def _register_usage(db: AsyncSession, cfg: AIConfig, tokens: int, fallback: bool = False) -> None:
+async def _register_usage(
+    db: AsyncSession, cfg: AIConfig, tokens: int, fallback: bool = False, *,
+    platform: bool = False, input_tokens: int = 0, output_tokens: int = 0,
+    rate_limited: int = 0, wait_ms: int = 0,
+) -> None:
     _ensure_month(cfg)
     cfg.tokens_used_month += tokens
+    if platform and tokens:
+        before = await ai_platform.allowance(db, cfg.account_id)
+        await ai_platform.charge_extra(db, before, tokens)
+        cfg.platform_tokens_month += tokens
     today = date.today()
     row = (await db.execute(
         select(AIUsageDay).where(AIUsageDay.account_id == cfg.account_id, AIUsageDay.day == today)
@@ -81,6 +89,11 @@ async def _register_usage(db: AsyncSession, cfg: AIConfig, tokens: int, fallback
         row = AIUsageDay(account_id=cfg.account_id, day=today, tokens=0, messages=0, fallbacks=0)
         db.add(row)
     row.tokens += tokens
+    row.input_tokens = (row.input_tokens or 0) + input_tokens
+    row.output_tokens = (row.output_tokens or 0) + output_tokens
+    row.platform_tokens = (row.platform_tokens or 0) + (tokens if platform else 0)
+    row.rate_limited = (row.rate_limited or 0) + rate_limited
+    row.queue_wait_ms = (row.queue_wait_ms or 0) + wait_ms
     if fallback:
         row.fallbacks += 1
     else:
@@ -104,7 +117,7 @@ async def handle_inbound(
     NÃO responde aqui — a resposta sai no job do debounce (3s após a última msg).
     """
     cfg = await get_ai_config(db, tenant_id)
-    if not cfg or not cfg.enabled or not cfg.gemini_api_key_encrypted:
+    if not ai_platform.ai_ready(cfg):
         return
 
     # Anti-loop: padrão de bot na mensagem → não responder, logar
@@ -137,7 +150,7 @@ async def _transcribe_audio_message(
             return
         token = decrypt_token(conn.access_token_encrypted)
         audio_bytes, _ = await whatsapp_service.fetch_media(token, media_id)
-        api_key = safe_decrypt_token(cfg.gemini_api_key_encrypted)
+        api_key = ai_platform.any_key(cfg)
         transcript = await gemini_service.transcribe_audio(api_key, audio_bytes, mime)
         msg.text = f"[Áudio transcrito]: {transcript}"
         await db.flush()
@@ -164,7 +177,7 @@ async def _reply_job(tenant_id: str, conversation_id: str) -> None:
 
 async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_id: str) -> None:
     cfg = await get_ai_config(db, tenant_id)
-    if not cfg or not cfg.enabled or not cfg.gemini_api_key_encrypted:
+    if not ai_platform.ai_ready(cfg):
         return
 
     conv = (await db.execute(
@@ -183,13 +196,15 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
     if not conn:
         return
 
-    # Cota de tokens estourada → direto pra fila humana
+    # Franquia: chave própria → teto da própria conta; IA do Prospecta → plano + pacotes
     _ensure_month(cfg)
-    from app.services.billing import plan_limit
-    plan_tokens = await plan_limit(db, tenant_id, "ai_tokens")
-    limit = min(cfg.token_limit_monthly, plan_tokens) if plan_tokens is not None else cfg.token_limit_monthly
-    if cfg.tokens_used_month >= limit:
-        logger.warning("IA: tenant %s estourou a cota de tokens do mês", tenant_id)
+    own = ai_platform.uses_own_key(cfg)
+    if own:
+        over = cfg.tokens_used_month >= cfg.token_limit_monthly
+    else:
+        over = not (await ai_platform.allowance(db, tenant_id)).allowed
+    if over:
+        logger.warning("IA: tenant %s estourou a franquia de IA do mês", tenant_id)
         await _fallback_to_human(db, cfg, conn, conv, reason="token_limit")
         return
 
@@ -197,8 +212,7 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
     if not history["pending"]:
         return  # nada novo do cliente desde a última resposta
 
-    api_key = safe_decrypt_token(cfg.gemini_api_key_encrypted)
-    contents = await _build_contents(db, cfg, api_key, history)
+    contents = await _build_contents(db, cfg, ai_platform.any_key(cfg), history)
 
     # "Digitando…" no WhatsApp enquanto a IA processa (best-effort)
     token = decrypt_token(conn.access_token_encrypted)
@@ -209,22 +223,37 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
         except Exception:
             pass
 
-    # Gemini com retry/backoff para 429; timeout/5xx caem no fallback
+    # Fila de vazão + Gemini. 429: a chave do Prospecta pausa e outra assume;
+    # chave própria tenta de novo com espera. Timeout/5xx caem no fallback.
     answer: str | None = None
     tokens_used = 0
+    usage: dict = {}
+    rate_limited = 0
+    waited_ms = 0
     for attempt in range(3):
+        slot, wait_ms = await ai_platform.acquire_slot(tenant_id, own_key=own)
+        waited_ms += wait_ms
+        if slot is None:
+            logger.warning("IA: fila sem vaga (tenant %s) — fila humana", tenant_id)
+            await _fallback_to_human(db, cfg, conn, conv, reason="rate_limit",
+                                     rate_limited=rate_limited, wait_ms=waited_ms)
+            return
         try:
             answer, tokens_used = await gemini_service.generate_content(
-                api_key, (cfg.system_prompt or "") + POLICY_GUARDRAILS, contents,
-                temperature=cfg.temperature,
+                ai_platform.key_for(cfg, slot), (cfg.system_prompt or "") + POLICY_GUARDRAILS, contents,
+                temperature=cfg.temperature, usage_out=usage,
             )
             break
         except GeminiRateLimited:
+            rate_limited += 1
+            await ai_platform.cool_down(slot)
             if attempt == 2:
                 logger.warning("IA: 429 persistente (tenant %s) — fila humana", tenant_id)
-                await _fallback_to_human(db, cfg, conn, conv, reason="rate_limit")
+                await _fallback_to_human(db, cfg, conn, conv, reason="rate_limit",
+                                         rate_limited=rate_limited, wait_ms=waited_ms)
                 return
-            await asyncio.sleep(2 ** attempt)  # 1s, 2s
+            if own:
+                await asyncio.sleep(2 ** attempt)  # 1s, 2s
         except (GeminiTimeout, GeminiError) as exc:
             logger.warning("IA indisponível (tenant %s): %s — fila humana", tenant_id, exc)
             await _fallback_to_human(db, cfg, conn, conv, reason="error")
@@ -267,7 +296,11 @@ async def reply_to_conversation(db: AsyncSession, tenant_id: str, conversation_i
     db.add(ai_msg)
     conv.last_updated = datetime.now(timezone.utc)
     await db.flush()
-    await _register_usage(db, cfg, tokens_used)
+    await _register_usage(
+        db, cfg, tokens_used, platform=not own,
+        input_tokens=usage.get("input", 0), output_tokens=usage.get("output", tokens_used),
+        rate_limited=rate_limited, wait_ms=waited_ms,
+    )
 
     await ws_manager.broadcast(tenant_id, "new_message", {
         "id": ai_msg.id, "conversation_id": conversation_id, "sender": "ai",
@@ -350,14 +383,15 @@ async def _build_contents(db: AsyncSession, cfg: AIConfig, api_key: str, history
 # ---------------------------------------------------------------------------
 
 async def _fallback_to_human(
-    db: AsyncSession, cfg: AIConfig, conn: MetaConnection, conv: Conversation, reason: str
+    db: AsyncSession, cfg: AIConfig, conn: MetaConnection, conv: Conversation, reason: str,
+    rate_limited: int = 0, wait_ms: int = 0,
 ) -> None:
     """IA indisponível: avisa o cliente, entrega à fila Espera e notifica o painel."""
     conv.bot_active = False
     conv.atendimento_status = "aguardando"
     conv.last_updated = datetime.now(timezone.utc)
     await db.flush()
-    await _register_usage(db, cfg, tokens=0, fallback=True)
+    await _register_usage(db, cfg, tokens=0, fallback=True, rate_limited=rate_limited, wait_ms=wait_ms)
 
     # Mensagem automática ao cliente (best-effort)
     try:

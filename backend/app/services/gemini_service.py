@@ -38,6 +38,7 @@ async def generate_content(
     contents: list[dict],
     temperature: float = 0.4,
     timeout: float | None = None,
+    usage_out: dict | None = None,
 ) -> tuple[str, int]:
     """
     Chama o modelo de chat. `contents` no formato Gemini:
@@ -72,7 +73,12 @@ async def generate_content(
         # Bloqueio de safety ou resposta vazia
         raise GeminiError(f"Resposta sem texto: {str(data)[:300]}") from exc
 
-    tokens = int(data.get("usageMetadata", {}).get("totalTokenCount", 0) or 0)
+    meta = data.get("usageMetadata", {}) or {}
+    tokens = int(meta.get("totalTokenCount", 0) or 0)
+    if usage_out is not None:
+        prompt = int(meta.get("promptTokenCount", 0) or 0)
+        usage_out["input"] = prompt
+        usage_out["output"] = max(0, tokens - prompt)  # resposta + raciocínio, cobrados como saída
     return text.strip(), tokens
 
 

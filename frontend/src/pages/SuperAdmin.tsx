@@ -3,7 +3,7 @@ import { Shield, Building2, Save, Check, X, Clock } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import HelpLink from '../components/HelpLink'
 import { useI18n, tr } from '../i18n'
-import { PlansEditor, TenantBilling, type TenantBillingInfo } from '../components/AdminBilling'
+import { AIUsagePanel, PlansEditor, TenantBilling, type TenantBillingInfo } from '../components/AdminBilling'
 import { useMe } from '../components/MeContext'
 
 interface Tenant {
@@ -43,7 +43,7 @@ export default function SuperAdmin() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('pending')
-  const [view, setView] = useState<'accounts' | 'plans'>('accounts')
+  const [view, setView] = useState<'accounts' | 'plans' | 'ai'>('accounts')
   const [plans, setPlans] = useState<any[]>([])
   const me = useMe()
 
@@ -129,7 +129,7 @@ export default function SuperAdmin() {
       {error && <div className="mb-5 bg-red-900/20 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">{error}</div>}
 
       <div className="flex gap-2 mb-4">
-        {([['accounts', tr('Contas', 'Accounts')], ['plans', tr('Planos', 'Plans')]] as const).map(([key, label]) => (
+        {([['accounts', tr('Contas', 'Accounts')], ['plans', tr('Planos', 'Plans')], ['ai', 'IA']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setView(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${view === key ? 'bg-violet-600/20 border-violet-500/40 text-violet-200' : 'border-line text-ink-4 hover:text-ink'}`}>
             {label}
@@ -146,7 +146,7 @@ export default function SuperAdmin() {
         </div>
       )}
 
-      {view === 'plans' ? <PlansEditor plans={plans} reload={loadPlans} /> : <>
+      {view === 'ai' ? <AIUsagePanel /> : view === 'plans' ? <PlansEditor plans={plans} reload={loadPlans} /> : <>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="flex rounded-lg border border-line bg-card p-1 text-sm">

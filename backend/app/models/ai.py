@@ -30,6 +30,10 @@ class AIConfig(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # API key da Gemini do tenant, criptografada (Fernet — mesmo esquema dos tokens Meta)
     gemini_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # True: usa a chave acima (sem franquia do plano). False: usa a IA do Prospecta.
+    use_own_key: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Tokens gastos com as chaves do Prospecta no mês (contam na franquia do plano)
+    platform_tokens_month: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     # System prompt FIXO — injetado em toda requisição, nunca sobrescrito
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False, default=DEFAULT_SYSTEM_PROMPT)
     temperature: Mapped[float] = mapped_column(Float, nullable=False, default=0.4)
@@ -111,6 +115,12 @@ class AIUsageDay(Base):
     tokens: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     messages: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     fallbacks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Detalhe para custo e saúde da IA da plataforma
+    input_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    output_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    platform_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    rate_limited: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    queue_wait_ms: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
 
     __table_args__ = (
         Index("ix_aiusage_account_day", "account_id", "day", unique=True),

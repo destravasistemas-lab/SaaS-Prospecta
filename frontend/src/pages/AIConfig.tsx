@@ -6,11 +6,14 @@ import {
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n } from '../i18n'
+import AIPackDialog from '../components/AIPackDialog'
 import HelpLink from '../components/HelpLink'
 
 interface AIConfigData {
   enabled: boolean
   has_api_key: boolean
+  platform_available: boolean
+  use_own_key: boolean
   system_prompt: string
   temperature: number
   rag_top_k: number
@@ -30,6 +33,13 @@ interface KnowledgeDoc {
 
 interface UsagePoint { day: string; tokens: number; messages: number; fallbacks: number }
 interface Usage {
+  own_key: boolean
+  included_tokens: number | null
+  extra_tokens: number
+  platform_used_tokens: number
+  conversations_included: number | null
+  conversations_left: number | null
+  tokens_per_conversation: number
   tokens_used_month: number
   token_limit_monthly: number
   series: UsagePoint[]
@@ -37,7 +47,7 @@ interface Usage {
 }
 
 export default function AIConfig() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const statusLabel: Record<string, { label: string; color: string }> = {
     processing: { label: t('Processando…', 'Processing…'), color: 'text-amber-400' },
     ready: { label: t('Pronto', 'Ready'), color: 'text-green-400' },
@@ -52,6 +62,7 @@ export default function AIConfig() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showPack, setShowPack] = useState(false)
   const [chunksOf, setChunksOf] = useState<{ doc: KnowledgeDoc; chunks: { index: number; content: string }[] } | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -181,8 +192,25 @@ export default function AIConfig() {
               </button>
             </div>
 
-            {/* API key */}
+            {/* Qual IA usar */}
             <div>
+              <p className="text-xs font-medium text-ink-4 mb-2">{t('Qual IA usar', 'Which AI to use')}</p>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <button onClick={() => cfg.use_own_key && save({ use_own_key: false })} disabled={saving || !cfg.platform_available}
+                  className={`text-left p-3 rounded-lg border text-xs disabled:opacity-40 ${!cfg.use_own_key ? 'border-indigo-500/60 bg-indigo-600/10' : 'border-white/[0.08]'}`}>
+                  <span className="block text-sm font-semibold text-ink">{t('IA do Prospecta', 'Prospecta AI')}</span>
+                  <span className="text-ink-4">{cfg.platform_available ? t('Já incluída no plano. Não precisa configurar nada.', 'Included in your plan. Nothing to set up.') : t('Ainda não disponível.', 'Not available yet.')}</span>
+                </button>
+                <button onClick={() => !cfg.use_own_key && cfg.has_api_key ? save({ use_own_key: true }) : undefined} disabled={saving}
+                  className={`text-left p-3 rounded-lg border text-xs ${cfg.use_own_key ? 'border-indigo-500/60 bg-indigo-600/10' : 'border-white/[0.08]'}`}>
+                  <span className="block text-sm font-semibold text-ink">{t('Minha chave da Gemini', 'My own Gemini key')}</span>
+                  <span className="text-ink-4">{t('Sem limite do plano; o Google cobra direto de você.', 'No plan limit; Google bills you directly.')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* API key */}
+            {(cfg.use_own_key || !cfg.platform_available || cfg.has_api_key) && <div>
               <label className="block text-xs font-medium text-ink-4 mb-1 flex items-center gap-1.5">
                 <KeyRound size={12} /> {t('API key da Gemini', 'Gemini API key')} {cfg.has_api_key && <span className="text-green-400">• {t('configurada', 'configured')}</span>}
               </label>
@@ -202,7 +230,7 @@ export default function AIConfig() {
                   {t('Salvar', 'Save')}
                 </button>
               </div>
-            </div>
+            </div>}
 
             {/* System prompt */}
             <div>
@@ -261,8 +289,42 @@ export default function AIConfig() {
             </button>
           </div>
 
-          {/* Uso de tokens */}
-          <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+          {/* Uso: franquia de atendimentos (IA do Prospecta) */}
+          {usage && !usage.own_key && (() => {
+            const per = Math.max(1, usage.tokens_per_conversation)
+            const used = Math.floor(usage.platform_used_tokens / per)
+            const total = usage.conversations_included
+            const p = total ? Math.min(100, Math.round((used / Math.max(1, total)) * 100)) : 0
+            return (
+              <div className="bg-card rounded-xl border border-white/[0.06] p-6">
+                <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                  <h3 className="text-ink font-semibold text-sm">{t('Atendimentos com IA neste mês', 'AI conversations this month')}</h3>
+                  <button onClick={() => setShowPack(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-200 rounded-lg text-xs font-semibold">
+                    <CreditCard size={13} /> {t('Comprar mais', 'Buy more')}
+                  </button>
+                </div>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-xl font-bold text-white">{used.toLocaleString(locale)}</span>
+                  <span className="text-ink-4 text-sm">{total === null ? t('· sem limite', '· no limit') : `/ ${total.toLocaleString(locale)}`}</span>
+                  {p >= 80 && <span className="flex items-center gap-1 text-amber-400 text-xs font-medium"><AlertTriangle size={12} /> {p}%</span>}
+                </div>
+                {total !== null && (
+                  <div className="w-full h-2 rounded-full bg-white/[0.05] overflow-hidden mb-2">
+                    <div className={`h-full rounded-full ${p >= 80 ? 'bg-amber-500' : 'bg-violet-500'}`} style={{ width: `${p}%` }} />
+                  </div>
+                )}
+                <p className="text-[11px] text-ink-5">
+                  {t(`Cada atendimento conta em média ${per.toLocaleString(locale)} tokens.`, `Each conversation counts about ${per.toLocaleString(locale)} tokens on average.`)}
+                  {usage.extra_tokens > 0 && ' ' + t(`Inclui ${Math.floor(usage.extra_tokens / per).toLocaleString(locale)} de pacotes extras.`, `Includes ${Math.floor(usage.extra_tokens / per).toLocaleString(locale)} from extra packs.`)}
+                  {' '}{t('Ao acabar, as conversas vão para a fila humana.', 'When it runs out, conversations go to the human queue.')}
+                </p>
+              </div>
+            )
+          })()}
+
+          {/* Uso de tokens (chave própria) */}
+          {(!usage || usage.own_key) && <div className="bg-card rounded-xl border border-white/[0.06] p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-ink font-semibold text-sm">{t('Uso de tokens (mês)', 'Token usage (month)')}</h3>
               <button
@@ -305,7 +367,7 @@ export default function AIConfig() {
                 </div>
               </>
             )}
-          </div>
+          </div>}
         </div>
 
         {/* ---------- Coluna 2: base de conhecimento ---------- */}
@@ -380,6 +442,7 @@ export default function AIConfig() {
           </div>
         </div>
       )}
+      {showPack && <AIPackDialog onClose={() => setShowPack(false)} onPaid={() => { setShowPack(false); load() }} />}
     </div>
   )
 }

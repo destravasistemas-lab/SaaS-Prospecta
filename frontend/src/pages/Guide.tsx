@@ -266,14 +266,16 @@ function groups(t: T, callingOn: boolean, superAdmin: boolean): Group[] {
             'An assistant (Gemini) replies on WhatsApp based on your company documents. If it is unavailable or the customer asks for a person, the conversation goes to the Waiting queue.',
           ),
           steps: [
-            t('Crie uma API key no Google AI Studio e cole em "API key da Gemini".', 'Create an API key in Google AI Studio and paste it in "Gemini API key".'),
+            t('Em "Qual IA usar", deixe a IA do Prospecta (já incluída no plano) ou escolha usar a sua própria chave da Gemini, criada no Google AI Studio.', 'In "Which AI to use", keep the Prospecta AI (included in your plan) or choose your own Gemini key, created in Google AI Studio.'),
             t('Escreva as instruções: tom de voz, o que pode e o que não pode dizer.', 'Write the instructions: tone of voice, what it can and cannot say.'),
             t('Envie PDFs para a base de conhecimento: catálogo, perguntas frequentes, políticas e preços.', 'Upload PDFs to the knowledge base: catalog, FAQ, policies and prices.'),
             t('Ligue "IA ativa". Ela responde nas conversas com Bot ON quando nenhuma palavra-chave respondeu.', 'Turn on "AI enabled". It replies in conversations with Bot ON when no keyword replied.'),
           ],
           rules: [
             t('Regras fixas: responde só sobre o seu negócio, diz que é automatizada quando perguntada e nunca pede senhas ou dados de cartão.', 'Fixed rules: it only answers about your business, says it is automated when asked and never asks for passwords or card details.'),
-            t('A cota mensal aparece em "Uso de tokens". Ao estourar, as conversas vão para a fila humana.', 'The monthly quota is shown in "Token usage". When exceeded, conversations go to the human queue.'),
+            t('Com a IA do Prospecta, o plano inclui um número de atendimentos por mês, somando a agência e as empresas-filhas. "Comprar mais" gera um Pix de um pacote extra, que não vence. Quando acaba, as conversas vão para a fila humana.', 'With the Prospecta AI, your plan includes a number of conversations per month, shared by the agency and its client businesses. "Buy more" creates a Pix for an extra pack that does not expire. When it runs out, conversations go to the human queue.'),
+            t('Em horário de pico, a resposta pode esperar alguns segundos na fila antes de sair. Se a espera passar do limite, a conversa vai para a fila humana.', 'At peak times, a reply may wait a few seconds in the queue before it goes out. If the wait goes over the limit, the conversation goes to the human queue.'),
+            t('Com a sua própria chave, não há limite do plano: o Google cobra direto de você.', 'With your own key, there is no plan limit: Google bills you directly.'),
           ],
           links: [{ label: 'Google AI Studio: API key', url: 'https://aistudio.google.com/app/apikey' }],
         },

@@ -32,6 +32,8 @@ from app.schemas.subscription import (
 )
 from app.services.asaas_service import asaas_service
 from app.services import billing
+from app.models.billing import AIPackPurchase
+from app.routes.billing import mark_pack_paid
 
 logger = logging.getLogger(__name__)
 
@@ -356,6 +358,19 @@ async def handle_asaas_webhook(
             logger.warning("Webhook sem payment_id, ignorando")
             return {"status": "ok"}
         
+        # Pacote extra de atendimentos com IA
+        pack = (await db.execute(
+            select(AIPackPurchase).where(AIPackPurchase.asaas_payment_id == payment_id)
+        )).scalar_one_or_none()
+        if pack is not None:
+            if event in ("PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"):
+                await mark_pack_paid(db, pack)
+                logger.info(f"Pacote de IA pago: {pack.id}")
+            elif event in ("PAYMENT_DELETED", "PAYMENT_REFUNDED") and pack.status == "pending":
+                pack.status = "canceled"
+            await db.commit()
+            return {"status": "ok"}
+
         # Assinatura do Prospecta (cobrança mensal recorrente)
         sub_id = payment_data.get("subscription")
         if sub_id:
