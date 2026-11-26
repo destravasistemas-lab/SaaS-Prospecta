@@ -1708,5 +1708,20 @@ export const ES: Record<string, string> = {
   "IA que responde no WhatsApp: até {0} atendimentos por mês": "IA que responde en WhatsApp: hasta {0} atenciones por mes",
   "ai": "ai",
   "No teste grátis, a IA do Prospecta tem uma franquia menor. Assine um plano para liberar a franquia completa.": "En la prueba gratis, la IA de Prospecta tiene una franquicia menor. Suscríbete a un plan para liberar la franquicia completa.",
-  "O teste ou o pagamento venceu: a IA do Prospecta só usa os pacotes extras.": "La prueba o el pago venció: la IA de Prospecta solo usa los paquetes extra."
+  "O teste ou o pagamento venceu: a IA do Prospecta só usa os pacotes extras.": "La prueba o el pago venció: la IA de Prospecta solo usa los paquetes extra.",
+  "Até {0} posts agendados por vez": "Hasta {0} posts programados a la vez",
+  "Até {0} automações de Instagram ativas": "Hasta {0} automatizaciones de Instagram activas",
+  "Posts agendados por vez": "Posts programados a la vez",
+  "Mídia guardada (MB)": "Multimedia guardada (MB)",
+  "Automações ativas": "Automatizaciones activas",
+  "Mídia guardada": "Multimedia guardada",
+  "Posts agendados": "Posts programados",
+  "A mídia é apagada daqui assim que o post sai no Instagram.": "La multimedia se borra de aquí en cuanto el post sale en Instagram.",
+  "A automação de um post desliga sozinha depois de {0} dias; dá para religar.": "La automatización de un post se apaga sola después de {0} días; se puede volver a encender.",
+  "Publicando…": "Publicando…",
+  "Mídia apagada": "Multimedia borrada",
+  "Tentar de novo": "Intentar de nuevo",
+  "O plano limita os posts agendados por vez, o espaço de mídia guardada e as automações ativas; o uso aparece no topo da tela.": "El plan limita los posts programados a la vez, el espacio de multimedia guardada y las automatizaciones activas; el uso aparece arriba en la pantalla.",
+  "A mídia é apagada assim que o post sai no Instagram. Upload que não vira post some em 24 horas, e post que falhou perde a mídia depois de 7 dias.": "La multimedia se borra en cuanto el post sale en Instagram. Lo que se sube y no se convierte en post desaparece en 24 horas, y un post que falló pierde la multimedia después de 7 días.",
+  "A automação de comentário de um post desliga sozinha depois de 30 dias sem alteração. Dá para religar em Automações.": "La automatización de comentarios de un post se apaga sola después de 30 días sin cambios. Se puede volver a encender en Automatizaciones."
 }

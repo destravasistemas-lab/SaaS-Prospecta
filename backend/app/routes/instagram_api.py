@@ -7,11 +7,12 @@ from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, update
 import httpx
 
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.i18n import t
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.meta_connection import (
@@ -30,7 +31,7 @@ from app.services.instagram_service import (
     TokenExpiredError,
 )
 from app.services.meta_token_service import decrypt_token
-from app.services import storage_service
+from app.services import post_media, storage_service
 from app.services import instagram_service
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,7 @@ async def get_instagram_profile(
 # uma URL que precisa ser acessível pela internet (em dev, via túnel ngrok).
 # ---------------------------------------------------------------------------
 
-UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR = post_media.UPLOAD_DIR
 _IMAGE_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
 _VIDEO_EXT = {"video/mp4": ".mp4", "video/quicktime": ".mov"}
 _MAX_IMAGE = 8 * 1024 * 1024
@@ -107,6 +108,7 @@ _MAX_VIDEO = 50 * 1024 * 1024
 @router.post("/upload-media")
 async def upload_media_for_post(
     file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Recebe uma imagem/vídeo, guarda no servidor e retorna a URL pública dela."""
@@ -124,6 +126,7 @@ async def upload_media_for_post(
     content = await file.read()
     if len(content) > limit:
         raise HTTPException(413, f"Arquivo excede o limite de {limit // (1024 * 1024)} MB.")
+    await post_media.check_storage(db, current_user.tenant_id, len(content))
 
     # Nome imprevisível (uuid) — a URL é pública, então não deve ser adivinhável
     fname = f"{uuid.uuid4().hex}{ext}"
@@ -134,7 +137,8 @@ async def upload_media_for_post(
     else:
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         (UPLOAD_DIR / fname).write_bytes(content)
-        media_url = f"{settings.public_backend_url}/api/v1/instagram/uploads/{fname}"
+        media_url = f"{post_media.local_prefix()}{fname}"
+    await post_media.record(db, current_user.tenant_id, media_url, len(content), media_type)
 
     logger.info("Mídia de post enviada: %s (%s, %d bytes)", fname, media_type, len(content))
     return {"media_url": media_url, "media_type": media_type}
@@ -165,6 +169,8 @@ async def publish_media(
     current_user: User = Depends(get_current_user),
 ):
     conn, token, ig_id = await _get_ig_connection(db, current_user, body.ig_user_id)
+    if body.automation_keyword:
+        await post_media.check_automations(db, current_user.tenant_id)
 
     caption = body.caption or ""
     if body.hashtags:
@@ -189,7 +195,7 @@ async def publish_media(
             )
 
         # Já está no Instagram: apaga a mídia do storage para não acumular peso.
-        await storage_service.delete_by_url(body.media_url)
+        await post_media.release(db, body.media_url)
 
         return PublishMediaResponse(success=True, media_id=media_id, message="Publicado com sucesso!")
 
@@ -210,6 +216,26 @@ async def publish_media(
 # Schedule a post
 # ---------------------------------------------------------------------------
 
+def _check_when(scheduled_for: datetime) -> None:
+    now = datetime.now(timezone.utc)
+    if scheduled_for < now - timedelta(minutes=5):
+        raise HTTPException(422, "A data de agendamento não pode estar no passado.")
+    if scheduled_for > now + timedelta(days=settings.max_schedule_days):
+        raise HTTPException(
+            422,
+            f"Só é possível agendar até {settings.max_schedule_days} dias à frente.",
+        )
+
+
+@router.get("/limits")
+async def content_limits(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Uso e limites de mídia guardada, posts na fila e automações ativas."""
+    return await post_media.usage(db, current_user.tenant_id)
+
+
 @router.post("/schedule", response_model=ScheduleResponse, status_code=201)
 async def create_schedule(
     body: ScheduleCreate,
@@ -224,14 +250,10 @@ async def create_schedule(
     if scheduled_for.tzinfo is None:
         scheduled_for = scheduled_for.replace(tzinfo=timezone.utc)
 
-    if scheduled_for < now - timedelta(minutes=5):
-        raise HTTPException(422, "A data de agendamento não pode estar no passado.")
-    max_dt = now + timedelta(days=settings.max_schedule_days)
-    if scheduled_for > max_dt:
-        raise HTTPException(
-            422,
-            f"Só é possível agendar até {settings.max_schedule_days} dias à frente.",
-        )
+    _check_when(scheduled_for)
+    await post_media.check_queue(db, current_user.tenant_id)
+    if body.automation_keyword:
+        await post_media.check_automations(db, current_user.tenant_id)
 
     schedule = PostSchedule(
         account_id=current_user.tenant_id,
@@ -288,14 +310,26 @@ async def update_schedule(
     if not schedule:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
 
+    if schedule.status not in ("scheduled", "failed"):
+        raise HTTPException(409, t(
+            "Este post já foi publicado ou está sendo publicado.",
+            "This post was already published or is being published.",
+        ))
+    if body.status is not None:
+        if body.status != "scheduled":
+            raise HTTPException(422, "Status inválido.")
+        if schedule.status != "scheduled":
+            await post_media.check_queue(db, current_user.tenant_id)
+            schedule.retry_count = 0
+        schedule.status = "scheduled"
     if body.caption is not None:
         schedule.caption = body.caption
     if body.hashtags is not None:
         schedule.hashtags = body.hashtags
     if body.scheduled_for is not None:
-        schedule.scheduled_for = body.scheduled_for
-    if body.status is not None:
-        schedule.status = body.status
+        when = body.scheduled_for if body.scheduled_for.tzinfo else body.scheduled_for.replace(tzinfo=timezone.utc)
+        _check_when(when)
+        schedule.scheduled_for = when
 
     await db.flush()
     await db.refresh(schedule)
@@ -317,7 +351,13 @@ async def delete_schedule(
     schedule = result.scalar_one_or_none()
     if not schedule:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
+    if schedule.status == "publishing":
+        raise HTTPException(409, t(
+            "Este post está sendo publicado agora. Espere terminar para remover.",
+            "This post is being published right now. Wait for it to finish before removing it.",
+        ))
 
+    await post_media.release(db, schedule.media_url)
     await db.delete(schedule)
     return {"success": True}
 
@@ -339,6 +379,21 @@ async def publish_scheduled_now(
         raise HTTPException(status_code=404, detail="Agendamento não encontrado.")
 
     conn, token, ig_id = await _get_ig_connection(db, current_user, schedule.ig_user_id)
+
+    # Dois cliques ou o agendador ao mesmo tempo: só um publica
+    claimed = await db.execute(
+        update(PostSchedule)
+        .where(PostSchedule.id == schedule.id, PostSchedule.status.in_(("scheduled", "failed")))
+        .values(status="publishing", updated_at=datetime.now(timezone.utc))
+        .execution_options(synchronize_session=False)
+    )
+    if not claimed.rowcount:
+        raise HTTPException(409, t(
+            "Este post já foi publicado ou está sendo publicado.",
+            "This post was already published or is being published.",
+        ))
+    await db.commit()
+    await db.refresh(schedule)
 
     caption = schedule.caption or ""
     if schedule.hashtags:
@@ -367,7 +422,7 @@ async def publish_scheduled_now(
             )
 
         # Já publicado: apaga a mídia do storage (o registro fica como "check").
-        await storage_service.delete_by_url(schedule.media_url)
+        await post_media.release(db, schedule.media_url)
 
         return PublishMediaResponse(success=True, media_id=media_id, message="Publicado com sucesso!")
 

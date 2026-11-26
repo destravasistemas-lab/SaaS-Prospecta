@@ -12,7 +12,7 @@ export interface Plan {
   name: string
   description: string | null
   price_cents: number
-  limits: { users?: number | null; clients?: number | null; ai_tokens?: number | null }
+  limits: { users?: number | null; clients?: number | null; ai_tokens?: number | null; scheduled_posts?: number | null; storage_mb?: number | null; automations?: number | null }
   modules: string[]
   extras: string[]
   highlight: boolean
@@ -55,7 +55,13 @@ export function planFeatures(t: T, fmt: ReturnType<typeof makeFormat>, p: Plan):
   if (clients == null) out.push(t('Empresas clientes ilimitadas', 'Unlimited client companies'))
   else if (clients > 0) out.push(t(`Até ${clients} empresas clientes`, `Up to ${clients} client companies`))
   if (p.modules.includes('whatsapp')) out.push(t('WhatsApp: atendimento, disparos, follow-ups e ligações', 'WhatsApp: inbox, broadcasts, follow-ups and calls'))
-  if (p.modules.includes('instagram')) out.push(t('Instagram: Direct, comentários e posts', 'Instagram: Direct, comments and posts'))
+  if (p.modules.includes('instagram')) {
+    out.push(t('Instagram: Direct, comentários e posts', 'Instagram: Direct, comments and posts'))
+    const posts = p.limits.scheduled_posts
+    const autos = p.limits.automations
+    if (posts != null) out.push(t(`Até ${posts} posts agendados por vez`, `Up to ${posts} scheduled posts at a time`))
+    if (autos != null) out.push(t(`Até ${autos} automações de Instagram ativas`, `Up to ${autos} active Instagram automations`))
+  }
   if (p.modules.includes('ads')) out.push(t('Anúncios: diagnóstico e retorno por venda', 'Ads: diagnosis and return per sale'))
   if (p.modules.includes('ia')) {
     out.push(p.ai_conversations == null

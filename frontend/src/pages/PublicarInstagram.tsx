@@ -6,6 +6,16 @@ import HelpLink from '../components/HelpLink'
 import IgCommentsModal from '../components/IgCommentsModal'
 
 type Tab = 'publish_auto' | 'scheduled' | 'media'
+
+interface ContentLimits {
+  storage_used_mb: number
+  storage_limit_mb: number | null
+  scheduled_posts: number
+  scheduled_posts_limit: number | null
+  automations: number
+  automations_limit: number | null
+  post_automation_days: number
+}
 type TriggerType = 'comment' | 'dm' | 'both'
 
 interface Schedule {
@@ -110,6 +120,10 @@ export default function PublicarInstagram() {
   const [loadingAutomations, setLoadingAutomations] = useState(false)
   const [commentsFor, setCommentsFor] = useState<MediaItem | null>(null)
   const [profile, setProfile] = useState<IgProfile | null>(null)
+  const [limits, setLimits] = useState<ContentLimits | null>(null)
+
+  const loadLimits = () => { api.get<ContentLimits>('/instagram/limits').then(({ data }) => setLimits(data)).catch(() => {}) }
+  useEffect(() => { loadLimits() }, [tab])
 
   useEffect(() => {
     if (tab === 'scheduled') loadSchedules()
@@ -145,6 +159,7 @@ export default function PublicarInstagram() {
       setMediaUrl(res.data.media_url)
       setMediaType(res.data.media_type)
       setUploadedName(file.name)
+      loadLimits()
     } catch (err: any) {
       setError(apiError(err, t('Erro ao enviar o arquivo.', 'Failed to upload the file.')))
     } finally {
@@ -183,6 +198,7 @@ export default function PublicarInstagram() {
       setSuccess(t(`Publicado com sucesso! ID: ${res.data.media_id}`, `Published successfully! ID: ${res.data.media_id}`))
       resetForm()
       loadAutomations()
+      loadLimits()
     } catch (err: any) {
       setError(apiError(err, t('Erro ao publicar.', 'Failed to publish.')))
     } finally { setPublishing(false) }
@@ -205,6 +221,7 @@ export default function PublicarInstagram() {
       setSuccess(t('Agendado com sucesso!', 'Scheduled successfully!'))
       resetForm(); setScheduledFor('')
       loadSchedules()
+      loadLimits()
     } catch (err: any) {
       setError(apiError(err, t('Erro ao agendar.', 'Failed to schedule.')))
     } finally { setPublishing(false) }
@@ -247,6 +264,7 @@ export default function PublicarInstagram() {
       await api.post(`/instagram/schedule/${id}/publish-now`)
       setSuccess(t('Publicado agora!', 'Published now!'))
       loadSchedules()
+      loadLimits()
     } catch (err: any) {
       setError(apiError(err, t('Erro ao publicar.', 'Failed to publish.')))
     }
@@ -257,13 +275,18 @@ export default function PublicarInstagram() {
     try {
       await api.delete(`/instagram/schedule/${id}`)
       loadSchedules()
-    } catch {}
+      loadLimits()
+    } catch (err: any) {
+      setError(apiError(err, t('Erro ao remover.', 'Failed to remove.')))
+    }
   }
 
   const statusLabel: Record<string, { label: string; color: string }> = {
     scheduled: { label: t('Agendado', 'Scheduled'), color: 'text-blue-400' },
+    publishing: { label: t('Publicando…', 'Publishing…'), color: 'text-amber-400' },
     published: { label: t('Publicado', 'Published'), color: 'text-green-400' },
     failed: { label: t('Falhou', 'Failed'), color: 'text-red-400' },
+    expired: { label: t('Mídia apagada', 'Media deleted'), color: 'text-ink-4' },
   }
 
   async function loadAutomations() {
@@ -278,7 +301,8 @@ export default function PublicarInstagram() {
     try {
       await api.put(`/automations/${a.id}`, { is_active: !a.is_active })
       loadAutomations()
-    } catch { setError(t('Erro ao atualizar automação.', 'Failed to update automation.')) }
+      loadLimits()
+    } catch (err: any) { setError(apiError(err, t('Erro ao atualizar automação.', 'Failed to update automation.'))) }
   }
 
   async function deleteAutomation(id: string) {
@@ -286,6 +310,7 @@ export default function PublicarInstagram() {
     try {
       await api.delete(`/automations/${id}`)
       loadAutomations()
+      loadLimits()
     } catch { setError(t('Erro ao remover automação.', 'Failed to remove automation.')) }
   }
 
@@ -316,6 +341,18 @@ export default function PublicarInstagram() {
               <p className="text-ink-4 text-[10px]">{t('Posts', 'Posts')}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {limits && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 mb-4 text-xs text-ink-4 max-w-2xl">
+          <span>{t('Mídia guardada', 'Stored media')}: <b className="text-ink-2">{limits.storage_used_mb.toLocaleString(locale)} MB</b>{limits.storage_limit_mb != null && ` / ${limits.storage_limit_mb.toLocaleString(locale)} MB`}</span>
+          <span>{t('Posts agendados', 'Scheduled posts')}: <b className="text-ink-2">{limits.scheduled_posts}</b>{limits.scheduled_posts_limit != null && ` / ${limits.scheduled_posts_limit}`}</span>
+          <span>{t('Automações ativas', 'Active automations')}: <b className="text-ink-2">{limits.automations}</b>{limits.automations_limit != null && ` / ${limits.automations_limit}`}</span>
+          <span className="text-ink-5 basis-full">
+            {t('A mídia é apagada daqui assim que o post sai no Instagram.', 'Media is deleted from here as soon as the post goes out on Instagram.')}
+            {limits.post_automation_days > 0 && ' ' + t(`A automação de um post desliga sozinha depois de ${limits.post_automation_days} dias; dá para religar.`, `A post automation turns itself off after ${limits.post_automation_days} days; you can turn it back on.`)}
+          </span>
         </div>
       )}
 
@@ -539,16 +576,16 @@ export default function PublicarInstagram() {
                       {s.error_message && <p className="text-red-400 text-xs mt-1">{t('Erro', 'Error')}: {s.error_message}</p>}
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      {s.status === 'scheduled' && (
+                      {(s.status === 'scheduled' || s.status === 'failed') && (
                         <button onClick={() => handlePublishNow(s.id)}
                           className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors">
-                          {t('Publicar Agora', 'Publish Now')}
+                          {s.status === 'failed' ? t('Tentar de novo', 'Try again') : t('Publicar Agora', 'Publish Now')}
                         </button>
                       )}
-                      <button onClick={() => handleDeleteSchedule(s.id)}
+                      {s.status !== 'publishing' && <button onClick={() => handleDeleteSchedule(s.id)}
                         className="px-3 py-1.5 bg-red-900/20 text-red-400 rounded-lg text-xs font-medium hover:bg-red-900/40 transition-colors">
                         {t('Remover', 'Remove')}
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 </div>

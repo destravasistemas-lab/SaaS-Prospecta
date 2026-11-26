@@ -149,6 +149,12 @@ Modelo padrão: `gemini-3.5-flash-lite` (`GEMINI_MODEL`). Embeddings: `gemini-em
 
 Vazão: cada resposta pega uma vaga no Redis, limitada por conta (`AI_ACCOUNT_RPM`) e por chave (`AI_KEY_RPM`). A chave que recebe 429 fica `AI_KEY_COOLDOWN_SECONDS` em pausa e a próxima assume. Sem vaga em `AI_SLOT_WAIT_SECONDS`, a conversa vai para a fila humana. O super admin acompanha respostas, custo estimado, 429 e espera em **Super Admin → IA**.
 
+## Posts do Instagram
+
+O agendador reserva cada post vencido (`scheduled` → `publishing`) antes de publicar, então duas rodadas ou duas instâncias não publicam o mesmo post. Falha passageira volta para a fila com espera crescente (até 3 tentativas). Post parado em `publishing` por mais de 15 minutos, ou atrasado mais de 6 horas, vira `failed` sem ser publicado, e a tela pede para conferir no Instagram e usar "Tentar de novo".
+
+Limites por empresa, definidos no plano (`scheduled_posts`, `storage_mb`, `automations`) ou, sem plano, por `DEFAULT_SCHEDULED_POSTS`, `DEFAULT_STORAGE_MB` e `DEFAULT_AUTOMATIONS`. Valem mesmo com `BILLING_ENFORCED=false`, porque são custo de armazenamento. Cada upload fica em `media_uploads` e conta na cota até ser apagado: ao publicar, ao remover o agendamento, quando sobra sem virar post (24h) e quando o post falhou e ficou parado (`FAILED_MEDIA_DAYS`, padrão 7). A automação de comentário de um post desliga sozinha depois de `POST_AUTOMATION_DAYS` (padrão 30) sem alteração.
+
 ## Isolamento entre clientes
 
 Toda consulta filtra por `tenant_id` ou `account_id`, e o tenant vem sempre do JWT ou do webhook, nunca do corpo da requisição. Os módulos (`whatsapp`, `instagram`, `ads`, `ia`) são verificados por `require_module`.

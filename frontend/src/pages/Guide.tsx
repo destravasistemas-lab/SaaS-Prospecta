@@ -304,6 +304,9 @@ function groups(t: T, callingOn: boolean, superAdmin: boolean): Group[] {
           rules: [
             t('Formatos: JPEG, PNG ou WebP até 8 MB; MP4 ou MOV até 50 MB.', 'Formats: JPEG, PNG or WebP up to 8 MB; MP4 or MOV up to 50 MB.'),
             t('Agendamento até 15 dias à frente.', 'Scheduling up to 15 days ahead.'),
+            t('O plano limita os posts agendados por vez, o espaço de mídia guardada e as automações ativas; o uso aparece no topo da tela.', 'The plan limits scheduled posts at a time, stored media space and active automations; usage shows at the top of the screen.'),
+            t('A mídia é apagada assim que o post sai no Instagram. Upload que não vira post some em 24 horas, e post que falhou perde a mídia depois de 7 dias.', 'Media is deleted as soon as the post goes out on Instagram. Uploads that never become a post are removed after 24 hours, and failed posts lose their media after 7 days.'),
+            t('A automação de comentário de um post desliga sozinha depois de 30 dias sem alteração. Dá para religar em Automações.', 'A post comment automation turns itself off after 30 days without changes. You can turn it back on in Automations.'),
           ],
           links: [
             { label: t('Publicação de conteúdo (Meta)', 'Content publishing (Meta)'), url: 'https://developers.facebook.com/docs/instagram-platform/content-publishing' },

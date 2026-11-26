@@ -67,6 +67,14 @@ class Settings(BaseSettings):
 
     # Janela máxima (em dias) para agendar um post no futuro.
     max_schedule_days: int = 15
+    # Limites de posts, mídia e automações para contas sem plano (o plano manda quando tem a chave)
+    default_scheduled_posts: int = 30
+    default_storage_mb: int = 500
+    default_automations: int = 20
+    # Automação de comentário de um post desliga sozinha depois destes dias (0 = nunca)
+    post_automation_days: int = 30
+    # Mídia de post que falhou é apagada depois destes dias sem nova tentativa
+    failed_media_days: int = 7
 
     @property
     def public_backend_url(self) -> str:

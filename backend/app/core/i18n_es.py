@@ -437,4 +437,14 @@ ES: dict[str, str] = {
         "Pega la API key de Gemini para usar tu propia clave.",
     "Não foi possível gerar a cobrança agora. Tente de novo em instantes.":
         "No se pudo generar el cobro ahora. Inténtalo de nuevo en unos instantes.",
+    "Espaço de mídia cheio: o plano guarda até {0} MB de posts esperando publicação e restam {1} MB. Publique ou remova agendamentos para liberar espaço.":
+        "Espacio de multimedia lleno: el plan guarda hasta {0} MB de posts esperando publicación y quedan {1} MB. Publica o elimina programaciones para liberar espacio.",
+    "O plano permite até {0} posts agendados ao mesmo tempo. Espere algum sair ou remova um agendamento.":
+        "El plan permite hasta {0} posts programados al mismo tiempo. Espera a que salga alguno o elimina una programación.",
+    "O plano permite até {0} automações ativas. Pause ou remova uma automação antes de criar outra.":
+        "El plan permite hasta {0} automatizaciones activas. Pausa o elimina una automatización antes de crear otra.",
+    "Este post já foi publicado ou está sendo publicado.":
+        "Este post ya fue publicado o se está publicando.",
+    "Este post está sendo publicado agora. Espere terminar para remover.":
+        "Este post se está publicando ahora. Espera a que termine para eliminarlo.",
 }

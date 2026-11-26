@@ -26,15 +26,18 @@ ALL_MODULES = ["whatsapp", "instagram", "ads", "ia"]
 DEFAULT_PLANS = [
     {"code": "essencial", "name": "Essencial", "price_cents": 14700, "sort": 1, "highlight": False,
      "description": "Atendimento no WhatsApp e no Instagram para um negócio.",
-     "limits": {"users": 2, "clients": 0, "ai_tokens": 6_000_000},
+     "limits": {"users": 2, "clients": 0, "ai_tokens": 6_000_000,
+                "scheduled_posts": 30, "storage_mb": 500, "automations": 20},
      "modules": ["whatsapp", "instagram", "ia"], "extras": []},
     {"code": "profissional", "name": "Profissional", "price_cents": 29700, "sort": 2, "highlight": True,
      "description": "Atendimento, automações e anúncios com retorno por venda.",
-     "limits": {"users": 5, "clients": 0, "ai_tokens": 20_000_000},
+     "limits": {"users": 5, "clients": 0, "ai_tokens": 20_000_000,
+                "scheduled_posts": 60, "storage_mb": 1000, "automations": 50},
      "modules": ALL_MODULES, "extras": []},
     {"code": "agencia", "name": "Agência", "price_cents": 59700, "sort": 3, "highlight": False,
      "description": "Para agências que atendem várias empresas.",
-     "limits": {"users": 15, "clients": 10, "ai_tokens": 60_000_000},
+     "limits": {"users": 15, "clients": 10, "ai_tokens": 60_000_000,
+                "scheduled_posts": 60, "storage_mb": 1000, "automations": 50},
      "modules": ALL_MODULES, "extras": []},
 ]
 
@@ -74,7 +77,37 @@ async def seed_plans(db: AsyncSession) -> None:
         plan = existing.get(d["code"])
         if plan and (plan.limits or {}).get("ai_tokens") == _OLD_AI_TOKENS.get(d["code"]):
             plan.limits = {**(plan.limits or {}), "ai_tokens": d["limits"]["ai_tokens"]}
+    # Limites de conteúdo que entraram depois: completa os planos que ainda não têm
+    defaults = {d["code"]: d["limits"] for d in DEFAULT_PLANS}
+    for plan in existing.values():
+        base = defaults.get(plan.code) or {k: content_default(k) for k in CONTENT_LIMITS}
+        missing = {k: base[k] for k in CONTENT_LIMITS if k not in (plan.limits or {})}
+        if missing:
+            plan.limits = {**(plan.limits or {}), **missing}
     await db.flush()
+
+
+# Posts na fila, mídia guardada (MB) e automações ativas, por empresa. Valem mesmo
+# com BILLING_ENFORCED=false: são custo de armazenamento e de processamento.
+CONTENT_LIMITS = ("scheduled_posts", "storage_mb", "automations")
+
+
+def content_default(key: str) -> int:
+    return {
+        "scheduled_posts": settings.default_scheduled_posts,
+        "storage_mb": settings.default_storage_mb,
+        "automations": settings.default_automations,
+    }[key]
+
+
+async def content_limit(db: AsyncSession, account_id: str, key: str) -> int | None:
+    """Limite de conteúdo da empresa (None = sem limite, só se o plano disser isso)."""
+    acc = await billing_account(db, account_id)
+    plan = await db.get(Plan, acc.billing_plan) if acc and acc.billing_plan else None
+    limits = (plan.limits or {}) if plan else {}
+    if key not in limits:
+        return content_default(key)
+    return None if limits[key] is None else int(limits[key])
 
 
 @dataclass

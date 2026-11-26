@@ -25,6 +25,9 @@ async def create_automation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if data.is_active:
+        from app.services.post_media import check_automations
+        await check_automations(db, current_user.tenant_id)
     config = AutomationConfig(
         account_id=current_user.tenant_id,
         **data.model_dump(),
@@ -83,7 +86,11 @@ async def update_automation(
     if not config:
         raise HTTPException(status_code=404, detail="Automação não encontrada")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    if changes.get("is_active") and not config.is_active:
+        from app.services.post_media import check_automations
+        await check_automations(db, current_user.tenant_id)
+    for field, value in changes.items():
         setattr(config, field, value)
 
     await db.flush()

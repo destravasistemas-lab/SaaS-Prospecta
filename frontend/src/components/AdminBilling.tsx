@@ -131,7 +131,7 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
 
   const set = (code: string, patch: Partial<AdminPlan & { priceText: string; extrasText: string }>) =>
     setDrafts((d) => ({ ...d, [code]: { ...d[code], ...patch } }))
-  const setLimit = (code: string, key: 'users' | 'clients' | 'ai_tokens', raw: string) =>
+  const setLimit = (code: string, key: 'users' | 'clients' | 'ai_tokens' | 'scheduled_posts' | 'storage_mb' | 'automations', raw: string) =>
     set(code, { limits: { ...drafts[code].limits, [key]: raw === '' ? null : key === 'ai_tokens' ? Math.round(Number(raw) * perConv(code)) : Number(raw) } })
   const perConv = (code: string) => Math.max(1, drafts[code]?.tokens_per_conversation || 20000)
 
@@ -153,7 +153,7 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
   function addPlan() {
     const code = newCode.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_')
     if (!code || drafts[code]) return
-    set(code, { code, name: newCode.trim(), description: '', price_cents: 0, priceText: '0,00', limits: { users: 1, clients: 0, ai_tokens: 1_000_000 },
+    set(code, { code, name: newCode.trim(), description: '', price_cents: 0, priceText: '0,00', limits: { users: 1, clients: 0, ai_tokens: 1_000_000, scheduled_posts: 30, storage_mb: 500, automations: 20 },
       modules: ['whatsapp'], extras: [], extrasText: '', highlight: false, active: false, sort: plans.length + 1,
       ai_conversations: 50, tokens_per_conversation: plans[0]?.tokens_per_conversation || 20000 })
     setNewCode('')
@@ -179,6 +179,11 @@ export function PlansEditor({ plans, reload }: { plans: AdminPlan[]; reload: () 
             <label className="text-[11px] text-ink-4">{t('Usuários', 'Users')}<input type="number" min={0} value={d.limits.users ?? ''} onChange={(e) => setLimit(d.code, 'users', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
             <label className="text-[11px] text-ink-4">{t('Empresas clientes', 'Client companies')}<input type="number" min={0} value={d.limits.clients ?? ''} onChange={(e) => setLimit(d.code, 'clients', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
             <label className="text-[11px] text-ink-4">{t('IA (atendimentos/mês)', 'AI (conversations/month)')}<input type="number" min={0} step={50} value={d.limits.ai_tokens == null ? '' : Math.round(d.limits.ai_tokens / perConv(d.code))} onChange={(e) => setLimit(d.code, 'ai_tokens', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label className="text-[11px] text-ink-4">{t('Posts agendados por vez', 'Scheduled posts at a time')}<input type="number" min={0} value={d.limits.scheduled_posts ?? ''} onChange={(e) => setLimit(d.code, 'scheduled_posts', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
+            <label className="text-[11px] text-ink-4">{t('Mídia guardada (MB)', 'Stored media (MB)')}<input type="number" min={0} step={100} value={d.limits.storage_mb ?? ''} onChange={(e) => setLimit(d.code, 'storage_mb', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
+            <label className="text-[11px] text-ink-4">{t('Automações ativas', 'Active automations')}<input type="number" min={0} value={d.limits.automations ?? ''} onChange={(e) => setLimit(d.code, 'automations', e.target.value)} className={`${input} block mt-1 w-full`} /></label>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {[['whatsapp', 'WhatsApp'], ['instagram', 'Instagram'], ['ads', 'Meta Ads'], ['ia', 'IA']].map(([key, name]) => {
