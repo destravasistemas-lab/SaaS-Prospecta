@@ -98,10 +98,12 @@ function groups(t: T, callingOn: boolean, superAdmin: boolean): Group[] {
           ],
           rules: [
             t('O Instagram precisa ser conta profissional (Empresa ou Criador).', 'Instagram must be a professional account (Business or Creator).'),
+            t('Sem verificar a empresa no Meta Business, o WhatsApp funciona com limite: mensagens iniciadas pela empresa chegam a até 250 contatos diferentes por dia, e o portfólio tem até 2 números. Verificado, sobe para 2.000 por dia e 20 números.', 'Without verifying your business in Meta Business, WhatsApp works with limits: messages your business starts reach up to 250 different contacts a day, and the portfolio has up to 2 numbers. Once verified, it goes up to 2,000 a day and 20 numbers.'),
             t('Tokens expiram. Se o status mostrar "Expirado", clique em Reconectar.', 'Tokens expire. If the status says "Expired", click Reconnect.'),
           ],
           links: [
             { label: t('Cadastro Incorporado do WhatsApp (Meta)', 'WhatsApp Embedded Signup (Meta)'), url: 'https://developers.facebook.com/docs/whatsapp/embedded-signup' },
+            { label: t('Como verificar a empresa na Meta', 'How to verify your business with Meta'), url: 'https://www.facebook.com/business/help/2058515294227817' },
             { label: t('API do Instagram com login do Instagram', 'Instagram API with Instagram Login'), url: 'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login' },
           ],
         },

@@ -122,6 +122,38 @@ const STATUS_COLOR: Record<Connection['status'], string> = {
 
 type ModalState = 'waiting' | 'success' | null
 
+/** Regra da Meta: o número conecta sem verificar o portfólio, mas com limite baixo. */
+function BusinessVerificationNotice() {
+  const { t } = useI18n()
+  return (
+    <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-500/[0.06] px-4 py-3 text-xs text-amber-100/80 space-y-1.5">
+      <p className="font-semibold text-amber-200">
+        {t('Verifique a empresa no Meta Business (portfólio empresarial)', 'Verify your business in Meta Business (business portfolio)')}
+      </p>
+      <p>
+        {t(
+          'O número conecta sem a verificação, mas a Meta limita: mensagens que a empresa inicia (disparos, templates e follow-ups) chegam a no máximo 250 contatos diferentes a cada 24 horas, e o portfólio pode ter até 2 números.',
+          'The number connects without verification, but Meta sets limits: messages your business starts (broadcasts, templates and follow-ups) reach at most 250 different contacts every 24 hours, and the portfolio can have up to 2 numbers.',
+        )}
+      </p>
+      <p>
+        {t(
+          'Com o portfólio verificado, o limite sobe para 2.000 contatos por dia (depois aumenta sozinho se a qualidade for boa) e até 20 números. Responder quem te chamou não conta no limite.',
+          'With a verified portfolio, the limit goes up to 2,000 contacts a day (then rises by itself if quality is good) and up to 20 numbers. Replying to people who message you does not count toward the limit.',
+        )}
+      </p>
+      <a
+        href="https://www.facebook.com/business/help/2058515294227817"
+        target="_blank"
+        rel="noreferrer"
+        className="inline-block text-amber-200 underline hover:text-white"
+      >
+        {t('Como verificar a empresa na Meta', 'How to verify your business with Meta')}
+      </a>
+    </div>
+  )
+}
+
 export default function ConexaoMeta() {
   const { t, locale } = useI18n()
   const PROVIDERS = providers(t)
@@ -526,6 +558,7 @@ export default function ConexaoMeta() {
                   )}
                 </div>
               </div>
+              {key === 'whatsapp' && <BusinessVerificationNotice />}
               {key === 'whatsapp' && isConnected && <CallingSettingsPanel />}
               </div>
             )

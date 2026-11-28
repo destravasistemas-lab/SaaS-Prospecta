@@ -45,9 +45,9 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
-// Preço por mensagem tem até 4 casas (ex.: R$ 0,0350).
-const brlUnit = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
-const usdUnit = (v: number) => `US$ ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+// Preço por mensagem arredondado em 2 casas; os totais usam o valor exato.
+const brlUnit = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const usdUnit = (v: number) => `US$ ${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const usd = (v: number) => `US$ ${v.toFixed(2)}`
 const fmtDate = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '')
 
