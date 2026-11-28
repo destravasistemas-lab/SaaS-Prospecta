@@ -10,7 +10,7 @@ import HelpLink from '../components/HelpLink'
 import { CallBanner, useCalls } from '../components/CallProvider'
 import { CallLogLine } from '../components/CallLog'
 import SaleDialog from '../components/SaleDialog'
-import OptInRisk from '../components/OptInRisk'
+import SendTemplateDialog from '../components/SendTemplateDialog'
 import ConversationMuteButton from '../components/ConversationMuteButton'
 
 interface Conversation {
@@ -47,13 +47,6 @@ interface Message {
   context_text?: string | null
   payload?: MsgPayload | null
   created_at: string
-}
-
-interface Tpl {
-  name: string
-  language: string
-  status?: string
-  components?: any[]
 }
 
 type Queue = 'bot' | 'espera' | 'minhas'
@@ -188,13 +181,6 @@ export default function WhatsApp() {
   // Envio de template
   const [showTpl, setShowTpl] = useState(false)
   const [showSale, setShowSale] = useState(false)
-  const [tpls, setTpls] = useState<Tpl[]>([])
-  const [pickedTpl, setPickedTpl] = useState<Tpl | null>(null)
-  const [tplVars, setTplVars] = useState<string[]>([])
-  const [sendingTpl, setSendingTpl] = useState(false)
-  const [tplOptIn, setTplOptIn] = useState(false)
-  const [tplRisk, setTplRisk] = useState<string | null>(null)
-  const [tplRiskOk, setTplRiskOk] = useState(false)
 
   // Mensagem interativa (botões / lista)
   const [showInt, setShowInt] = useState(false)
@@ -450,51 +436,8 @@ export default function WhatsApp() {
     } catch { /* ignore */ }
   }
 
-  async function openTplPicker() {
+  function openTplPicker() {
     setShowTpl(true)
-    setPickedTpl(null)
-    setTplOptIn(false)
-    try {
-      const { data } = await api.get('/whatsapp/templates')
-      setTpls(Array.isArray(data) ? data : [])
-    } catch { setTpls([]) }
-  }
-
-  function pickTpl(tpl: Tpl) {
-    setPickedTpl(tpl)
-    const body = tpl.components?.find((c) => c.type === 'BODY')?.text || ''
-    const nums = [...body.matchAll(/\{\{(\d+)\}\}/g)].map((m) => parseInt(m[1]))
-    setTplVars(Array(nums.length ? Math.max(...nums) : 0).fill(''))
-  }
-
-  async function sendTemplate() {
-    if (!pickedTpl || !selected) return
-    setSendingTpl(true)
-    try {
-      await api.post('/whatsapp/send-template', {
-        to: recipientWaId || '',
-        template_name: pickedTpl.name,
-        language: pickedTpl.language || 'pt_BR',
-        variables: tplVars,
-        conversation_id: selected.id,
-        opt_in_confirmed: tplOptIn,
-        accept_no_opt_in_risk: tplRiskOk,
-      })
-      setShowTpl(false)
-      setPickedTpl(null)
-      setTplRisk(null)
-      setTplRiskOk(false)
-      loadMessages(selected.id)
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail
-      if (detail?.can_accept_risk) {
-        setTplRisk(detail.message)
-        return
-      }
-      alert(detail?.message || (typeof detail === 'string' ? detail : t('Erro ao enviar template.', 'Failed to send template.')))
-    } finally {
-      setSendingTpl(false)
-    }
   }
 
   function openInteractive() {
@@ -925,88 +868,15 @@ export default function WhatsApp() {
         <SaleDialog leadId={selected.customer_id} name={getConvName()} onClose={() => setShowSale(false)} />
       )}
 
-      {showTpl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-card border border-white/[0.08] rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-white">{t('Enviar template', 'Send template')}</h3>
-              <button onClick={() => setShowTpl(false)} className="text-ink-5 hover:text-ink-3"><X size={18} /></button>
-            </div>
-
-            {!recipientWaId && (
-              <div className="bg-amber-900/15 border border-amber-500/20 text-amber-400/90 text-[11px] rounded-lg px-3 py-2 mb-3">
-                {t('Número do cliente não identificado nesta conversa — o envio pode falhar.', "Customer number not identified in this conversation — sending may fail.")}
-              </div>
-            )}
-
-            {!pickedTpl ? (
-              tpls.length === 0 ? (
-                <p className="text-ink-4 text-sm text-center py-6">
-                  {t('Nenhum template. Crie na página', 'No templates. Create one on the')}{' '}
-                  <Link to="/app/templates" className="text-indigo-400">{t('Templates', 'Templates')}</Link>{t('.', ' page.')}
-                </p>
-              ) : (
-                <div className="space-y-1.5">
-                  {tpls.map((tpl) => (
-                    <button
-                      key={tpl.name}
-                      onClick={() => pickTpl(tpl)}
-                      className="w-full text-left px-3 py-2.5 rounded-lg bg-field border border-white/[0.06] hover:border-indigo-500/40 transition-colors"
-                    >
-                      <p className="text-sm font-medium text-ink">{tpl.name}</p>
-                      <p className="text-xs text-ink-4 truncate">{tpl.components?.find((c) => c.type === 'BODY')?.text}</p>
-                    </button>
-                  ))}
-                </div>
-              )
-            ) : (
-              <div>
-                <div className="bg-field border border-white/[0.06] rounded-lg p-3 mb-3">
-                  <p className="text-sm font-medium text-ink">{pickedTpl.name}</p>
-                  <p className="text-xs text-ink-4 mt-1">{pickedTpl.components?.find((c) => c.type === 'BODY')?.text}</p>
-                </div>
-                {tplVars.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    {tplVars.map((v, i) => (
-                      <div key={i}>
-                        <label className="block text-[11px] text-ink-4 mb-1">{t('Variável', 'Variable')} {`{{${i + 1}}}`}</label>
-                        <input
-                          value={v}
-                          onChange={(e) => setTplVars((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
-                          className="w-full px-3 py-2 bg-field border border-white/[0.08] text-ink text-sm rounded-lg focus:border-indigo-500 focus:outline-none"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <label className="flex items-start gap-2 mb-3 text-[11px] text-ink-3 cursor-pointer">
-                  <input type="checkbox" checked={tplOptIn} onChange={(e) => setTplOptIn(e.target.checked)} className="mt-0.5 accent-indigo-500" />
-                  <span>
-                    {t(
-                      'Confirmo que este contato aceitou receber mensagens da empresa no WhatsApp (opt-in). O consentimento fica registrado no lead.',
-                      'I confirm this contact agreed to receive messages from the business on WhatsApp (opt-in). The consent is recorded on the lead.',
-                    )}
-                  </span>
-                </label>
-                {tplRisk && !tplOptIn && (
-                  <OptInRisk
-                    title={t('Este contato não tem opt-in', 'This contact has no opt-in')}
-                    message={tplRisk}
-                    checked={tplRiskOk}
-                    onChange={setTplRiskOk}
-                    label={t('Entendo os riscos e quero enviar mesmo assim.', 'I understand the risks and want to send anyway.')}
-                  />
-                )}
-                <div className="flex gap-2">
-                  <button onClick={() => { setPickedTpl(null); setTplRisk(null); setTplRiskOk(false) }} className="flex-1 py-2.5 border border-white/[0.08] text-ink-4 hover:text-white text-sm rounded-lg transition-colors">{t('Voltar', 'Back')}</button>
-                  <button onClick={sendTemplate} disabled={sendingTpl || (!!tplRisk && !tplOptIn && !tplRiskOk)} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
-                    {sendingTpl ? t('Enviando…', 'Sending…') : t('Enviar', 'Send')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      {showTpl && selected && (
+        <SendTemplateDialog
+          to={recipientWaId || ''}
+          conversationId={selected.id}
+          recipient={getConvName()}
+          warnNoNumber={!recipientWaId}
+          onClose={() => setShowTpl(false)}
+          onSent={() => { setShowTpl(false); loadMessages(selected.id) }}
+        />
       )}
 
       {/* Modal: mensagem interativa (botões / lista) */}

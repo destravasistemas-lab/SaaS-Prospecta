@@ -25,7 +25,7 @@ from app.models.account import Account
 from app.models.meta_connection import MetaConnection, PROVIDER_WHATSAPP, STATUS_ACTIVE
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.models.lead import Lead
+from app.models.lead import Lead, LeadStatus
 from app.models.followup import FollowUpRule, FollowUpDispatch
 from app.models.queue import (
     JOB_ACTIVE, JOB_CANCELED, JOB_DONE, JOB_QUEUED, RCPT_PENDING, RCPT_SKIPPED, BroadcastJob, BroadcastRecipient,
@@ -83,12 +83,16 @@ class SendTextRequest(BaseModel):
 
 
 class SendTemplateRequest(BaseModel):
-    to: str
+    to: str = ""
     template_name: str
     language: str = "pt_BR"
     variables: list[str] = Field(default_factory=list,
                                   description="Valores para {{1}}, {{2}}, etc.")
     conversation_id: str | None = None
+    lead_id: str | None = Field(
+        default=None,
+        description="Send to this lead's phone (Leads page); the message goes into their WhatsApp conversation.",
+    )
     opt_in_confirmed: bool = Field(
         default=False,
         description="Agent confirms the contact gave WhatsApp opt-in (recorded on the lead).",
@@ -664,7 +668,16 @@ async def send_template(
 ):
     """Envia template aprovado — funciona fora da janela de 24h (exige opt-in do contato)."""
     conn = await _get_conn_or_404(current_user.tenant_id, db)
-    lead = await _lead_for_recipient(current_user.tenant_id, body.to, body.conversation_id, db)
+    to, conv_id = body.to, body.conversation_id
+    if body.lead_id and not conv_id:
+        lead = await db.get(Lead, body.lead_id)
+        if lead is None or lead.account_id != current_user.tenant_id:
+            raise HTTPException(404, t("Lead não encontrado.", "Lead not found."))
+        to = to or lead.phone or ""
+    else:
+        lead = await _lead_for_recipient(current_user.tenant_id, to, conv_id, db)
+    if not to:
+        raise HTTPException(422, t("Este contato não tem telefone.", "This contact has no phone number."))
     if body.opt_in_confirmed and lead and lead.whatsapp_opted_out_at is None and not lead.whatsapp_opt_in:
         messaging_policy.mark_opt_in(lead, "manual")
     no_opt_in = messaging_policy.require_template_consent(lead, accept_risk=body.accept_no_opt_in_risk)
@@ -678,18 +691,23 @@ async def send_template(
         })
 
     result = await whatsapp_service.send_template(
-        token, conn.phone_number_id, body.to,
+        token, conn.phone_number_id, to,
         body.template_name, body.language, components or None,
     )
 
     wamid = (result.get("messages") or [{}])[0].get("id")
     if not wamid:
         raise messaging_policy.meta_send_error(result)
+    if body.lead_id and not conv_id:
+        # Lead que nunca conversou (planilha): a conversa nasce com o template, como nos disparos
+        conv_id = (await _get_or_create_conv_for_lead(current_user.tenant_id, lead.id, db)).id
+    if lead is not None and lead.status == LeadStatus.NEW:
+        lead.status = LeadStatus.CONTACTED
     await _save_outbound(
         tenant_id=current_user.tenant_id,
-        conv_id=body.conversation_id,
+        conv_id=conv_id,
         sender=current_user.username,
-        wa_to=body.to,
+        wa_to=to,
         text=f"[template:{body.template_name}] {' | '.join(body.variables)}",
         wamid=wamid,
         template_name=body.template_name,
@@ -1062,10 +1080,12 @@ async def delete_followup_rule(
 
 
 async def _get_or_create_conv_for_lead(tenant_id: str, lead_id: str, db: AsyncSession) -> Conversation:
+    # Só a conversa do WhatsApp: lead mesclado também tem a do Instagram
     result = await db.execute(
         select(Conversation).where(
             Conversation.tenant_id == tenant_id,
             Conversation.customer_id == lead_id,
+            Conversation.channel == "whatsapp",
             Conversation.status == "active",
         ).limit(1)
     )
@@ -1076,6 +1096,7 @@ async def _get_or_create_conv_for_lead(tenant_id: str, lead_id: str, db: AsyncSe
         id=str(uuid.uuid4()),
         tenant_id=tenant_id,
         customer_id=lead_id,
+        channel="whatsapp",
         atendimento_status="aberto",
         status="active",
     )

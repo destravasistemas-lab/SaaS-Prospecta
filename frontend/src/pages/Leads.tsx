@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Users, Search, Flame, Thermometer, Snowflake,
   MessageCircle, RefreshCw, Trash2, ChevronDown, X, Send,
-  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall, BadgeDollarSign, Download,
+  TrendingUp, GitMerge, UserPlus, Phone, PhoneCall, BadgeDollarSign, Download, FileText,
 } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, tr } from '../i18n'
@@ -10,6 +10,8 @@ import HelpLink from '../components/HelpLink'
 import { useCalls } from '../components/CallProvider'
 import { LeadCallsModal } from '../components/CallLog'
 import SaleDialog from '../components/SaleDialog'
+import SendTemplateDialog from '../components/SendTemplateDialog'
+import { hasModule, useMe } from '../components/MeContext'
 
 interface Lead {
   id: string
@@ -112,6 +114,8 @@ export default function Leads() {
 
   // DM modal
   const [dmLead, setDmLead] = useState<Lead | null>(null)
+  const [tplLead, setTplLead] = useState<Lead | null>(null)
+  const waOn = hasModule(useMe(), 'whatsapp')
   const [dmMessage, setDmMessage] = useState('')
   const [dmSending, setDmSending] = useState(false)
   const [dmError, setDmError] = useState('')
@@ -637,19 +641,30 @@ export default function Leads() {
                   {/* Actions */}
                   <td className="max-lg:w-full max-lg:p-0 px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity max-lg:justify-start max-lg:[&>button]:p-2.5">
-                      <button
-                        onClick={() => {
-                          setDmLead(lead)
-                          setDmMessage('')
-                          setDmError('')
-                          setDmSuccess(false)
-                        }}
-                        disabled={!lead.ig_user_id}
-                        title={lead.ig_user_id ? t('Enviar DM (somente até 24h após a última mensagem do cliente)', 'Send DM (only within 24h of the customer’s last message)') : t('ID do Instagram não disponível', 'Instagram ID not available')}
-                        className="p-1.5 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <MessageCircle size={13} />
-                      </button>
+                      {waOn && lead.phone && (
+                        <button
+                          onClick={() => setTplLead(lead)}
+                          title={t('Enviar template no WhatsApp (funciona mesmo sem conversa aberta)', 'Send a WhatsApp template (works even without an open conversation)')}
+                          aria-label={t('Enviar template no WhatsApp', 'Send a WhatsApp template')}
+                          className="p-1.5 rounded-lg bg-emerald-600/15 text-emerald-300 hover:bg-emerald-600/30 transition-colors"
+                        >
+                          <FileText size={13} />
+                        </button>
+                      )}
+                      {lead.ig_user_id && (
+                        <button
+                          onClick={() => {
+                            setDmLead(lead)
+                            setDmMessage('')
+                            setDmError('')
+                            setDmSuccess(false)
+                          }}
+                          title={t('Enviar DM (somente até 24h após a última mensagem do cliente)', 'Send DM (only within 24h of the customer’s last message)')}
+                          className="p-1.5 rounded-lg bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 transition-colors"
+                        >
+                          <MessageCircle size={13} />
+                        </button>
+                      )}
                       <button
                         onClick={() => setSaleLead(lead)}
                         title={t('Fechou venda', 'Closed sale')}
@@ -807,6 +822,18 @@ export default function Leads() {
       )}
 
       {/* DM Modal */}
+      {tplLead && (
+        <SendTemplateDialog
+          leadId={tplLead.id}
+          recipient={`${tplLead.name || handleLabel(tplLead.instagram_handle)} · ${tplLead.phone}`}
+          onClose={() => setTplLead(null)}
+          onSent={() => {
+            setLeads((prev) => prev.map((l) => (l.id === tplLead.id && l.status === 'new' ? { ...l, status: 'contacted' } : l)))
+            setTplLead(null)
+          }}
+        />
+      )}
+
       {dmLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center max-lg:[align-items:safe_center] max-lg:overflow-y-auto max-lg:py-4 bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-card border border-white/[0.08] rounded-2xl p-7 w-full max-w-md">
