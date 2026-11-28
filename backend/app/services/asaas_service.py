@@ -14,7 +14,7 @@ class AsaasService:
     def __init__(self):
         self.api_key = settings.asaas_api_key
         self.base_url = (
-            "https://sandbox.asaas.com/api/v3" 
+            "https://api-sandbox.asaas.com/v3" 
             if settings.asaas_mode == "sandbox" 
             else "https://api.asaas.com/v3"
         )
@@ -155,6 +155,15 @@ class AsaasService:
 
     async def subscription_payments(self, subscription_id: str) -> list[dict]:
         return (await self._call("GET", f"/subscriptions/{subscription_id}/payments")).get("data", [])
+
+    async def subscription_pix_authorization(self, subscription_id: str) -> dict | None:
+        """Autorização de Pix Automático que o Asaas cria com a assinatura (a ativa, se houver)."""
+        data = (await self._call("GET", "/pix/automatic/authorizations",
+                                 params={"subscriptionId": subscription_id, "limit": 10})).get("data") or []
+        return next((a for a in data if a.get("status") == "ACTIVE"), data[0] if data else None)
+
+    async def cancel_pix_authorization(self, authorization_id: str) -> dict:
+        return await self._call("DELETE", f"/pix/automatic/authorizations/{authorization_id}")
 
     async def get_pix_qr(self, payment_id: str) -> dict:
         """QR Code do Pix da cobrança: {encodedImage, payload, expirationDate}."""

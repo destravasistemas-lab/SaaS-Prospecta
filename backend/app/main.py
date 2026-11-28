@@ -139,6 +139,8 @@ _MIGRATIONS = [
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS pending_payment_id VARCHAR(100)",
     "CREATE INDEX IF NOT EXISTS ix_accounts_asaas_subscription_id ON accounts (asaas_subscription_id)",
     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS ai_extra_tokens BIGINT NOT NULL DEFAULT 0",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS pix_auto_id VARCHAR(64)",
+    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS pix_auto_status VARCHAR(20)",
     # IA da plataforma: quem já tinha chave própria continua usando a dela
     "ALTER TABLE ai_configs ADD COLUMN IF NOT EXISTS use_own_key BOOLEAN",
     "UPDATE ai_configs SET use_own_key = (gemini_api_key_encrypted IS NOT NULL) WHERE use_own_key IS NULL",

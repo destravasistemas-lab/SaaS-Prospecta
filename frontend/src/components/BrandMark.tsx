@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-/** Logo DP: o D da Destrava com o P do Prospecta dentro, dividindo a haste. Mesmo desenho dos ícones do app. */
+/** Logo P do Prospecta. Mesmo desenho dos ícones do app (frontend/public/icon-*.png). */
 export default function BrandMark({ className = 'w-8 h-8' }: { className?: string }) {
   const id = useId()
   return (
@@ -16,12 +16,7 @@ export default function BrandMark({ className = 'w-8 h-8' }: { className?: strin
       <path
         fillRule="evenodd"
         fill="#fff"
-        d="M276 232H548A200 280 0 0 1 548 792H276ZM360 316H548A116 196 0 0 1 548 708H360Z"
-      />
-      <path
-        fillRule="evenodd"
-        fill="#ffd6a5"
-        d="M360 372H488A120 120 0 0 1 488 612H360ZM360 432H488A60 60 0 0 1 488 552H360Z"
+        d="M284 232H564A184 184 0 0 1 564 600H404V792H284ZM404 340H564A76 76 0 0 1 564 492H404Z"
       />
     </svg>
   )

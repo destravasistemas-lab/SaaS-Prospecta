@@ -326,6 +326,42 @@ async def public_checkout(
         raise HTTPException(status_code=500, detail="Erro ao criar checkout")
 
 
+async def _pix_automatic_event(db: AsyncSession, event: str, data: dict) -> None:
+    """Autorização do Pix Automático da assinatura. O dinheiro continua chegando pelos eventos PAYMENT_*."""
+    from app.core.redis import get_store
+    from app.services import billing
+
+    if event.startswith("PIX_AUTOMATIC_RECURRING_PAYMENT_INSTRUCTION_"):
+        instruction = data.get("paymentInstruction") or {}
+        payment_id = instruction.get("paymentId")
+        if event.endswith("_REFUSED") and payment_id:
+            # Débito recusado: a cobrança fica em aberto e a tela volta a mostrar o Pix para pagar
+            store = await get_store()
+            await store.set_ttl(f"pixauto:refused:{payment_id}", "1", 60 * 60 * 24 * 45)
+            logger.info("Pix Automático: débito recusado para a cobrança %s", payment_id)
+        return
+    if not event.startswith("PIX_AUTOMATIC_RECURRING_AUTHORIZATION_"):
+        return
+    auth = data.get("authorization") or {}
+    acc = None
+    if auth.get("subscriptionId"):
+        acc = (await db.execute(
+            select(Account).where(Account.asaas_subscription_id == auth["subscriptionId"])
+        )).scalar_one_or_none()
+    if acc is None and auth.get("id"):
+        acc = (await db.execute(select(Account).where(Account.pix_auto_id == auth["id"]))).scalar_one_or_none()
+    if acc is None and auth.get("customerId"):
+        acc = (await db.execute(select(Account).where(
+            Account.asaas_customer_id == auth["customerId"], Account.asaas_subscription_id.is_not(None),
+            Account.pix_auto_id.is_(None),
+        ))).scalars().first()
+    if acc is None:
+        logger.info("Pix Automático: autorização %s sem conta (%s)", auth.get("id"), event)
+        return
+    if billing.apply_pix_authorization(acc, auth, event):
+        logger.info("Pix Automático da conta %s: %s", acc.id, acc.pix_auto_status)
+
+
 @router.post("/webhook/asaas")
 async def handle_asaas_webhook(
     data: dict = Body(...),
@@ -349,6 +385,10 @@ async def handle_asaas_webhook(
             return {"status": "ok"}
 
         event = data.get("event")
+        if event and event.startswith("PIX_AUTOMATIC_RECURRING_"):
+            await _pix_automatic_event(db, event, data)
+            await db.commit()
+            return {"status": "ok"}
         payment_data = data.get("payment", {})
         payment_id = payment_data.get("id")
         

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.redis import get_store
 from app.core.i18n import t
 from app.core.security import get_current_user
 from app.models.billing import AIPackPurchase, Plan
@@ -72,7 +73,13 @@ async def _pending_payment(acc) -> dict | None:
         acc.pending_payment_id = None
         return None
     out = {"payment_id": payment.get("id"), "value": payment.get("value"), "due_date": payment.get("dueDate"),
-           "invoice_url": payment.get("invoiceUrl"), "pix_payload": None, "pix_image": None}
+           "invoice_url": payment.get("invoiceUrl"), "pix_payload": None, "pix_image": None,
+           "auto_debit": False}
+    # Com o Pix Automático ativo o banco debita no vencimento: a tela não pede para pagar de novo,
+    # a não ser que o débito tenha sido recusado ou a cobrança já esteja vencida.
+    if acc.pix_auto_status == billing.PIX_AUTO_ACTIVE and payment.get("status") == "PENDING":
+        store = await get_store()
+        out["auto_debit"] = not await store.get(_refused_key(acc.pending_payment_id))
     try:
         qr = await asaas_service.get_pix_qr(acc.pending_payment_id)
         out["pix_payload"], out["pix_image"] = qr.get("payload"), qr.get("encodedImage")
@@ -81,12 +88,49 @@ async def _pending_payment(acc) -> dict | None:
     return out
 
 
+def _refused_key(payment_id: str) -> str:
+    return f"pixauto:refused:{payment_id}"
+
+
+async def _sync_pix_automatic(acc) -> None:
+    """O webhook é o caminho principal. Aqui só consulta o Asaas enquanto não sabemos se foi
+    oferecido ou se o cliente ainda não autorizou, no máximo a cada 10 minutos."""
+    if not acc or not acc.asaas_subscription_id or not settings.asaas_api_key:
+        return
+    if acc.pix_auto_status not in (None, billing.PIX_AUTO_OFFERED):
+        return
+    store = await get_store()
+    if not await store.set_nx_ttl(f"pixauto:sync:{acc.id}", "1", 600):
+        return
+    try:
+        auth = await asaas_service.subscription_pix_authorization(acc.asaas_subscription_id)
+    except Exception as exc:
+        logger.warning("Pix Automático da assinatura %s indisponível: %s", acc.asaas_subscription_id, exc)
+        return
+    if auth:
+        billing.apply_pix_authorization(acc, auth)
+    elif acc.pix_auto_status is None:
+        acc.pix_auto_status = billing.PIX_AUTO_DISABLED
+
+
+async def _drop_pix_authorization(acc) -> None:
+    """Assinatura trocada ou cancelada: a autorização antiga não fica pendurada no app do banco."""
+    if acc.pix_auto_id and acc.pix_auto_status in (billing.PIX_AUTO_OFFERED, billing.PIX_AUTO_ACTIVE):
+        try:
+            await asaas_service.cancel_pix_authorization(acc.pix_auto_id)
+        except Exception as exc:
+            logger.warning("Autorização de Pix Automático %s não cancelada: %s", acc.pix_auto_id, exc)
+    acc.pix_auto_id = None
+    acc.pix_auto_status = None
+
+
 @router.get("/status")
 async def billing_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     acc = await billing.billing_account(db, current_user.tenant_id)
+    await _sync_pix_automatic(acc)
     pending = await _pending_payment(acc)
     await db.flush()
     access = billing.compute_access(acc) if acc else billing.Access(billing.STATUS_UNMANAGED, True, None, None)
@@ -97,6 +141,7 @@ async def billing_status(
         "is_child": bool(acc and acc.id != current_user.tenant_id),
         "trial_days": settings.billing_trial_days,
         "payments_ready": bool(settings.asaas_api_key),
+        "pix_automatic": acc.pix_auto_status if acc and acc.asaas_subscription_id else None,
     }
 
 
@@ -138,6 +183,7 @@ async def subscribe(
             )
             acc.asaas_customer_id = customer.get("id")
         if acc.asaas_subscription_id:
+            await _drop_pix_authorization(acc)
             try:
                 await asaas_service.cancel_subscription(acc.asaas_subscription_id)
             except Exception as exc:
@@ -155,6 +201,7 @@ async def subscribe(
         raise HTTPException(502, t("Não foi possível criar a assinatura agora. Tente de novo em instantes.", "Could not create the subscription right now. Try again shortly."))
 
     acc.asaas_subscription_id = sub.get("id")
+    billing.pix_auto_from_subscription(acc, sub)
     acc.billing_plan = plan.code
     acc.pending_payment_id = None
     if next_due == today:
@@ -184,6 +231,7 @@ async def cancel(
     except Exception as exc:
         logger.warning("Cancelamento da assinatura %s falhou no Asaas: %s", acc.asaas_subscription_id, exc)
         raise HTTPException(502, t("Não foi possível cancelar agora. Tente de novo.", "Could not cancel right now. Try again."))
+    await _drop_pix_authorization(acc)
     acc.asaas_subscription_id = None
     acc.pending_payment_id = None
     if acc.billing_status not in (None, billing.STATUS_COURTESY):

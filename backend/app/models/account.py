@@ -58,6 +58,10 @@ class Account(Base):
     asaas_customer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     asaas_subscription_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
     pending_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Pix Automático da assinatura (autorização no Asaas): CREATED, ACTIVE, CANCELLED, EXPIRED,
+    # REFUSED; DISABLED quando o Asaas não ofereceu
+    pix_auto_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    pix_auto_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     # Saldo de tokens de IA comprados em pacotes extras (gasto depois da franquia do plano)
     ai_extra_tokens: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(

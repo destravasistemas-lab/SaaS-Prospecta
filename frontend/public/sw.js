@@ -1,6 +1,6 @@
 // Service worker do app instalável. Só trata navegação de páginas (rede primeiro);
 // API, WebSocket e arquivos seguem direto para a rede, sem cache.
-const CACHE = 'prospecta-shell-v2'
+const CACHE = 'prospecta-shell-v3'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.add('/')).then(() => self.skipWaiting()))
@@ -41,8 +41,8 @@ self.addEventListener('push', (event) => {
     if (data.kind !== 'test' && wins.some((w) => w.visibilityState === 'visible' && w.focused)) return
     await self.registration.showNotification(data.title || 'Prospecta', {
       body: data.body || '',
-      icon: '/icon-192.png',
-      badge: '/badge-96.png',
+      icon: '/icon-192.png?v=2',
+      badge: '/badge-96.png?v=2',
       tag: data.tag,
       renotify: Boolean(data.tag),
       requireInteraction: data.kind === 'interest',

@@ -196,6 +196,45 @@ def add_month(ts: datetime) -> datetime:
     return ts + timedelta(days=30)
 
 
+PIX_AUTO_OFFERED = "CREATED"
+PIX_AUTO_ACTIVE = "ACTIVE"
+PIX_AUTO_DISABLED = "DISABLED"
+_PIX_AUTO_RANK = {"CREATED": 0, "ACTIVE": 1, "CANCELLED": 2, "EXPIRED": 2, "REFUSED": 2}
+_PIX_AUTO_EVENTS = {
+    "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_CREATED": "CREATED",
+    "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_ACTIVATED": "ACTIVE",
+    "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_CANCELLED": "CANCELLED",
+    "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_EXPIRED": "EXPIRED",
+    "PIX_AUTOMATIC_RECURRING_AUTHORIZATION_REFUSED": "REFUSED",
+}
+
+
+def pix_auto_from_subscription(acc: Account, subscription: dict) -> None:
+    """Assinatura nova: o Asaas oferece o Pix Automático na primeira cobrança (OPTIONAL) ou não."""
+    acc.pix_auto_id = None
+    offered = subscription.get("pixAutomaticAuthorizationMode") == "OPTIONAL"
+    acc.pix_auto_status = PIX_AUTO_OFFERED if offered else PIX_AUTO_DISABLED
+
+
+def apply_pix_authorization(acc: Account, auth: dict, event: str | None = None) -> bool:
+    """Atualiza o Pix Automático da conta. Ignora autorização de outra assinatura e evento fora de ordem."""
+    sub_id = auth.get("subscriptionId")
+    auth_id = auth.get("id")
+    if sub_id and sub_id != acc.asaas_subscription_id:
+        return False
+    if not sub_id and acc.pix_auto_id and auth_id and auth_id != acc.pix_auto_id:
+        return False
+    status = auth.get("status") or _PIX_AUTO_EVENTS.get(event or "")
+    if status not in _PIX_AUTO_RANK:
+        return False
+    same = auth_id is not None and auth_id == acc.pix_auto_id
+    if same and _PIX_AUTO_RANK[status] < _PIX_AUTO_RANK.get(acc.pix_auto_status or "", -1):
+        return False
+    acc.pix_auto_id = auth_id or acc.pix_auto_id
+    acc.pix_auto_status = status
+    return True
+
+
 def apply_paid(acc: Account, due_date: str | None, payment_id: str | None = None) -> None:
     """Pagamento confirmado: libera até um mês depois do vencimento (idempotente)."""
     try:

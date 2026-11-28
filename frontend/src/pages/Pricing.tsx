@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, Copy, Loader2, X, Sparkles, Bot } from 'lucide-react'
+import { Check, Copy, Loader2, X, Sparkles, Bot, Repeat } from 'lucide-react'
 import api, { apiError } from '../services/api'
 import { useI18n, LanguageToggle } from '../i18n'
 import HelpLink from '../components/HelpLink'
@@ -28,7 +28,10 @@ interface Pending {
   invoice_url: string | null
   pix_payload: string | null
   pix_image: string | null
+  auto_debit: boolean
 }
+
+type PixAutomatic = 'CREATED' | 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'REFUSED' | 'DISABLED'
 
 interface Status {
   status: 'unmanaged' | 'courtesy' | 'trial' | 'active' | 'past_due' | 'canceled' | 'blocked'
@@ -42,6 +45,7 @@ interface Status {
   pending: Pending | null
   is_child: boolean
   trial_days: number
+  pix_automatic: PixAutomatic | null
 }
 
 type T = (pt: string, en: string) => string
@@ -102,12 +106,12 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
     loadStatus()
   }, [loadStatus])
 
-  // Enquanto há cobrança em aberto, confere o pagamento a cada 5 s.
+  // Enquanto há cobrança para pagar aqui, confere o pagamento a cada 5 s (débito automático não).
   useEffect(() => {
-    if (!status?.pending) return
+    if (!status?.pending || status.pending.auto_debit) return
     const id = window.setInterval(loadStatus, 5000)
     return () => window.clearInterval(id)
-  }, [status?.pending?.payment_id, loadStatus])
+  }, [status?.pending?.payment_id, status?.pending?.auto_debit, loadStatus])
 
   async function cancel() {
     if (!confirm(t('Cancelar a renovação? O acesso continua até o fim do período pago.', 'Cancel renewal? Access continues until the end of the paid period.'))) return
@@ -118,7 +122,9 @@ export default function Pricing({ embedded = false }: { embedded?: boolean }) {
     } finally { setCanceling(false) }
   }
 
-  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale) : '')
+  // Vencimento do Asaas vem só com a data (AAAA-MM-DD): lido como UTC, mostraria o dia anterior no Brasil.
+  const date = (iso: string | null) =>
+    iso ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : iso).toLocaleDateString(locale) : ''
   const isCurrent = (p: Plan) => !!status && status.plan === p.code && ['active', 'past_due', 'trial', 'courtesy'].includes(status.status)
   const canBuy = embedded && status && !status.is_child
 
@@ -274,7 +280,26 @@ function StatusCard({ status, date, canceling, onCancel, fmt }: {
           </button>
         )}
       </div>
-      {s.pending && (
+      {s.pix_automatic === 'ACTIVE' && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-emerald-300">
+          <Repeat size={13} className="shrink-0" />
+          {t('Pix Automático ativo: as mensalidades são debitadas no vencimento, sem precisar pagar aqui.', 'Automatic Pix is on: monthly fees are debited on the due date, no need to pay here.')}
+        </p>
+      )}
+      {s.subscribed && (s.pix_automatic === 'CANCELLED' || s.pix_automatic === 'EXPIRED' || s.pix_automatic === 'REFUSED') && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-3">
+          <Repeat size={13} className="shrink-0" />
+          {t('Pix Automático desligado. As próximas mensalidades aparecem aqui para pagar por Pix, boleto ou cartão.', 'Automatic Pix is off. Upcoming monthly fees show up here to pay by Pix, bank slip or card.')}
+        </p>
+      )}
+      {s.pending?.auto_debit && (
+        <div className="mt-4 flex items-center gap-2.5 bg-black/20 rounded-xl p-4 text-sm text-ink-2">
+          <Repeat size={16} className="text-emerald-400 shrink-0" />
+          {t(`A mensalidade de ${fmt.money(s.pending.value)} será debitada pelo Pix Automático em ${date(s.pending.due_date)}. Não precisa pagar aqui.`,
+             `The ${fmt.money(s.pending.value)} monthly fee will be debited by Automatic Pix on ${date(s.pending.due_date)}. No need to pay here.`)}
+        </div>
+      )}
+      {s.pending && !s.pending.auto_debit && (
         <div className="mt-4 flex flex-col sm:flex-row gap-4 items-start bg-black/20 rounded-xl p-4">
           {s.pending.pix_image && <img src={`data:image/png;base64,${s.pending.pix_image}`} alt="QR Code Pix" className="w-36 h-36 rounded-lg bg-white p-1.5 shrink-0" />}
           <div className="text-sm text-ink-2 space-y-2">
@@ -284,6 +309,13 @@ function StatusCard({ status, date, canceling, onCancel, fmt }: {
                 className="flex items-center gap-1.5 px-3 py-1.5 border border-white/[0.12] rounded-lg text-xs hover:text-white">
                 {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}{copied ? t('Copiado', 'Copied') : t('Copiar Pix copia e cola', 'Copy Pix code')}
               </button>
+            )}
+            {s.pix_automatic === 'CREATED' && s.pending.pix_payload && (
+              <p className="flex items-start gap-1.5 text-xs text-emerald-200 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2.5 py-2 max-w-sm">
+                <Repeat size={13} className="mt-0.5 shrink-0" />
+                {t('Pague pelo app do banco e aceite o Pix Automático quando ele aparecer no final: as próximas mensalidades saem sozinhas no vencimento. Dá para cancelar quando quiser no app do banco.',
+                   'Pay in your bank app and accept Automatic Pix when it shows up at the end: upcoming monthly fees are paid on the due date by themselves. You can cancel anytime in your bank app.')}
+              </p>
             )}
             {s.pending.invoice_url && (
               <a href={s.pending.invoice_url} target="_blank" rel="noreferrer" className="block text-xs text-violet-300 underline">
