@@ -12,6 +12,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import DBAPIError
 
 from app.core.config import settings
 from app.core.database import async_session
@@ -30,6 +31,7 @@ BATCH = 50
 # Erros da conta ou do template, não do contato: não adianta continuar.
 FATAL_CODES = {133010, 190, 132001, 133005}
 _LOOP_SECONDS = 2
+_MAX_BACKOFF_SECONDS = 60
 _INTERRUPTED_MINUTES = 5
 
 
@@ -249,14 +251,37 @@ async def process_jobs(session_factory=async_session) -> int:
             return total
 
 
+def describe_error(exc: Exception) -> str:
+    """Tipo e mensagem do banco (qual tabela ou coluna), sem o SQL e os parâmetros, que trazem dados de contato."""
+    name = type(exc).__name__
+    if isinstance(exc, DBAPIError) and exc.orig is not None:
+        detail = str(exc.orig).strip().splitlines()
+        if detail:
+            return f"{name}: {detail[0][:300]}"
+    return name
+
+
+def next_delay(failures: int) -> int:
+    """2s com tudo certo; com falhas seguidas, 4, 8, 16, 32 e no máximo 60s."""
+    if not failures:
+        return _LOOP_SECONDS
+    return min(_LOOP_SECONDS * 2 ** failures, _MAX_BACKOFF_SECONDS)
+
+
 async def broadcast_loop() -> None:
     logger.info("Fila de disparos ligada")
+    failures = 0
     while True:
         try:
             await recover_interrupted()
             await process_jobs()
+            if failures:
+                logger.info("Fila de disparos: voltou a funcionar depois de %d falhas", failures)
+            failures = 0
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.error("Fila de disparos: rodada falhou: %s", type(exc).__name__)
-        await asyncio.sleep(_LOOP_SECONDS)
+            failures += 1
+            logger.error("Fila de disparos: rodada falhou (%dª seguida, próxima em %ds): %s",
+                         failures, next_delay(failures), describe_error(exc))
+        await asyncio.sleep(next_delay(failures))

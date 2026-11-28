@@ -153,6 +153,23 @@ _MIGRATIONS = [
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS rate_limited INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE ai_usage_days ADD COLUMN IF NOT EXISTS queue_wait_ms BIGINT NOT NULL DEFAULT 0",
     "ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS embedding_model VARCHAR(64)",
+    # Fila de disparos: as tabelas nasceram no deploy de 11/11 (revertido) sem estas colunas
+    "ALTER TABLE broadcast_jobs ADD COLUMN IF NOT EXISTS include_without_opt_in BOOLEAN NOT NULL DEFAULT FALSE",
+    "ALTER TABLE broadcast_jobs ADD COLUMN IF NOT EXISTS skipped INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE broadcast_recipients ADD COLUMN IF NOT EXISTS no_opt_in BOOLEAN NOT NULL DEFAULT FALSE",
+    # Disparos que ficaram na fila em 11/11 não são retomados semanas depois
+    """
+    UPDATE broadcast_recipients SET status = 'skipped'
+    WHERE status = 'pending' AND job_id IN (
+        SELECT id FROM broadcast_jobs
+        WHERE status IN ('queued', 'running') AND created_at < '2026-11-12T00:00:00Z'
+    )
+    """,
+    """
+    UPDATE broadcast_jobs
+    SET status = 'canceled', finished_at = now(), error = 'Disparo antigo cancelado na atualização do sistema'
+    WHERE status IN ('queued', 'running') AND created_at < '2026-11-12T00:00:00Z'
+    """,
     "UPDATE accounts SET billing_status = NULL WHERE approval_status <> 'approved' AND billing_status = 'courtesy' AND courtesy_until IS NULL AND billing_note IS NULL",
 
     # Prospecção foi removida: apaga as tabelas que ela criou, só se estiverem vazias
